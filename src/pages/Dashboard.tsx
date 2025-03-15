@@ -1,3 +1,4 @@
+
 import React from 'react';
 import StatCard from '@/components/dashboard/StatCard';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
@@ -67,19 +68,19 @@ const Dashboard: React.FC = () => {
     { 
       id: "v1", 
       name: "TL-3045", 
-      status: "delivering", 
+      status: "delivering" as const, 
       location: "Route A7" 
     },
     { 
       id: "v2", 
       name: "TL-2189", 
-      status: "idle", 
+      status: "idle" as const, 
       location: "Dépôt Central" 
     },
     { 
       id: "v3", 
       name: "TL-4023", 
-      status: "maintenance", 
+      status: "maintenance" as const, 
       location: "Garage Nord" 
     }
   ];
@@ -100,21 +101,21 @@ const Dashboard: React.FC = () => {
       customer: "Société Dupont", 
       destination: "Paris, 15ème", 
       scheduledFor: "Aujourd'hui, 14:30", 
-      status: "on-time" 
+      status: "on-time" as const 
     },
     { 
       id: "d2", 
       customer: "Entreprise Martin", 
       destination: "Lyon, Centre", 
       scheduledFor: "Aujourd'hui, 16:45", 
-      status: "at-risk" 
+      status: "at-risk" as const 
     },
     { 
       id: "d3", 
       customer: "Distribution Rapide", 
       destination: "Marseille, Port", 
       scheduledFor: "Demain, 09:15", 
-      status: "delayed" 
+      status: "delayed" as const 
     }
   ];
 
@@ -122,25 +123,25 @@ const Dashboard: React.FC = () => {
     { 
       id: "dr1", 
       name: "Thomas Durand", 
-      status: "on-duty", 
+      status: "on-duty" as const, 
       lastActivity: "il y a 5 min" 
     },
     { 
       id: "dr2", 
       name: "Sophie Lefèvre", 
-      status: "available", 
+      status: "available" as const, 
       lastActivity: "il y a 20 min" 
     },
     { 
       id: "dr3", 
       name: "Pierre Martin", 
-      status: "off-duty", 
+      status: "off-duty" as const, 
       lastActivity: "hier, 18:30" 
     },
     { 
       id: "dr4", 
       name: "Julie Dubois", 
-      status: "on-duty", 
+      status: "on-duty" as const, 
       lastActivity: "il y a 15 min" 
     }
   ];
