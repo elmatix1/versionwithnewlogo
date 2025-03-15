@@ -1,10 +1,16 @@
 
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuth, UserRole } from '@/hooks/useAuth';
+import { toast } from "sonner";
 
-const ProtectedRoute: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+interface ProtectedRouteProps {
+  requiredRoles?: UserRole[];
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requiredRoles = [] }) => {
+  const { isAuthenticated, isLoading, user, hasPermission } = useAuth();
+  const location = useLocation();
   
   // Afficher un écran de chargement pendant la vérification
   if (isLoading) {
@@ -17,10 +23,18 @@ const ProtectedRoute: React.FC = () => {
   
   // Rediriger vers la page de connexion si non authentifié
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
   
-  // Afficher les routes enfants si authentifié
+  // Vérifier les permissions basées sur les rôles
+  if (requiredRoles.length > 0 && !hasPermission(requiredRoles)) {
+    toast.error("Accès refusé", {
+      description: "Vous n'avez pas les permissions nécessaires pour accéder à cette page",
+    });
+    return <Navigate to="/" replace />;
+  }
+  
+  // Afficher les routes enfants si authentifié et autorisé
   return <Outlet />;
 };
 

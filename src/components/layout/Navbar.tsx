@@ -15,16 +15,32 @@ import {
   Search, 
   Settings, 
   HelpCircle, 
-  LogOut
+  LogOut,
+  UserCircle
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
+import { Badge } from '@/components/ui/badge';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   
   const handleLogout = () => {
     logout();
+  };
+
+  // Fonction pour obtenir la version française du rôle
+  const getRoleFrench = (role: string): string => {
+    const roleMapping: Record<string, string> = {
+      'admin': 'Administrateur',
+      'rh': 'Ressources Humaines',
+      'planificateur': 'Planificateur',
+      'commercial': 'Commercial',
+      'approvisionneur': 'Approvisionneur',
+      'exploitation': 'Exploitation',
+      'maintenance': 'Maintenance'
+    };
+    return roleMapping[role] || role;
   };
 
   return (
@@ -47,11 +63,17 @@ const Navbar: React.FC = () => {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="rounded-full h-8 w-8 p-0">
+              <Button variant="ghost" className="flex items-center gap-2 py-1 px-2">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="/placeholder.svg" alt="avatar" />
-                  <AvatarFallback>{ user?.name?.charAt(0) || 'U' }</AvatarFallback>
+                  <AvatarFallback>{ user?.username?.charAt(0).toUpperCase() || 'U' }</AvatarFallback>
                 </Avatar>
+                <div className="flex flex-col items-start text-sm">
+                  <span className="leading-none">{user?.name || 'Utilisateur'}</span>
+                  <Badge variant="outline" className="mt-1 px-1 py-0 text-xs font-normal">
+                    {user?.role ? getRoleFrench(user.role) : 'Invité'}
+                  </Badge>
+                </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -64,6 +86,10 @@ const Navbar: React.FC = () => {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <UserCircle className="mr-2 h-4 w-4" />
+                <span>Profil</span>
+              </DropdownMenuItem>
               <DropdownMenuItem>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Paramètres</span>

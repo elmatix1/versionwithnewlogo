@@ -1,74 +1,64 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useToast } from '@/components/ui/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Truck } from 'lucide-react';
+import { Truck, Info } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Définition du schéma de validation
 const formSchema = z.object({
-  email: z.string().email({ message: "Adresse email invalide" }),
-  password: z.string().min(6, { message: "Le mot de passe doit contenir au moins 6 caractères" }),
+  username: z.string().min(1, { message: "Le nom d'utilisateur est requis" }),
+  password: z.string().min(1, { message: "Le mot de passe est requis" }),
 });
 
 // Type basé sur le schéma
 type LoginFormValues = z.infer<typeof formSchema>;
 
 const Login: React.FC = () => {
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
+
+  // Déterminer l'URL de redirection après connexion
+  const from = location.state?.from?.pathname || '/';
 
   // Initialisation du formulaire avec React Hook Form
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
+      username: "",
       password: "",
     },
   });
 
   // Fonction de soumission du formulaire
-  const onSubmit = (data: LoginFormValues) => {
+  const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     
-    // Simulation d'un appel API
-    setTimeout(() => {
-      // Ici, vous feriez normalement un appel API à votre backend
-      console.log("Tentative de connexion:", data);
+    try {
+      const success = await login(data.username, data.password);
       
-      // Simuler un succès (à remplacer par la logique réelle)
-      const mockUser = {
-        id: '1',
-        name: 'Admin',
-        email: data.email,
-        role: 'admin'
-      };
-      
-      // Stocker les informations d'authentification
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      localStorage.setItem('isAuthenticated', 'true');
-      
-      toast({
-        title: "Connexion réussie",
-        description: "Bienvenue sur TransLogica",
-      });
-      
-      // Rediriger vers le tableau de bord
-      navigate('/');
-      
+      if (success) {
+        // Rediriger vers la page d'origine ou le tableau de bord
+        navigate(from, { replace: true });
+      }
+    } catch (error) {
+      console.error("Erreur de connexion:", error);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
@@ -86,12 +76,12 @@ const Login: React.FC = () => {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="email"
+                name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Nom d'utilisateur</FormLabel>
                     <FormControl>
-                      <Input placeholder="exemple@translogica.fr" {...field} />
+                      <Input placeholder="Saisissez votre nom d'utilisateur" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -118,7 +108,22 @@ const Login: React.FC = () => {
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex flex-col gap-2">
+        <CardFooter className="flex flex-col gap-4">
+          <Alert className="bg-muted">
+            <Info className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              <div className="font-medium mb-1">Comptes de démonstration :</div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                <div><span className="font-medium">admin</span>: admin123</div>
+                <div><span className="font-medium">rh</span>: admin123</div>
+                <div><span className="font-medium">pl</span>: admin123</div>
+                <div><span className="font-medium">cl</span>: admin123</div>
+                <div><span className="font-medium">ap</span>: admin123</div>
+                <div><span className="font-medium">ch</span>: admin123</div>
+                <div><span className="font-medium">chh</span>: admin123</div>
+              </div>
+            </AlertDescription>
+          </Alert>
           <div className="text-center text-sm text-muted-foreground">
             <a href="#" className="hover:text-primary">Mot de passe oublié?</a>
           </div>

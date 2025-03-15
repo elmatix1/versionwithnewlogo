@@ -28,20 +28,44 @@ const App = () => (
             {/* Route publique */}
             <Route path="/login" element={<Login />} />
             
-            {/* Routes protégées */}
+            {/* Routes protégées de base - accessibles à tous les utilisateurs authentifiés */}
             <Route element={<ProtectedRoute />}>
               <Route element={<MainLayout />}>
                 <Route path="/" element={<Dashboard />} />
-                <Route path="/users" element={<UserManagement />} />
-                <Route path="/hr" element={<HRManagement />} />
-                <Route path="/vehicles" element={<VehicleManagement />} />
-                <Route path="/orders" element={<OrderManagement />} />
-                {/* Placeholder routes - These would be implemented as needed */}
-                <Route path="/planning" element={<NotFound />} />
-                <Route path="/inventory" element={<NotFound />} />
-                <Route path="/maintenance" element={<NotFound />} />
-                <Route path="/reports" element={<NotFound />} />
-                <Route path="/settings" element={<NotFound />} />
+                
+                {/* Routes protégées par rôle */}
+                <Route element={<ProtectedRoute requiredRoles={['admin']} />}>
+                  <Route path="/users" element={<UserManagement />} />
+                  <Route path="/settings" element={<NotFound />} />
+                </Route>
+                
+                <Route element={<ProtectedRoute requiredRoles={['admin', 'rh']} />}>
+                  <Route path="/hr" element={<HRManagement />} />
+                </Route>
+                
+                <Route element={<ProtectedRoute requiredRoles={['admin', 'exploitation', 'maintenance', 'planificateur']} />}>
+                  <Route path="/vehicles" element={<VehicleManagement />} />
+                </Route>
+                
+                <Route element={<ProtectedRoute requiredRoles={['admin', 'commercial', 'approvisionneur']} />}>
+                  <Route path="/orders" element={<OrderManagement />} />
+                </Route>
+                
+                <Route element={<ProtectedRoute requiredRoles={['admin', 'planificateur', 'exploitation']} />}>
+                  <Route path="/planning" element={<NotFound />} />
+                </Route>
+                
+                <Route element={<ProtectedRoute requiredRoles={['admin', 'approvisionneur']} />}>
+                  <Route path="/inventory" element={<NotFound />} />
+                </Route>
+                
+                <Route element={<ProtectedRoute requiredRoles={['admin', 'maintenance']} />}>
+                  <Route path="/maintenance" element={<NotFound />} />
+                </Route>
+                
+                <Route element={<ProtectedRoute requiredRoles={['admin', 'commercial']} />}>
+                  <Route path="/reports" element={<NotFound />} />
+                </Route>
               </Route>
             </Route>
             
