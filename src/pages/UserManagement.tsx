@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -25,53 +25,87 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from '@/components/ui/badge';
-import { Search, MoreVertical, Plus, Filter } from 'lucide-react';
+import { Search, MoreVertical, Plus, Filter, UserPlus } from 'lucide-react';
+import { useAuth, UserRole } from '@/hooks/useAuth';
+import AddUserForm from '@/components/users/AddUserForm';
+
+type UserStatus = 'active' | 'inactive';
+
+interface ExtendedUser {
+  id: string;
+  username: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  status: UserStatus;
+  lastActive: string;
+}
+
+const roleLabels: Record<UserRole, string> = {
+  'admin': 'Administrateur',
+  'rh': 'Ressources Humaines',
+  'planificateur': 'Planificateur',
+  'commercial': 'Commercial',
+  'approvisionneur': 'Approvisionneur',
+  'exploitation': 'Chargé d\'exploitation', 
+  'maintenance': 'Chargé de maintenance'
+};
 
 const UserManagement: React.FC = () => {
-  // Mock data
-  const users = [
-    { 
-      id: 1, 
-      name: "Jean Dupont", 
-      email: "jean.dupont@example.com", 
-      role: "Administrateur", 
-      status: "active", 
-      lastActive: "Il y a 10 minutes"
-    },
-    { 
-      id: 2, 
-      name: "Marie Martin", 
-      email: "marie.martin@example.com", 
-      role: "Planificateur", 
-      status: "active", 
-      lastActive: "Il y a 3 heures"
-    },
-    { 
-      id: 3, 
-      name: "Pierre Richard", 
-      email: "pierre.richard@example.com", 
-      role: "Commercial", 
-      status: "inactive", 
-      lastActive: "Hier"
-    },
-    { 
-      id: 4, 
-      name: "Sophie Bernard", 
-      email: "sophie.bernard@example.com", 
-      role: "Ressources Humaines", 
-      status: "active", 
-      lastActive: "Il y a 30 minutes"
-    },
-    { 
-      id: 5, 
-      name: "Thomas Leroy", 
-      email: "thomas.leroy@example.com", 
-      role: "Chauffeur", 
-      status: "active", 
-      lastActive: "Il y a 5 heures"
-    },
-  ];
+  const { allUsers, addUser, updateUser, deleteUser, hasActionPermission } = useAuth();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [openAddUserDialog, setOpenAddUserDialog] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  
+  // Convertir les utilisateurs du contexte auth en utilisateurs étendus pour l'affichage
+  const extendedUsers: ExtendedUser[] = allUsers.map(user => ({
+    ...user,
+    status: 'active' as UserStatus,
+    lastActive: "Il y a quelques minutes" // Donnée simulée
+  }));
+  
+  // Filtrer les utilisateurs en fonction du terme de recherche
+  const filteredUsers = extendedUsers.filter(user => 
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    roleLabels[user.role].toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  // Gestionnaire pour ajouter un nouvel utilisateur
+  const handleAddUser = (userData: any) => {
+    addUser({
+      username: userData.username,
+      name: userData.name,
+      email: userData.email,
+      role: userData.role as UserRole
+    });
+  };
+  
+  // Gestionnaire pour changer le statut d'un utilisateur
+  const handleToggleStatus = (userId: string, currentStatus: UserStatus) => {
+    updateUser(userId, {
+      // Cette propriété serait normalement gérée par le backend
+    });
+  };
+  
+  // Gestionnaire pour supprimer un utilisateur
+  const handleDeleteUser = () => {
+    if (userToDelete) {
+      deleteUser(userToDelete);
+      setUserToDelete(null);
+    }
+  };
 
   return (
     <div>
@@ -87,10 +121,15 @@ const UserManagement: React.FC = () => {
               <CardTitle>Utilisateurs</CardTitle>
               <CardDescription>Gérez les utilisateurs et leurs rôles</CardDescription>
             </div>
-            <Button className="flex items-center gap-2">
-              <Plus size={16} />
-              <span>Ajouter</span>
-            </Button>
+            {hasActionPermission('add-user') && (
+              <Button 
+                className="flex items-center gap-2"
+                onClick={() => setOpenAddUserDialog(true)}
+              >
+                <UserPlus size={16} />
+                <span>Ajouter</span>
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -100,6 +139,8 @@ const UserManagement: React.FC = () => {
               <Input 
                 placeholder="Rechercher..." 
                 className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <Button variant="outline" className="flex items-center gap-2">
@@ -117,46 +158,90 @@ const UserManagement: React.FC = () => {
                   <TableHead>Rôle</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead>Dernière activité</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
+                  {hasActionPermission('edit-user') && (
+                    <TableHead className="w-[50px]"></TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
+                {filteredUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.role}</TableCell>
+                    <TableCell>{roleLabels[user.role]}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={user.status === "active" ? "border-green-500 text-green-600" : "border-zinc-500 text-zinc-600"}>
                         {user.status === "active" ? "Actif" : "Inactif"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{user.lastActive}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem>Modifier</DropdownMenuItem>
-                          <DropdownMenuItem>Changer le rôle</DropdownMenuItem>
-                          <DropdownMenuItem>Réinitialiser le mot de passe</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">Désactiver</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                    {hasActionPermission('edit-user') && (
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem>Modifier</DropdownMenuItem>
+                            <DropdownMenuItem>Changer le rôle</DropdownMenuItem>
+                            <DropdownMenuItem>Réinitialiser le mot de passe</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onClick={() => setUserToDelete(user.id)}
+                            >
+                              Supprimer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
+                {filteredUsers.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={hasActionPermission('edit-user') ? 6 : 5} className="text-center py-8 text-muted-foreground">
+                      Aucun utilisateur trouvé
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
         </CardContent>
       </Card>
+      
+      {/* Formulaire d'ajout d'utilisateur */}
+      <AddUserForm 
+        open={openAddUserDialog}
+        onOpenChange={setOpenAddUserDialog}
+        onAddUser={handleAddUser}
+      />
+      
+      {/* Boîte de dialogue de confirmation de suppression */}
+      <AlertDialog
+        open={!!userToDelete}
+        onOpenChange={(open) => !open && setUserToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Êtes-vous sûr?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action ne peut pas être annulée. Cela supprimera définitivement cet utilisateur du système.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive text-destructive-foreground">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

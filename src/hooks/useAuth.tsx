@@ -28,6 +28,11 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   hasPermission: (requiredRoles: UserRole[]) => boolean;
+  hasActionPermission: (action: string) => boolean;
+  allUsers: User[];
+  addUser: (user: Omit<User, 'id'>) => void;
+  updateUser: (id: string, userData: Partial<User>) => void;
+  deleteUser: (id: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -103,8 +108,25 @@ const ROLE_ACCESS_MAP: Record<UserRole, string[]> = {
   'maintenance': ['/', '/vehicles', '/maintenance']
 };
 
+// Cartographie des actions permises par rôle
+const ACTION_PERMISSIONS: Record<string, UserRole[]> = {
+  'add-user': ['admin'],
+  'edit-user': ['admin'],
+  'delete-user': ['admin'],
+  'manage-roles': ['admin'],
+  'add-vehicle': ['admin', 'exploitation'],
+  'edit-vehicle': ['admin', 'exploitation', 'maintenance'],
+  'add-order': ['admin', 'commercial'],
+  'edit-order': ['admin', 'commercial'],
+  'add-inventory': ['admin', 'approvisionneur'],
+  'add-planning': ['admin', 'planificateur'],
+  'edit-planning': ['admin', 'planificateur'],
+  'manage-hr': ['admin', 'rh']
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const navigate = useNavigate();
@@ -119,6 +141,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(JSON.parse(storedUser));
         setIsAuthenticated(true);
       }
+      
+      // Initialiser la liste des utilisateurs (sans les mots de passe)
+      const initialUsers = DEFAULT_USERS.map(({ password, ...user }) => user);
+      setAllUsers(initialUsers);
       
       setIsLoading(false);
     };
@@ -186,6 +212,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return requiredRoles.includes(user.role);
   };
 
+  // Vérifier si l'utilisateur a la permission pour une action spécifique
+  const hasActionPermission = (action: string): boolean => {
+    if (!user) return false;
+    
+    if (!ACTION_PERMISSIONS[action]) return false;
+    
+    return ACTION_PERMISSIONS[action].includes(user.role);
+  };
+
+  // Fonctions de gestion des utilisateurs
+  const addUser = (userData: Omit<User, 'id'>) => {
+    if (!hasActionPermission('add-user')) {
+      toast.error("Accès refusé", { description: "Vous n'avez pas les permissions pour ajouter un utilisateur" });
+      return;
+    }
+    
+    const newUser = {
+      id: (allUsers.length + 1).toString(),
+      ...userData
+    };
+    
+    setAllUsers(prev => [...prev, newUser]);
+    toast.success("Utilisateur ajouté", { description: `${newUser.name} a été ajouté avec succès` });
+  };
+
+  const updateUser = (id: string, userData: Partial<User>) => {
+    if (!hasActionPermission('edit-user')) {
+      toast.error("Accès refusé", { description: "Vous n'avez pas les permissions pour modifier un utilisateur" });
+      return;
+    }
+    
+    setAllUsers(prev => 
+      prev.map(user => user.id === id ? { ...user, ...userData } : user)
+    );
+    toast.success("Utilisateur mis à jour", { description: "Les informations ont été mises à jour avec succès" });
+  };
+
+  const deleteUser = (id: string) => {
+    if (!hasActionPermission('delete-user')) {
+      toast.error("Accès refusé", { description: "Vous n'avez pas les permissions pour supprimer un utilisateur" });
+      return;
+    }
+    
+    setAllUsers(prev => prev.filter(user => user.id !== id));
+    toast.success("Utilisateur supprimé", { description: "L'utilisateur a été supprimé avec succès" });
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -193,7 +266,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isLoading, 
       login, 
       logout,
-      hasPermission 
+      hasPermission,
+      hasActionPermission,
+      allUsers,
+      addUser,
+      updateUser,
+      deleteUser
     }}>
       {children}
     </AuthContext.Provider>
