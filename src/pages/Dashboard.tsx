@@ -1,4 +1,3 @@
-
 import React from 'react';
 import StatCard from '@/components/dashboard/StatCard';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
@@ -40,25 +39,25 @@ const Dashboard: React.FC = () => {
   const activities = [
     { 
       id: "1", 
-      type: "order", 
+      type: "order" as const, 
       message: "Commande #1038 a été complétée avec succès", 
       time: "Il y a 23 minutes" 
     },
     { 
       id: "2", 
-      type: "vehicle", 
+      type: "vehicle" as const, 
       message: "Camion TL-3045 a démarré sa tournée", 
       time: "Il y a 47 minutes" 
     },
     { 
       id: "3", 
-      type: "employee", 
+      type: "employee" as const, 
       message: "Jacques Martin a signalé un problème sur la route D45", 
       time: "Il y a 1 heure" 
     },
     { 
       id: "4", 
-      type: "order", 
+      type: "order" as const, 
       message: "Nouvelle commande #1039 de Société Dupont", 
       time: "Il y a 3 heures" 
     }
@@ -83,7 +82,7 @@ const Dashboard: React.FC = () => {
       status: "maintenance", 
       location: "Garage Nord" 
     }
-  ] as const;
+  ];
 
   const ordersData = [
     { name: "Lun", completed: 15, pending: 5 },
@@ -117,7 +116,7 @@ const Dashboard: React.FC = () => {
       scheduledFor: "Demain, 09:15", 
       status: "delayed" 
     }
-  ] as const;
+  ];
 
   const drivers = [
     { 
@@ -144,7 +143,7 @@ const Dashboard: React.FC = () => {
       status: "on-duty", 
       lastActivity: "il y a 15 min" 
     }
-  ] as const;
+  ];
 
   return (
     <div>
