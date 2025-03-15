@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Card, 
@@ -254,11 +253,6 @@ const VehicleManagement: React.FC = () => {
                             <Progress 
                               value={vehicle.fuelLevel} 
                               className="h-2 w-16" 
-                              indicatorClassName={
-                                vehicle.fuelLevel < 30 ? "bg-destructive" : 
-                                vehicle.fuelLevel < 60 ? "bg-amber-500" : 
-                                "bg-green-500"
-                              }
                             />
                             <span className="text-sm">{vehicle.fuelLevel}%</span>
                           </div>
