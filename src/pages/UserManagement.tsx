@@ -35,10 +35,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from '@/components/ui/badge';
 import { Search, MoreVertical, Plus, Filter, UserPlus } from 'lucide-react';
 import { useAuth, UserRole } from '@/hooks/useAuth';
 import AddUserForm from '@/components/users/AddUserForm';
+import { toast } from "sonner";
 
 type UserStatus = 'active' | 'inactive';
 
@@ -49,7 +65,6 @@ interface ExtendedUser {
   email: string;
   role: UserRole;
   status: UserStatus;
-  lastActive: string;
 }
 
 const roleLabels: Record<UserRole, string> = {
@@ -67,12 +82,14 @@ const UserManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [openAddUserDialog, setOpenAddUserDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [userToEdit, setUserToEdit] = useState<ExtendedUser | null>(null);
+  const [userRoleToChange, setUserRoleToChange] = useState<{userId: string, currentRole: UserRole} | null>(null);
+  const [userToResetPassword, setUserToResetPassword] = useState<string | null>(null);
   
   // Convertir les utilisateurs du contexte auth en utilisateurs étendus pour l'affichage
   const extendedUsers: ExtendedUser[] = allUsers.map(user => ({
     ...user,
-    status: 'active' as UserStatus,
-    lastActive: "Il y a quelques minutes" // Donnée simulée
+    status: 'active' as UserStatus
   }));
   
   // Filtrer les utilisateurs en fonction du terme de recherche
@@ -104,6 +121,38 @@ const UserManagement: React.FC = () => {
     if (userToDelete) {
       deleteUser(userToDelete);
       setUserToDelete(null);
+    }
+  };
+
+  // Gestionnaire pour modifier un utilisateur
+  const handleEditUser = () => {
+    if (userToEdit) {
+      updateUser(userToEdit.id, {
+        name: userToEdit.name,
+        email: userToEdit.email
+      });
+      setUserToEdit(null);
+      toast.success("Utilisateur modifié avec succès");
+    }
+  };
+
+  // Gestionnaire pour changer le rôle d'un utilisateur
+  const handleChangeRole = (newRole: UserRole) => {
+    if (userRoleToChange) {
+      updateUser(userRoleToChange.userId, {
+        role: newRole
+      });
+      setUserRoleToChange(null);
+      toast.success("Rôle de l'utilisateur modifié avec succès");
+    }
+  };
+
+  // Gestionnaire pour réinitialiser le mot de passe
+  const handleResetPassword = () => {
+    if (userToResetPassword) {
+      // Dans une application réelle, cela enverrait un email ou générerait un nouveau mot de passe
+      toast.success("Un lien de réinitialisation de mot de passe a été envoyé à l'utilisateur");
+      setUserToResetPassword(null);
     }
   };
 
@@ -157,7 +206,6 @@ const UserManagement: React.FC = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Rôle</TableHead>
                   <TableHead>Statut</TableHead>
-                  <TableHead>Dernière activité</TableHead>
                   {hasActionPermission('edit-user') && (
                     <TableHead className="w-[50px]"></TableHead>
                   )}
@@ -174,7 +222,6 @@ const UserManagement: React.FC = () => {
                         {user.status === "active" ? "Actif" : "Inactif"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{user.lastActive}</TableCell>
                     {hasActionPermission('edit-user') && (
                       <TableCell>
                         <DropdownMenu>
@@ -186,9 +233,15 @@ const UserManagement: React.FC = () => {
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem>Modifier</DropdownMenuItem>
-                            <DropdownMenuItem>Changer le rôle</DropdownMenuItem>
-                            <DropdownMenuItem>Réinitialiser le mot de passe</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setUserToEdit(user)}>
+                              Modifier
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setUserRoleToChange({userId: user.id, currentRole: user.role})}>
+                              Changer le rôle
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setUserToResetPassword(user.id)}>
+                              Réinitialiser le mot de passe
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
                               className="text-destructive"
@@ -204,7 +257,7 @@ const UserManagement: React.FC = () => {
                 ))}
                 {filteredUsers.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={hasActionPermission('edit-user') ? 6 : 5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={hasActionPermission('edit-user') ? 5 : 4} className="text-center py-8 text-muted-foreground">
                       Aucun utilisateur trouvé
                     </TableCell>
                   </TableRow>
@@ -221,6 +274,102 @@ const UserManagement: React.FC = () => {
         onOpenChange={setOpenAddUserDialog}
         onAddUser={handleAddUser}
       />
+      
+      {/* Boîte de dialogue de modification d'utilisateur */}
+      <Dialog open={!!userToEdit} onOpenChange={(open) => !open && setUserToEdit(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier l'utilisateur</DialogTitle>
+            <DialogDescription>
+              Modifiez les informations de l'utilisateur ci-dessous.
+            </DialogDescription>
+          </DialogHeader>
+          {userToEdit && (
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <label htmlFor="name" className="text-sm font-medium">Nom</label>
+                <Input
+                  id="name"
+                  value={userToEdit.name}
+                  onChange={(e) => setUserToEdit({...userToEdit, name: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium">Email</label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={userToEdit.email}
+                  onChange={(e) => setUserToEdit({...userToEdit, email: e.target.value})}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUserToEdit(null)}>Annuler</Button>
+            <Button onClick={handleEditUser}>Enregistrer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Boîte de dialogue de changement de rôle */}
+      <Dialog open={!!userRoleToChange} onOpenChange={(open) => !open && setUserRoleToChange(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Changer le rôle</DialogTitle>
+            <DialogDescription>
+              Choisissez un nouveau rôle pour cet utilisateur.
+            </DialogDescription>
+          </DialogHeader>
+          {userRoleToChange && (
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <label htmlFor="role" className="text-sm font-medium">Rôle</label>
+                <Select 
+                  defaultValue={userRoleToChange.currentRole}
+                  onValueChange={(value) => handleChangeRole(value as UserRole)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un rôle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Administrateur</SelectItem>
+                    <SelectItem value="rh">Ressources Humaines</SelectItem>
+                    <SelectItem value="planificateur">Planificateur</SelectItem>
+                    <SelectItem value="commercial">Commercial</SelectItem>
+                    <SelectItem value="approvisionneur">Approvisionneur</SelectItem>
+                    <SelectItem value="exploitation">Chargé d'exploitation</SelectItem>
+                    <SelectItem value="maintenance">Chargé de maintenance</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUserRoleToChange(null)}>Annuler</Button>
+            <Button onClick={() => setUserRoleToChange(null)}>Fermer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Boîte de dialogue de réinitialisation de mot de passe */}
+      <AlertDialog
+        open={!!userToResetPassword}
+        onOpenChange={(open) => !open && setUserToResetPassword(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Réinitialiser le mot de passe</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir réinitialiser le mot de passe de cet utilisateur ? Un lien de réinitialisation sera envoyé à son adresse email.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleResetPassword}>Réinitialiser</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       {/* Boîte de dialogue de confirmation de suppression */}
       <AlertDialog

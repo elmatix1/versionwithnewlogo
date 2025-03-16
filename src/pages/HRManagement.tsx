@@ -32,6 +32,9 @@ import {
   PlusCircle
 } from 'lucide-react';
 import AddDriverForm from '@/components/hr/AddDriverForm';
+import HRCalendar from '@/components/hr/HRCalendar';
+import DocumentManager from '@/components/hr/DocumentManager';
+import AttendanceSystem from '@/components/hr/AttendanceSystem';
 import { toast } from "sonner";
 
 interface Driver {
@@ -85,6 +88,11 @@ const HRManagement: React.FC = () => {
     };
     
     setDrivers(prev => [...prev, newDriver]);
+    toast.success(`${driverData.fullName} a été ajouté avec succès`);
+  };
+  
+  const handleScheduleRequest = () => {
+    toast.success("Demande de congés envoyée avec succès");
   };
 
   return (
@@ -204,14 +212,7 @@ const HRManagement: React.FC = () => {
               <CardTitle>Disponibilité des chauffeurs</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center p-8">
-                <CalendarClock className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Calendrier de disponibilité</h3>
-                <p className="text-muted-foreground max-w-md mx-auto mb-8">
-                  Planifiez et gérez les disponibilités des chauffeurs pour une meilleure organisation des trajets.
-                </p>
-                <Button onClick={() => toast.info("Affichage du calendrier")}>Afficher le calendrier</Button>
-              </div>
+              <HRCalendar onSchedule={handleScheduleRequest} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -264,14 +265,7 @@ const HRManagement: React.FC = () => {
               <CardTitle>Gestion des documents</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center p-8">
-                <FileCheck className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Section des documents</h3>
-                <p className="text-muted-foreground max-w-md mx-auto mb-8">
-                  Gérez les permis, assurances et autres documents administratifs des chauffeurs.
-                </p>
-                <Button onClick={() => toast.info("Gestion des documents")}>Gérer les documents</Button>
-              </div>
+              <DocumentManager />
             </CardContent>
           </Card>
         </TabsContent>
@@ -282,14 +276,7 @@ const HRManagement: React.FC = () => {
               <CardTitle>Pointage et présence</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center p-8">
-                <Clock className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Système de pointage</h3>
-                <p className="text-muted-foreground max-w-md mx-auto mb-8">
-                  Suivez les présences, retards et absences de tous les employés.
-                </p>
-                <Button onClick={() => toast.info("Accès au système de pointage")}>Accéder au système de pointage</Button>
-              </div>
+              <AttendanceSystem />
             </CardContent>
           </Card>
         </TabsContent>
