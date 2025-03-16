@@ -28,8 +28,7 @@ import {
   Truck,
   Plus,
   FileText,
-  BarChart,
-  Tool
+  BarChart
 } from 'lucide-react';
 
 interface MaintenanceTask {
@@ -361,3 +360,4 @@ const Maintenance: React.FC = () => {
 };
 
 export default Maintenance;
+
