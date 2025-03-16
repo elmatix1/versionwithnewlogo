@@ -1,0 +1,214 @@
+
+import React from 'react';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
+
+// Définition du schéma de validation
+const driverFormSchema = z.object({
+  fullName: z.string().min(3, { message: "Le nom complet doit comporter au moins 3 caractères" }),
+  licenseNumber: z.string().min(2, { message: "Le numéro de permis est requis" }),
+  experience: z.string(),
+  status: z.enum(['active', 'off-duty', 'sick-leave', 'vacation']),
+  phone: z.string().min(10, { message: "Un numéro de téléphone valide est requis" }),
+  email: z.string().email({ message: "Adresse email invalide" }),
+  address: z.string().min(5, { message: "L'adresse est requise" })
+});
+
+type DriverFormValues = z.infer<typeof driverFormSchema>;
+
+interface AddDriverFormProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onAddDriver: (driver: DriverFormValues) => void;
+}
+
+const statusOptions = {
+  'active': 'Actif',
+  'off-duty': 'Hors service',
+  'sick-leave': 'Arrêt maladie',
+  'vacation': 'Congés'
+};
+
+const experienceOptions = [
+  '< 1 an', '1 an', '2 ans', '3 ans', '4 ans', '5 ans', 
+  '6 ans', '7 ans', '8 ans', '9 ans', '10+ ans'
+];
+
+const AddDriverForm: React.FC<AddDriverFormProps> = ({ open, onOpenChange, onAddDriver }) => {
+  const form = useForm<DriverFormValues>({
+    resolver: zodResolver(driverFormSchema),
+    defaultValues: {
+      fullName: "",
+      licenseNumber: "",
+      experience: "3 ans",
+      status: "active",
+      phone: "",
+      email: "",
+      address: ""
+    },
+  });
+
+  function onSubmit(values: DriverFormValues) {
+    onAddDriver(values);
+    form.reset();
+    onOpenChange(false);
+    toast.success("Chauffeur ajouté", {
+      description: `${values.fullName} a été ajouté avec succès`
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>Ajouter un nouveau chauffeur</DialogTitle>
+          <DialogDescription>
+            Créez un nouveau compte chauffeur avec les informations et permis appropriés.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nom complet</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Jean Dupont" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="licenseNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Numéro de permis</FormLabel>
+                    <FormControl>
+                      <Input placeholder="12AB34567" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="experience"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Expérience</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {experienceOptions.map((exp) => (
+                          <SelectItem key={exp} value={exp}>{exp}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Statut</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner un statut" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.entries(statusOptions).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Téléphone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="+33 6 12 34 56 78" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="jean.dupont@exemple.fr" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Adresse</FormLabel>
+                  <FormControl>
+                    <Input placeholder="123 rue des Transports, 75001 Paris" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Annuler
+              </Button>
+              <Button type="submit">Ajouter le chauffeur</Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default AddDriverForm;
