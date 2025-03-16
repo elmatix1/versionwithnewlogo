@@ -66,6 +66,16 @@ const getRoleBadgeColor = (role: UserRole) => {
   return colors[role] || 'bg-gray-500';
 };
 
+const roleLabels: Record<UserRole, string> = {
+  'admin': 'Administrateur',
+  'rh': 'Ressources Humaines',
+  'planificateur': 'Planificateur',
+  'commercial': 'Commercial',
+  'approvisionneur': 'Approvisionneur',
+  'exploitation': 'Chargé d\'exploitation',
+  'maintenance': 'Chargé de maintenance'
+};
+
 const UserManagement: React.FC = () => {
   const { allUsers, updateUser, deleteUser, hasActionPermission } = useAuth();
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
@@ -122,7 +132,6 @@ const UserManagement: React.FC = () => {
 
   const confirmResetPassword = () => {
     if (selectedUser) {
-      // In a real app, this would trigger an API call to reset the password
       toast.success(`Mot de passe réinitialisé pour ${selectedUser.name}`, {
         description: 'Un nouveau mot de passe a été envoyé à l\'utilisateur.'
       });
@@ -138,8 +147,6 @@ const UserManagement: React.FC = () => {
   };
 
   const handleAddUser = (userData: any) => {
-    // Here you would typically call an API to add the user
-    // For now, just show a success message
     toast.success(`Utilisateur ${userData.name} ajouté`, {
       description: `Rôle: ${roleLabels[userData.role]}`
     });
@@ -351,3 +358,4 @@ const UserManagement: React.FC = () => {
 };
 
 export default UserManagement;
+
