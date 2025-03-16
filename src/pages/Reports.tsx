@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -21,8 +21,67 @@ import {
   LineChart,
   PieChart
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 const Reports: React.FC = () => {
+  const [reportType, setReportType] = useState<string>("");
+  const [reportPeriod, setReportPeriod] = useState<string>("");
+  
+  const handleViewAllReports = () => {
+    toast.info("Consultation des rapports", {
+      description: "Affichage de tous les rapports disponibles."
+    });
+  };
+  
+  const handleDownloadReport = (reportName: string) => {
+    toast.success("Téléchargement du rapport", {
+      description: `Le rapport ${reportName} a été téléchargé.`
+    });
+  };
+  
+  const handleCreateReport = () => {
+    if (!reportType || !reportPeriod) {
+      toast.error("Formulaire incomplet", {
+        description: "Veuillez sélectionner un type et une période."
+      });
+      return;
+    }
+    
+    toast.success("Rapport créé", {
+      description: `Votre rapport ${reportType} pour la période ${reportPeriod} a été généré.`
+    });
+  };
+  
+  const handleConfigureSchedule = () => {
+    toast.success("Configuration enregistrée", {
+      description: "La planification des rapports a été configurée."
+    });
+  };
+  
+  const handleViewDetail = (chartType: string) => {
+    toast.info(`Détails - ${chartType}`, {
+      description: `Visualisation détaillée des données de ${chartType}.`
+    });
+  };
+
   return (
     <div>
       <div className="mb-8">
@@ -113,7 +172,9 @@ const Reports: React.FC = () => {
                     <div className="text-center">
                       <BarChart4 className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                       <p className="text-muted-foreground">Graphique d'évolution du CA</p>
-                      <Button variant="outline" className="mt-4">Voir en détail</Button>
+                      <Button variant="outline" className="mt-4" onClick={() => handleViewDetail("Évolution du chiffre d'affaires")}>
+                        Voir en détail
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -126,7 +187,9 @@ const Reports: React.FC = () => {
                     <div className="text-center">
                       <PieChart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                       <p className="text-muted-foreground">Répartition par type de client</p>
-                      <Button variant="outline" className="mt-4">Voir en détail</Button>
+                      <Button variant="outline" className="mt-4" onClick={() => handleViewDetail("Répartition des commandes")}>
+                        Voir en détail
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -138,7 +201,54 @@ const Reports: React.FC = () => {
                 <LineChart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium mb-2">Rapports financiers</h3>
                 <p className="text-muted-foreground mb-6">Analysez les résultats financiers, marges et rentabilité.</p>
-                <Button>Générer un rapport</Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button>Générer un rapport</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Générer un rapport financier</DialogTitle>
+                      <DialogDescription>
+                        Sélectionnez les paramètres pour votre rapport financier.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="financial-type" className="text-right">
+                          Type
+                        </Label>
+                        <Select onValueChange={value => setReportType(value)}>
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Sélectionner le type de rapport" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ca-mensuel">Chiffre d'affaires mensuel</SelectItem>
+                            <SelectItem value="marge-brute">Marge brute</SelectItem>
+                            <SelectItem value="rentabilite">Rentabilité par client</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="financial-period" className="text-right">
+                          Période
+                        </Label>
+                        <Select onValueChange={value => setReportPeriod(value)}>
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Sélectionner la période" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="mois-courant">Mois courant</SelectItem>
+                            <SelectItem value="trimestre">Trimestre en cours</SelectItem>
+                            <SelectItem value="annee">Année complète</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button onClick={handleCreateReport}>Générer</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </TabsContent>
             
@@ -147,7 +257,54 @@ const Reports: React.FC = () => {
                 <Truck className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium mb-2">Rapports opérationnels</h3>
                 <p className="text-muted-foreground mb-6">Analysez les performances opérationnelles, délais et qualité.</p>
-                <Button>Générer un rapport</Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button>Générer un rapport</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Générer un rapport opérationnel</DialogTitle>
+                      <DialogDescription>
+                        Sélectionnez les paramètres pour votre rapport opérationnel.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="operational-type" className="text-right">
+                          Type
+                        </Label>
+                        <Select onValueChange={value => setReportType(value)}>
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Sélectionner le type de rapport" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="delais-livraison">Délais de livraison</SelectItem>
+                            <SelectItem value="perf-vehicules">Performance des véhicules</SelectItem>
+                            <SelectItem value="taux-incidents">Taux d'incidents</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="operational-period" className="text-right">
+                          Période
+                        </Label>
+                        <Select onValueChange={value => setReportPeriod(value)}>
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Sélectionner la période" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="semaine">Semaine courante</SelectItem>
+                            <SelectItem value="mois-courant">Mois courant</SelectItem>
+                            <SelectItem value="trimestre">Trimestre en cours</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button onClick={handleCreateReport}>Générer</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </TabsContent>
           </Tabs>
@@ -166,7 +323,11 @@ const Reports: React.FC = () => {
                   <FileText className="h-4 w-4 mr-2 text-blue-500" />
                   <span>Rapport mensuel - Juillet 2023</span>
                 </div>
-                <Button variant="ghost" size="icon">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => handleDownloadReport("Rapport mensuel - Juillet 2023")}
+                >
                   <Download className="h-4 w-4" />
                 </Button>
               </div>
@@ -175,7 +336,11 @@ const Reports: React.FC = () => {
                   <FileText className="h-4 w-4 mr-2 text-blue-500" />
                   <span>Rapport trimestriel - Q2 2023</span>
                 </div>
-                <Button variant="ghost" size="icon">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => handleDownloadReport("Rapport trimestriel - Q2 2023")}
+                >
                   <Download className="h-4 w-4" />
                 </Button>
               </div>
@@ -184,11 +349,15 @@ const Reports: React.FC = () => {
                   <FileText className="h-4 w-4 mr-2 text-blue-500" />
                   <span>Rapport annuel - 2022</span>
                 </div>
-                <Button variant="ghost" size="icon">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => handleDownloadReport("Rapport annuel - 2022")}
+                >
                   <Download className="h-4 w-4" />
                 </Button>
               </div>
-              <Button className="w-full mt-2">Voir tous les rapports</Button>
+              <Button className="w-full mt-2" onClick={handleViewAllReports}>Voir tous les rapports</Button>
             </div>
           </CardContent>
         </Card>
@@ -204,7 +373,68 @@ const Reports: React.FC = () => {
               <p className="text-muted-foreground max-w-md mx-auto mb-6">
                 Générez un rapport personnalisé en sélectionnant les données et la période qui vous intéressent.
               </p>
-              <Button>Créer un rapport</Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button>Créer un rapport</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Créer un rapport personnalisé</DialogTitle>
+                    <DialogDescription>
+                      Sélectionnez les critères pour votre rapport personnalisé.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="custom-title" className="text-right">
+                        Titre
+                      </Label>
+                      <Input
+                        id="custom-title"
+                        className="col-span-3"
+                        placeholder="Titre du rapport"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="custom-type" className="text-right">
+                        Catégorie
+                      </Label>
+                      <Select onValueChange={value => setReportType(value)}>
+                        <SelectTrigger id="custom-type" className="col-span-3">
+                          <SelectValue placeholder="Sélectionner une catégorie" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="commercial">Commercial</SelectItem>
+                          <SelectItem value="operationnel">Opérationnel</SelectItem>
+                          <SelectItem value="financier">Financier</SelectItem>
+                          <SelectItem value="rh">Ressources humaines</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="custom-period" className="text-right">
+                        Période
+                      </Label>
+                      <Select onValueChange={value => setReportPeriod(value)}>
+                        <SelectTrigger id="custom-period" className="col-span-3">
+                          <SelectValue placeholder="Sélectionner une période" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="jour">Jour</SelectItem>
+                          <SelectItem value="semaine">Semaine</SelectItem>
+                          <SelectItem value="mois">Mois</SelectItem>
+                          <SelectItem value="trimestre">Trimestre</SelectItem>
+                          <SelectItem value="annee">Année</SelectItem>
+                          <SelectItem value="personnalise">Personnalisée</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={handleCreateReport}>Créer</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </CardContent>
         </Card>
@@ -220,7 +450,65 @@ const Reports: React.FC = () => {
               <p className="text-muted-foreground max-w-md mx-auto mb-6">
                 Planifiez la génération et l'envoi automatique de rapports à vos équipes.
               </p>
-              <Button>Configurer</Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button>Configurer</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Configuration du calendrier des rapports</DialogTitle>
+                    <DialogDescription>
+                      Définissez la fréquence et les destinataires des rapports automatiques.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="schedule-report" className="text-right">
+                        Rapport
+                      </Label>
+                      <Select>
+                        <SelectTrigger id="schedule-report" className="col-span-3">
+                          <SelectValue placeholder="Sélectionner un rapport" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ca-mensuel">Chiffre d'affaires mensuel</SelectItem>
+                          <SelectItem value="delais-livraison">Délais de livraison</SelectItem>
+                          <SelectItem value="performance-rh">Performance RH</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="schedule-frequency" className="text-right">
+                        Fréquence
+                      </Label>
+                      <Select>
+                        <SelectTrigger id="schedule-frequency" className="col-span-3">
+                          <SelectValue placeholder="Sélectionner une fréquence" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="quotidien">Quotidienne</SelectItem>
+                          <SelectItem value="hebdomadaire">Hebdomadaire</SelectItem>
+                          <SelectItem value="mensuel">Mensuelle</SelectItem>
+                          <SelectItem value="trimestriel">Trimestrielle</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="schedule-recipients" className="text-right">
+                        Destinataires
+                      </Label>
+                      <Input
+                        id="schedule-recipients"
+                        className="col-span-3"
+                        placeholder="Adresses email séparées par des virgules"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={handleConfigureSchedule}>Enregistrer</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </CardContent>
         </Card>
