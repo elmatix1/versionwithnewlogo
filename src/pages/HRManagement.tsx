@@ -29,13 +29,32 @@ import {
   Users,
   FileEdit,
   UserX,
-  PlusCircle
+  PlusCircle,
+  CheckCircle,
+  XCircle
 } from 'lucide-react';
 import AddDriverForm from '@/components/hr/AddDriverForm';
 import HRCalendar from '@/components/hr/HRCalendar';
 import DocumentManager from '@/components/hr/DocumentManager';
 import AttendanceSystem from '@/components/hr/AttendanceSystem';
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface Driver {
   id: number;
@@ -76,6 +95,13 @@ const HRManagement: React.FC = () => {
   
   const [openAddDriver, setOpenAddDriver] = useState(false);
   const [selectedTab, setSelectedTab] = useState("drivers");
+  const [isEditDriverOpen, setIsEditDriverOpen] = useState(false);
+  const [isStatusChangeOpen, setIsStatusChangeOpen] = useState(false);
+  const [isDeleteDriverOpen, setIsDeleteDriverOpen] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editExperience, setEditExperience] = useState("");
+  const [editStatus, setEditStatus] = useState<"active" | "off-duty">("active");
 
   const handleAddDriver = (driverData: any) => {
     const newDriver: Driver = {
@@ -93,6 +119,56 @@ const HRManagement: React.FC = () => {
   
   const handleScheduleRequest = () => {
     toast.success("Demande de congés envoyée avec succès");
+  };
+
+  const handleEditDriver = (driver: Driver) => {
+    setSelectedDriver(driver);
+    setEditName(driver.fullName);
+    setEditExperience(driver.experience);
+    setIsEditDriverOpen(true);
+  };
+
+  const handleChangeStatus = (driver: Driver) => {
+    setSelectedDriver(driver);
+    setEditStatus(driver.status);
+    setIsStatusChangeOpen(true);
+  };
+
+  const handleDeleteDriver = (driver: Driver) => {
+    setSelectedDriver(driver);
+    setIsDeleteDriverOpen(true);
+  };
+
+  const saveEditedDriver = () => {
+    if (selectedDriver) {
+      setDrivers(drivers.map(driver => 
+        driver.id === selectedDriver.id 
+          ? { ...driver, fullName: editName, experience: editExperience }
+          : driver
+      ));
+      toast.success(`Informations de ${editName} mises à jour`);
+      setIsEditDriverOpen(false);
+    }
+  };
+
+  const saveStatusChange = () => {
+    if (selectedDriver) {
+      setDrivers(drivers.map(driver => 
+        driver.id === selectedDriver.id 
+          ? { ...driver, status: editStatus }
+          : driver
+      ));
+      toast.success(`Statut de ${selectedDriver.fullName} modifié avec succès`);
+      setIsStatusChangeOpen(false);
+    }
+  };
+
+  const confirmDeleteDriver = () => {
+    if (selectedDriver) {
+      setDrivers(drivers.filter(driver => driver.id !== selectedDriver.id));
+      toast.success(`${selectedDriver.fullName} a été supprimé`);
+      setIsDeleteDriverOpen(false);
+    }
   };
 
   return (
@@ -186,14 +262,18 @@ const HRManagement: React.FC = () => {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <UserCheck className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditDriver(driver)}>
                               <FileEdit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <UserX className="h-4 w-4" />
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleChangeStatus(driver)}>
+                              {driver.status === "active" ? (
+                                <XCircle className="h-4 w-4 text-amber-500" />
+                              ) : (
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                              )}
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDeleteDriver(driver)}>
+                              <UserX className="h-4 w-4 text-red-500" />
                             </Button>
                           </div>
                         </TableCell>
@@ -287,6 +367,102 @@ const HRManagement: React.FC = () => {
         onOpenChange={setOpenAddDriver} 
         onAddDriver={handleAddDriver}
       />
+
+      {/* Edit Driver Dialog */}
+      <Dialog open={isEditDriverOpen} onOpenChange={setIsEditDriverOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier le chauffeur</DialogTitle>
+            <DialogDescription>
+              Modifiez les informations du chauffeur.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="driverName" className="text-right">
+                Nom complet
+              </Label>
+              <Input
+                id="driverName"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="driverExperience" className="text-right">
+                Expérience
+              </Label>
+              <Input
+                id="driverExperience"
+                value={editExperience}
+                onChange={(e) => setEditExperience(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={saveEditedDriver}>Enregistrer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Status Dialog */}
+      <Dialog open={isStatusChangeOpen} onOpenChange={setIsStatusChangeOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Changer le statut</DialogTitle>
+            <DialogDescription>
+              Modifiez le statut de disponibilité du chauffeur.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="driverStatus" className="text-right">
+                Statut
+              </Label>
+              <Select
+                value={editStatus}
+                onValueChange={(value: "active" | "off-duty") => setEditStatus(value)}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Sélectionner un statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Actif</SelectItem>
+                  <SelectItem value="off-duty">Hors service</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={saveStatusChange}>Enregistrer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Driver Dialog */}
+      <Dialog open={isDeleteDriverOpen} onOpenChange={setIsDeleteDriverOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supprimer le chauffeur</DialogTitle>
+            <DialogDescription>
+              Cette action est irréversible. Confirmez-vous la suppression?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Êtes-vous sûr de vouloir supprimer {selectedDriver?.fullName}?</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDriverOpen(false)}>
+              Annuler
+            </Button>
+            <Button variant="destructive" onClick={confirmDeleteDriver}>
+              Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

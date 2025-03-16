@@ -1,17 +1,17 @@
 
 import React, { useState } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription
-} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Search, Upload, FileText, Download, Eye, Trash, Filter } from 'lucide-react';
-import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -20,260 +20,261 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { FileText, Download, Eye, Search, Upload, Filter, Calendar } from 'lucide-react';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 interface Document {
   id: string;
   name: string;
-  type: 'contrat' | 'permis' | 'formation' | 'médical';
+  type: 'permis' | 'carte-pro' | 'medical' | 'formation' | 'contrat';
+  status: 'valid' | 'expiring-soon' | 'expired';
   employee: string;
-  dateAdded: string;
-  status: 'valid' | 'expiring' | 'expired';
+  uploadDate: Date;
+  expiryDate: Date | null;
 }
 
-const sampleDocuments: Document[] = [
-  {
-    id: "DOC-1001",
-    name: "Contrat CDI - Thomas Durand",
-    type: "contrat",
-    employee: "Thomas Durand",
-    dateAdded: "12/05/2022",
-    status: "valid"
-  },
-  {
-    id: "DOC-1002",
-    name: "Permis C - Sophie Lefèvre",
-    type: "permis",
-    employee: "Sophie Lefèvre",
-    dateAdded: "03/07/2023",
-    status: "valid"
-  },
-  {
-    id: "DOC-1003",
-    name: "Certificat Médical - Pierre Martin",
-    type: "médical",
-    employee: "Pierre Martin",
-    dateAdded: "21/01/2023",
-    status: "expiring"
-  },
-  {
-    id: "DOC-1004",
-    name: "Attestation Formation - Marie Lambert",
-    type: "formation",
-    employee: "Marie Lambert",
-    dateAdded: "15/09/2022",
-    status: "expired"
+const getDocumentTypeName = (type: string): string => {
+  switch (type) {
+    case 'permis': return 'Permis de conduire';
+    case 'carte-pro': return 'Carte professionnelle';
+    case 'medical': return 'Certificat médical';
+    case 'formation': return 'Attestation de formation';
+    case 'contrat': return 'Contrat de travail';
+    default: return type;
   }
-];
+};
+
+const getStatusBadge = (status: string) => {
+  switch (status) {
+    case 'valid':
+      return <Badge className="bg-green-500">Valide</Badge>;
+    case 'expiring-soon':
+      return <Badge className="bg-amber-500">Expire bientôt</Badge>;
+    case 'expired':
+      return <Badge className="bg-red-500">Expiré</Badge>;
+    default:
+      return <Badge>Inconnu</Badge>;
+  }
+};
 
 const DocumentManager: React.FC = () => {
-  const [documents, setDocuments] = useState<Document[]>(sampleDocuments);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [documents, setDocuments] = useState<Document[]>([
+    {
+      id: 'doc-001',
+      name: 'Permis de conduire',
+      type: 'permis',
+      status: 'valid',
+      employee: 'Thomas Durand',
+      uploadDate: new Date(2023, 3, 15),
+      expiryDate: new Date(2025, 3, 15),
+    },
+    {
+      id: 'doc-002',
+      name: 'Certificat médical',
+      type: 'medical',
+      status: 'expiring-soon',
+      employee: 'Thomas Durand',
+      uploadDate: new Date(2023, 7, 10),
+      expiryDate: new Date(2023, 9, 10),
+    },
+    {
+      id: 'doc-003',
+      name: 'Carte professionnelle',
+      type: 'carte-pro',
+      status: 'valid',
+      employee: 'Sophie Lefèvre',
+      uploadDate: new Date(2023, 5, 20),
+      expiryDate: new Date(2026, 5, 20),
+    },
+    {
+      id: 'doc-004',
+      name: 'Attestation FIMO',
+      type: 'formation',
+      status: 'expired',
+      employee: 'Pierre Martin',
+      uploadDate: new Date(2022, 11, 5),
+      expiryDate: new Date(2023, 5, 5),
+    },
+    {
+      id: 'doc-005',
+      name: 'Contrat de travail',
+      type: 'contrat',
+      status: 'valid',
+      employee: 'Sophie Lefèvre',
+      uploadDate: new Date(2022, 8, 1),
+      expiryDate: null,
+    },
+  ]);
+
+  const [selectedTab, setSelectedTab] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [employeeFilter, setEmployeeFilter] = useState<string>('all');
+  const [documentTypeFilter, setDocumentTypeFilter] = useState<string>('all');
+
+  // Upload document state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [documentName, setDocumentName] = useState('');
+  const [documentType, setDocumentType] = useState<'permis' | 'carte-pro' | 'medical' | 'formation' | 'contrat'>('permis');
+  const [employeeName, setEmployeeName] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  // View document state
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [currentDoc, setCurrentDoc] = useState<Document | null>(null);
-  const [newDocName, setNewDocName] = useState("");
-  const [newDocType, setNewDocType] = useState<'contrat' | 'permis' | 'formation' | 'médical'>('contrat');
-  const [newDocEmployee, setNewDocEmployee] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
-  const [filterType, setFilterType] = useState<string | null>(null);
-  
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+
   const filteredDocuments = documents.filter(doc => {
-    // Apply search filter
-    const matchesSearch = 
-      doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.type.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Apply status filter if set
-    const matchesStatus = filterStatus ? doc.status === filterStatus : true;
-    
-    // Apply type filter if set
-    const matchesType = filterType ? doc.type === filterType : true;
-    
-    return matchesSearch && matchesStatus && matchesType;
+    // Filter by tab
+    if (selectedTab !== 'all' && doc.status !== selectedTab) {
+      return false;
+    }
+
+    // Filter by search query
+    if (
+      searchQuery &&
+      !doc.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !doc.employee.toLowerCase().includes(searchQuery.toLowerCase())
+    ) {
+      return false;
+    }
+
+    // Filter by employee
+    if (employeeFilter !== 'all' && doc.employee !== employeeFilter) {
+      return false;
+    }
+
+    // Filter by document type
+    if (documentTypeFilter !== 'all' && doc.type !== documentTypeFilter) {
+      return false;
+    }
+
+    return true;
   });
-  
-  const handleUpload = () => {
-    // Generate a new document ID
-    const newId = `DOC-${1000 + documents.length + 1}`;
-    
-    // Add the new document
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const handleUploadDocument = () => {
+    if (!documentName || !documentType || !employeeName) {
+      toast.error("Veuillez remplir tous les champs obligatoires");
+      return;
+    }
+
     const newDocument: Document = {
-      id: newId,
-      name: newDocName,
-      type: newDocType,
-      employee: newDocEmployee,
-      dateAdded: new Date().toLocaleDateString(),
-      status: 'valid'
+      id: `doc-${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`,
+      name: documentName,
+      type: documentType,
+      status: 'valid',
+      employee: employeeName,
+      uploadDate: new Date(),
+      expiryDate: expiryDate ? new Date(expiryDate) : null,
     };
-    
+
     setDocuments([...documents, newDocument]);
+    toast.success("Document téléchargé avec succès");
     setUploadDialogOpen(false);
     
     // Reset form
-    setNewDocName("");
-    setNewDocType('contrat');
-    setNewDocEmployee("");
-    
-    toast.success("Document téléchargé avec succès");
+    setDocumentName('');
+    setDocumentType('permis');
+    setEmployeeName('');
+    setExpiryDate('');
+    setSelectedFile(null);
   };
-  
-  const handleDownload = (docId: string) => {
-    toast.info(`Téléchargement du document ${docId}`);
-  };
-  
-  const handleView = (doc: Document) => {
-    setCurrentDoc(doc);
+
+  const handleViewDocument = (document: Document) => {
+    setSelectedDocument(document);
     setViewDialogOpen(true);
   };
-  
-  const handleDelete = (docId: string) => {
-    setDocuments(prev => prev.filter(doc => doc.id !== docId));
-    toast.success("Document supprimé avec succès");
+
+  const handleDownloadDocument = (document: Document) => {
+    toast.success(`Téléchargement du document: ${document.name}`, {
+      description: `Le document a été téléchargé avec succès.`
+    });
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
-        <div className="relative w-full md:w-2/3">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input 
-            placeholder="Rechercher un document..." 
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Filter size={16} />
-                <span>Filtrer</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80">
-              <div className="space-y-4">
-                <h4 className="font-medium">Filtrer les documents</h4>
-                <div className="space-y-2">
-                  <Label>Statut</Label>
-                  <Select 
-                    value={filterStatus || ""} 
-                    onValueChange={(val) => setFilterStatus(val || null)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Tous les statuts" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Tous les statuts</SelectItem>
-                      <SelectItem value="valid">Valide</SelectItem>
-                      <SelectItem value="expiring">Expire bientôt</SelectItem>
-                      <SelectItem value="expired">Expiré</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Type de document</Label>
-                  <Select 
-                    value={filterType || ""} 
-                    onValueChange={(val) => setFilterType(val || null)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Tous les types" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Tous les types</SelectItem>
-                      <SelectItem value="contrat">Contrat</SelectItem>
-                      <SelectItem value="permis">Permis</SelectItem>
-                      <SelectItem value="formation">Formation</SelectItem>
-                      <SelectItem value="médical">Médical</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex justify-end">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      setFilterStatus(null);
-                      setFilterType(null);
-                    }}
-                  >
-                    Réinitialiser
-                  </Button>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-          
+      <div className="flex flex-col md:flex-row justify-between gap-4">
+        <div className="flex flex-1 items-center space-x-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Rechercher un document..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
           <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="flex items-center gap-2 w-full md:w-auto">
+              <Button className="flex items-center gap-2">
                 <Upload size={16} />
-                <span>Télécharger un document</span>
+                <span>Nouveau document</span>
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Télécharger un nouveau document</DialogTitle>
+                <DialogTitle>Télécharger un document</DialogTitle>
                 <DialogDescription>
-                  Ajoutez un nouveau document pour un employé
+                  Remplissez les informations et téléchargez le fichier du document.
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="doc-name">Nom du document</Label>
-                  <Input 
-                    id="doc-name" 
-                    placeholder="Ex: Contrat CDI - Thomas Durand"
-                    value={newDocName}
-                    onChange={(e) => setNewDocName(e.target.value)}
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="documentName" className="text-right">
+                    Nom
+                  </Label>
+                  <Input
+                    id="documentName"
+                    value={documentName}
+                    onChange={(e) => setDocumentName(e.target.value)}
+                    className="col-span-3"
                   />
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="doc-type">Type de document</Label>
-                  <Select 
-                    value={newDocType} 
-                    onValueChange={(val: 'contrat' | 'permis' | 'formation' | 'médical') => setNewDocType(val)}
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="documentType" className="text-right">
+                    Type
+                  </Label>
+                  <Select
+                    value={documentType}
+                    onValueChange={(value: any) => setDocumentType(value)}
                   >
-                    <SelectTrigger id="doc-type">
-                      <SelectValue />
+                    <SelectTrigger id="documentType" className="col-span-3">
+                      <SelectValue placeholder="Sélectionner un type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="contrat">Contrat</SelectItem>
-                      <SelectItem value="permis">Permis</SelectItem>
-                      <SelectItem value="formation">Formation</SelectItem>
-                      <SelectItem value="médical">Médical</SelectItem>
+                      <SelectItem value="permis">Permis de conduire</SelectItem>
+                      <SelectItem value="carte-pro">Carte professionnelle</SelectItem>
+                      <SelectItem value="medical">Certificat médical</SelectItem>
+                      <SelectItem value="formation">Attestation de formation</SelectItem>
+                      <SelectItem value="contrat">Contrat de travail</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="doc-employee">Employé</Label>
-                  <Select 
-                    value={newDocEmployee} 
-                    onValueChange={setNewDocEmployee}
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="employeeName" className="text-right">
+                    Employé
+                  </Label>
+                  <Select
+                    value={employeeName}
+                    onValueChange={setEmployeeName}
                   >
-                    <SelectTrigger id="doc-employee">
-                      <SelectValue placeholder="Sélectionnez un employé" />
+                    <SelectTrigger id="employeeName" className="col-span-3">
+                      <SelectValue placeholder="Sélectionner un employé" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Thomas Durand">Thomas Durand</SelectItem>
@@ -283,107 +284,247 @@ const DocumentManager: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="doc-file">Fichier</Label>
-                  <Input id="doc-file" type="file" />
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="expiryDate" className="text-right">
+                    Date d'expiration
+                  </Label>
+                  <Input
+                    id="expiryDate"
+                    type="date"
+                    value={expiryDate}
+                    onChange={(e) => setExpiryDate(e.target.value)}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="documentFile" className="text-right">
+                    Fichier
+                  </Label>
+                  <Input
+                    id="documentFile"
+                    type="file"
+                    onChange={handleFileChange}
+                    className="col-span-3"
+                  />
                 </div>
               </div>
               <DialogFooter>
-                <Button 
-                  type="submit" 
-                  onClick={handleUpload}
-                  disabled={!newDocName || !newDocEmployee}
-                >
-                  Télécharger
-                </Button>
+                <Button onClick={handleUploadDocument}>Télécharger</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
+
+        <div className="flex flex-col md:flex-row gap-2">
+          <Select
+            value={employeeFilter}
+            onValueChange={setEmployeeFilter}
+          >
+            <SelectTrigger className="w-[200px]">
+              <div className="flex items-center gap-2">
+                <Filter size={16} />
+                <span>Employé</span>
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les employés</SelectItem>
+              <SelectItem value="Thomas Durand">Thomas Durand</SelectItem>
+              <SelectItem value="Sophie Lefèvre">Sophie Lefèvre</SelectItem>
+              <SelectItem value="Pierre Martin">Pierre Martin</SelectItem>
+              <SelectItem value="Marie Lambert">Marie Lambert</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={documentTypeFilter}
+            onValueChange={setDocumentTypeFilter}
+          >
+            <SelectTrigger className="w-[200px]">
+              <div className="flex items-center gap-2">
+                <Filter size={16} />
+                <span>Type de document</span>
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les types</SelectItem>
+              <SelectItem value="permis">Permis de conduire</SelectItem>
+              <SelectItem value="carte-pro">Carte professionnelle</SelectItem>
+              <SelectItem value="medical">Certificat médical</SelectItem>
+              <SelectItem value="formation">Attestation de formation</SelectItem>
+              <SelectItem value="contrat">Contrat de travail</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Documents des employés</CardTitle>
-          <CardDescription>
-            Gérez les documents importants de vos employés
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {filteredDocuments.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Aucun document trouvé
-              </div>
-            ) : (
-              filteredDocuments.map(doc => (
-                <div key={doc.id} className="p-3 border rounded-md flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-secondary p-2 rounded-md">
-                      <FileText className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <div className="font-medium">{doc.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {doc.employee} • Ajouté le {doc.dateAdded}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge 
-                      className={
-                        doc.status === "valid" ? "bg-green-500" : 
-                        doc.status === "expiring" ? "bg-amber-500" : 
-                        "bg-red-500"
-                      }
-                    >
-                      {doc.status === "valid" ? "Valide" : 
-                      doc.status === "expiring" ? "Expire bientôt" : 
-                      "Expiré"}
-                    </Badge>
-                    <Button variant="ghost" size="icon" onClick={() => handleView(doc)}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDownload(doc.id)}>
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(doc.id)}>
-                      <Trash className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
-      
+      <Tabs defaultValue="all" value={selectedTab} onValueChange={setSelectedTab}>
+        <TabsList>
+          <TabsTrigger value="all">Tous</TabsTrigger>
+          <TabsTrigger value="valid">Valides</TabsTrigger>
+          <TabsTrigger value="expiring-soon">Expirent bientôt</TabsTrigger>
+          <TabsTrigger value="expired">Expirés</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all" className="mt-4">
+          <DocumentTable
+            documents={filteredDocuments}
+            onViewDocument={handleViewDocument}
+            onDownloadDocument={handleDownloadDocument}
+          />
+        </TabsContent>
+        
+        <TabsContent value="valid" className="mt-4">
+          <DocumentTable
+            documents={filteredDocuments}
+            onViewDocument={handleViewDocument}
+            onDownloadDocument={handleDownloadDocument}
+          />
+        </TabsContent>
+        
+        <TabsContent value="expiring-soon" className="mt-4">
+          <DocumentTable
+            documents={filteredDocuments}
+            onViewDocument={handleViewDocument}
+            onDownloadDocument={handleDownloadDocument}
+          />
+        </TabsContent>
+        
+        <TabsContent value="expired" className="mt-4">
+          <DocumentTable
+            documents={filteredDocuments}
+            onViewDocument={handleViewDocument}
+            onDownloadDocument={handleDownloadDocument}
+          />
+        </TabsContent>
+      </Tabs>
+
+      {/* Document Viewer Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>{currentDoc?.name}</DialogTitle>
+            <DialogTitle>Visualisation du document</DialogTitle>
             <DialogDescription>
-              Document de {currentDoc?.employee} • Ajouté le {currentDoc?.dateAdded}
+              {selectedDocument && `${selectedDocument.name} - ${selectedDocument.employee}`}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-center items-center h-[60vh] border rounded-md bg-muted/20">
-            <div className="text-center p-8">
-              <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">Prévisualisation du document</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Type: {currentDoc?.type}
-              </p>
-            </div>
+          
+          <div className="py-4">
+            {selectedDocument && (
+              <div className="space-y-4">
+                <div className="aspect-video bg-gray-100 rounded-md flex items-center justify-center">
+                  <FileText className="h-16 w-16 text-muted-foreground" />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-sm font-medium mb-1">Type de document</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {getDocumentTypeName(selectedDocument.type)}
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium mb-1">Statut</h4>
+                    <div>{getStatusBadge(selectedDocument.status)}</div>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium mb-1">Date de téléchargement</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {format(selectedDocument.uploadDate, 'dd/MM/yyyy')}
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium mb-1">Date d'expiration</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedDocument.expiryDate 
+                        ? format(selectedDocument.expiryDate, 'dd/MM/yyyy')
+                        : 'Non applicable'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+          
           <DialogFooter>
-            <Button variant="outline" onClick={() => currentDoc && handleDownload(currentDoc.id)}>
-              <Download className="h-4 w-4 mr-2" />
+            <Button variant="outline" onClick={() => setViewDialogOpen(false)}>Fermer</Button>
+            <Button onClick={() => selectedDocument && handleDownloadDocument(selectedDocument)}>
+              <Download className="mr-2 h-4 w-4" />
               Télécharger
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+};
+
+interface DocumentTableProps {
+  documents: Document[];
+  onViewDocument: (document: Document) => void;
+  onDownloadDocument: (document: Document) => void;
+}
+
+const DocumentTable: React.FC<DocumentTableProps> = ({ documents, onViewDocument, onDownloadDocument }) => {
+  return (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nom</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Employé</TableHead>
+            <TableHead>Statut</TableHead>
+            <TableHead>Date d'expiration</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {documents.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                Aucun document trouvé
+              </TableCell>
+            </TableRow>
+          ) : (
+            documents.map((document) => (
+              <TableRow key={document.id}>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <FileText size={16} className="text-muted-foreground" />
+                    <span>{document.name}</span>
+                  </div>
+                </TableCell>
+                <TableCell>{getDocumentTypeName(document.type)}</TableCell>
+                <TableCell>{document.employee}</TableCell>
+                <TableCell>{getStatusBadge(document.status)}</TableCell>
+                <TableCell>
+                  {document.expiryDate 
+                    ? format(document.expiryDate, 'dd/MM/yyyy')
+                    : 'Non applicable'}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => onViewDocument(document)}
+                    >
+                      <Eye size={16} />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => onDownloadDocument(document)}
+                    >
+                      <Download size={16} />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 };

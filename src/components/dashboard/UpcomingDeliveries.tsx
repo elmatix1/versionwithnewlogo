@@ -3,16 +3,16 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { CalendarClock, ArrowUpRight } from 'lucide-react';
+import { Calendar, Clock, MapPin } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-interface Delivery {
+type Delivery = {
   id: string;
   customer: string;
   destination: string;
   scheduledFor: string;
-  status: 'on-time' | 'delayed' | 'at-risk';
-}
+  status: 'on-time' | 'at-risk' | 'delayed';
+};
 
 interface UpcomingDeliveriesProps {
   deliveries: Delivery[];
@@ -20,59 +20,47 @@ interface UpcomingDeliveriesProps {
 }
 
 const statusConfig = {
-  'on-time': { 
-    label: 'À l\'heure', 
-    variant: 'outline' as const, 
-    className: 'border-green-500 text-green-600' 
-  },
-  'delayed': { 
-    label: 'Retardée', 
-    variant: 'outline' as const, 
-    className: 'border-destructive text-destructive' 
-  },
-  'at-risk': { 
-    label: 'À risque', 
-    variant: 'outline' as const, 
-    className: 'border-amber-500 text-amber-600' 
-  },
+  'on-time': { label: 'À l\'heure', color: 'bg-green-500' },
+  'at-risk': { label: 'À risque', color: 'bg-amber-500' },
+  'delayed': { label: 'En retard', color: 'bg-red-500' }
 };
 
 const UpcomingDeliveries: React.FC<UpcomingDeliveriesProps> = ({ deliveries, className }) => {
+  const navigate = useNavigate();
+
+  const handleViewAllDeliveries = () => {
+    navigate('/planning');
+  };
+
   return (
-    <Card className={cn("overflow-hidden", className)}>
-      <CardHeader className="pb-2">
-        <CardTitle>Livraisons à venir</CardTitle>
+    <Card className={className}>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-md font-medium">Livraisons à venir</CardTitle>
+        <Button variant="ghost" size="sm" className="h-8 gap-1" onClick={handleViewAllDeliveries}>
+          <Clock className="mr-1 h-4 w-4" />
+          Voir toutes
+        </Button>
       </CardHeader>
-      <CardContent className="p-0">
-        <div className="divide-y">
+      <CardContent>
+        <div className="space-y-4">
           {deliveries.map((delivery) => (
-            <div key={delivery.id} className="p-4 flex items-start justify-between">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-medium">{delivery.customer}</h4>
-                  <Badge 
-                    variant={statusConfig[delivery.status].variant}
-                    className={cn("ml-2", statusConfig[delivery.status].className)}
-                  >
-                    {statusConfig[delivery.status].label}
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">{delivery.destination}</p>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <CalendarClock className="mr-1 h-3 w-3" />
-                  {delivery.scheduledFor}
-                </div>
+            <div key={delivery.id} className="flex flex-col space-y-2 border-b pb-3 last:border-0">
+              <div className="flex justify-between items-start">
+                <span className="font-medium">{delivery.customer}</span>
+                <Badge className={statusConfig[delivery.status].color}>
+                  {statusConfig[delivery.status].label}
+                </Badge>
               </div>
-              <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                <ArrowUpRight className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center text-sm text-muted-foreground">
+                <MapPin className="mr-1 h-4 w-4" />
+                <span>{delivery.destination}</span>
+              </div>
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Calendar className="mr-1 h-4 w-4" />
+                <span>{delivery.scheduledFor}</span>
+              </div>
             </div>
           ))}
-        </div>
-        <div className="p-4 border-t">
-          <Button variant="outline" className="w-full text-primary">
-            Voir toutes les livraisons
-          </Button>
         </div>
       </CardContent>
     </Card>

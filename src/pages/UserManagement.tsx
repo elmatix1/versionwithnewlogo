@@ -1,158 +1,140 @@
 
 import React, { useState } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Plus, MoreHorizontal, Pencil, UserCog, KeyRound, Trash } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Badge } from '@/components/ui/badge';
-import { Search, MoreVertical, Plus, Filter, UserPlus } from 'lucide-react';
-import { useAuth, UserRole } from '@/hooks/useAuth';
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { UserRole } from '@/hooks/useAuth';
 import AddUserForm from '@/components/users/AddUserForm';
-import { toast } from "sonner";
 
-type UserStatus = 'active' | 'inactive';
+const getRoleName = (role: UserRole) => {
+  const roleNames: Record<UserRole, string> = {
+    'admin': 'Administrateur',
+    'rh': 'Ressources Humaines',
+    'planificateur': 'Planificateur',
+    'commercial': 'Commercial',
+    'approvisionneur': 'Approvisionneur',
+    'exploitation': 'Exploitation',
+    'maintenance': 'Maintenance',
+  };
+  return roleNames[role] || role;
+};
 
-interface ExtendedUser {
-  id: string;
-  username: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  status: UserStatus;
-}
-
-const roleLabels: Record<UserRole, string> = {
-  'admin': 'Administrateur',
-  'rh': 'Ressources Humaines',
-  'planificateur': 'Planificateur',
-  'commercial': 'Commercial',
-  'approvisionneur': 'Approvisionneur',
-  'exploitation': 'Chargé d\'exploitation', 
-  'maintenance': 'Chargé de maintenance'
+const getRoleBadgeColor = (role: UserRole) => {
+  const colors: Record<UserRole, string> = {
+    'admin': 'bg-red-500',
+    'rh': 'bg-blue-500',
+    'planificateur': 'bg-amber-500',
+    'commercial': 'bg-green-500',
+    'approvisionneur': 'bg-indigo-500',
+    'exploitation': 'bg-purple-500',
+    'maintenance': 'bg-cyan-500',
+  };
+  return colors[role] || 'bg-gray-500';
 };
 
 const UserManagement: React.FC = () => {
-  const { allUsers, addUser, updateUser, deleteUser, hasActionPermission } = useAuth();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [openAddUserDialog, setOpenAddUserDialog] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<string | null>(null);
-  const [userToEdit, setUserToEdit] = useState<ExtendedUser | null>(null);
-  const [userRoleToChange, setUserRoleToChange] = useState<{userId: string, currentRole: UserRole} | null>(null);
-  const [userToResetPassword, setUserToResetPassword] = useState<string | null>(null);
-  
-  // Convertir les utilisateurs du contexte auth en utilisateurs étendus pour l'affichage
-  const extendedUsers: ExtendedUser[] = allUsers.map(user => ({
-    ...user,
-    status: 'active' as UserStatus
-  }));
-  
-  // Filtrer les utilisateurs en fonction du terme de recherche
-  const filteredUsers = extendedUsers.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    roleLabels[user.role].toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  
-  // Gestionnaire pour ajouter un nouvel utilisateur
-  const handleAddUser = (userData: any) => {
-    addUser({
-      username: userData.username,
-      name: userData.name,
-      email: userData.email,
-      role: userData.role as UserRole
-    });
-  };
-  
-  // Gestionnaire pour changer le statut d'un utilisateur
-  const handleToggleStatus = (userId: string, currentStatus: UserStatus) => {
-    updateUser(userId, {
-      // Cette propriété serait normalement gérée par le backend
-    });
-  };
-  
-  // Gestionnaire pour supprimer un utilisateur
-  const handleDeleteUser = () => {
-    if (userToDelete) {
-      deleteUser(userToDelete);
-      setUserToDelete(null);
-    }
+  const { allUsers, updateUser, deleteUser, hasActionPermission } = useAuth();
+  const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
+  const [editUserDialogOpen, setEditUserDialogOpen] = useState(false);
+  const [changeRoleDialogOpen, setChangeRoleDialogOpen] = useState(false);
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
+  const [deleteUserDialogOpen, setDeleteUserDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [newRole, setNewRole] = useState<UserRole>('admin');
+  const [newPassword, setNewPassword] = useState('');
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+
+  const handleEdit = (user: any) => {
+    setSelectedUser(user);
+    setEditName(user.name);
+    setEditEmail(user.email);
+    setEditUserDialogOpen(true);
   };
 
-  // Gestionnaire pour modifier un utilisateur
-  const handleEditUser = () => {
-    if (userToEdit) {
-      updateUser(userToEdit.id, {
-        name: userToEdit.name,
-        email: userToEdit.email
+  const handleChangeRole = (user: any) => {
+    setSelectedUser(user);
+    setNewRole(user.role);
+    setChangeRoleDialogOpen(true);
+  };
+
+  const handleResetPassword = (user: any) => {
+    setSelectedUser(user);
+    setNewPassword('');
+    setResetPasswordDialogOpen(true);
+  };
+
+  const handleDelete = (user: any) => {
+    setSelectedUser(user);
+    setDeleteUserDialogOpen(true);
+  };
+
+  const confirmEditUser = () => {
+    if (selectedUser) {
+      updateUser(selectedUser.id, {
+        name: editName,
+        email: editEmail
       });
-      setUserToEdit(null);
-      toast.success("Utilisateur modifié avec succès");
+      setEditUserDialogOpen(false);
     }
   };
 
-  // Gestionnaire pour changer le rôle d'un utilisateur
-  const handleChangeRole = (newRole: UserRole) => {
-    if (userRoleToChange) {
-      updateUser(userRoleToChange.userId, {
-        role: newRole
+  const confirmChangeRole = () => {
+    if (selectedUser) {
+      updateUser(selectedUser.id, { role: newRole });
+      setChangeRoleDialogOpen(false);
+    }
+  };
+
+  const confirmResetPassword = () => {
+    if (selectedUser) {
+      // In a real app, this would trigger an API call to reset the password
+      toast.success(`Mot de passe réinitialisé pour ${selectedUser.name}`, {
+        description: 'Un nouveau mot de passe a été envoyé à l\'utilisateur.'
       });
-      setUserRoleToChange(null);
-      toast.success("Rôle de l'utilisateur modifié avec succès");
+      setResetPasswordDialogOpen(false);
     }
   };
 
-  // Gestionnaire pour réinitialiser le mot de passe
-  const handleResetPassword = () => {
-    if (userToResetPassword) {
-      // Dans une application réelle, cela enverrait un email ou générerait un nouveau mot de passe
-      toast.success("Un lien de réinitialisation de mot de passe a été envoyé à l'utilisateur");
-      setUserToResetPassword(null);
+  const confirmDeleteUser = () => {
+    if (selectedUser) {
+      deleteUser(selectedUser.id);
+      setDeleteUserDialogOpen(false);
     }
   };
 
@@ -160,237 +142,199 @@ const UserManagement: React.FC = () => {
     <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1">Gestion des utilisateurs</h1>
-        <p className="text-muted-foreground">Gérez les comptes utilisateurs et les permissions</p>
+        <p className="text-muted-foreground">Administration des comptes et des permissions</p>
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Utilisateurs</CardTitle>
-              <CardDescription>Gérez les utilisateurs et leurs rôles</CardDescription>
-            </div>
-            {hasActionPermission('add-user') && (
-              <Button 
-                className="flex items-center gap-2"
-                onClick={() => setOpenAddUserDialog(true)}
-              >
-                <UserPlus size={16} />
-                <span>Ajouter</span>
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row gap-3 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input 
-                placeholder="Rechercher..." 
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Filter size={16} />
-              <span>Filtres</span>
-            </Button>
-          </div>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <p className="text-sm text-muted-foreground">
+            Total: <span className="font-medium">{allUsers.length} utilisateurs</span>
+          </p>
+        </div>
+        {hasActionPermission('add-user') && (
+          <Button onClick={() => setAddUserDialogOpen(true)} className="flex items-center gap-1">
+            <Plus className="h-4 w-4" />
+            <span>Nouvel utilisateur</span>
+          </Button>
+        )}
+      </div>
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Rôle</TableHead>
-                  <TableHead>Statut</TableHead>
-                  {hasActionPermission('edit-user') && (
-                    <TableHead className="w-[50px]"></TableHead>
-                  )}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{roleLabels[user.role]}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={user.status === "active" ? "border-green-500 text-green-600" : "border-zinc-500 text-zinc-600"}>
-                        {user.status === "active" ? "Actif" : "Inactif"}
-                      </Badge>
-                    </TableCell>
-                    {hasActionPermission('edit-user') && (
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => setUserToEdit(user)}>
-                              Modifier
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setUserRoleToChange({userId: user.id, currentRole: user.role})}>
-                              Changer le rôle
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setUserToResetPassword(user.id)}>
-                              Réinitialiser le mot de passe
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                              className="text-destructive"
-                              onClick={() => setUserToDelete(user.id)}
-                            >
-                              Supprimer
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-                {filteredUsers.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={hasActionPermission('edit-user') ? 5 : 4} className="text-center py-8 text-muted-foreground">
-                      Aucun utilisateur trouvé
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Formulaire d'ajout d'utilisateur */}
-      <AddUserForm 
-        open={openAddUserDialog}
-        onOpenChange={setOpenAddUserDialog}
-        onAddUser={handleAddUser}
-      />
-      
-      {/* Boîte de dialogue de modification d'utilisateur */}
-      <Dialog open={!!userToEdit} onOpenChange={(open) => !open && setUserToEdit(null)}>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nom</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Rôle</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {allUsers.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell>
+                  <div className="flex items-center space-x-4">
+                    <Avatar>
+                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium">{user.name}</span>
+                  </div>
+                </TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>
+                  <Badge className={getRoleBadgeColor(user.role)}>
+                    {getRoleName(user.role)}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEdit(user)} disabled={!hasActionPermission('edit-user')}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        <span>Modifier</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleChangeRole(user)} disabled={!hasActionPermission('manage-roles')}>
+                        <UserCog className="mr-2 h-4 w-4" />
+                        <span>Changer de rôle</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleResetPassword(user)} disabled={!hasActionPermission('edit-user')}>
+                        <KeyRound className="mr-2 h-4 w-4" />
+                        <span>Réinitialiser mot de passe</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => handleDelete(user)} disabled={!hasActionPermission('delete-user')} className="text-red-600">
+                        <Trash className="mr-2 h-4 w-4" />
+                        <span>Supprimer</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Edit User Dialog */}
+      <Dialog open={editUserDialogOpen} onOpenChange={setEditUserDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Modifier l'utilisateur</DialogTitle>
             <DialogDescription>
-              Modifiez les informations de l'utilisateur ci-dessous.
+              Modifiez les informations de l'utilisateur.
             </DialogDescription>
           </DialogHeader>
-          {userToEdit && (
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium">Nom</label>
-                <Input
-                  id="name"
-                  value={userToEdit.name}
-                  onChange={(e) => setUserToEdit({...userToEdit, name: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">Email</label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={userToEdit.email}
-                  onChange={(e) => setUserToEdit({...userToEdit, email: e.target.value})}
-                />
-              </div>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Nom
+              </Label>
+              <Input
+                id="name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="col-span-3"
+              />
             </div>
-          )}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">
+                Email
+              </Label>
+              <Input
+                id="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setUserToEdit(null)}>Annuler</Button>
-            <Button onClick={handleEditUser}>Enregistrer</Button>
+            <Button onClick={confirmEditUser}>Enregistrer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Boîte de dialogue de changement de rôle */}
-      <Dialog open={!!userRoleToChange} onOpenChange={(open) => !open && setUserRoleToChange(null)}>
+      {/* Change Role Dialog */}
+      <Dialog open={changeRoleDialogOpen} onOpenChange={setChangeRoleDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Changer le rôle</DialogTitle>
             <DialogDescription>
-              Choisissez un nouveau rôle pour cet utilisateur.
+              Sélectionnez un nouveau rôle pour {selectedUser?.name}.
             </DialogDescription>
           </DialogHeader>
-          {userRoleToChange && (
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <label htmlFor="role" className="text-sm font-medium">Rôle</label>
-                <Select 
-                  defaultValue={userRoleToChange.currentRole}
-                  onValueChange={(value) => handleChangeRole(value as UserRole)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un rôle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Administrateur</SelectItem>
-                    <SelectItem value="rh">Ressources Humaines</SelectItem>
-                    <SelectItem value="planificateur">Planificateur</SelectItem>
-                    <SelectItem value="commercial">Commercial</SelectItem>
-                    <SelectItem value="approvisionneur">Approvisionneur</SelectItem>
-                    <SelectItem value="exploitation">Chargé d'exploitation</SelectItem>
-                    <SelectItem value="maintenance">Chargé de maintenance</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="role" className="text-right">
+                Rôle
+              </Label>
+              <Select
+                value={newRole}
+                onValueChange={(value: any) => setNewRole(value)}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Sélectionner un rôle" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Administrateur</SelectItem>
+                  <SelectItem value="rh">Ressources Humaines</SelectItem>
+                  <SelectItem value="planificateur">Planificateur</SelectItem>
+                  <SelectItem value="commercial">Commercial</SelectItem>
+                  <SelectItem value="approvisionneur">Approvisionneur</SelectItem>
+                  <SelectItem value="exploitation">Exploitation</SelectItem>
+                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          )}
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setUserRoleToChange(null)}>Annuler</Button>
-            <Button onClick={() => setUserRoleToChange(null)}>Fermer</Button>
+            <Button onClick={confirmChangeRole}>Enregistrer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Boîte de dialogue de réinitialisation de mot de passe */}
-      <AlertDialog
-        open={!!userToResetPassword}
-        onOpenChange={(open) => !open && setUserToResetPassword(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Réinitialiser le mot de passe</AlertDialogTitle>
-            <AlertDialogDescription>
-              Êtes-vous sûr de vouloir réinitialiser le mot de passe de cet utilisateur ? Un lien de réinitialisation sera envoyé à son adresse email.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleResetPassword}>Réinitialiser</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
-      {/* Boîte de dialogue de confirmation de suppression */}
-      <AlertDialog
-        open={!!userToDelete}
-        onOpenChange={(open) => !open && setUserToDelete(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Êtes-vous sûr?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Cette action ne peut pas être annulée. Cela supprimera définitivement cet utilisateur du système.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive text-destructive-foreground">
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Reset Password Dialog */}
+      <Dialog open={resetPasswordDialogOpen} onOpenChange={setResetPasswordDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Réinitialiser le mot de passe</DialogTitle>
+            <DialogDescription>
+              Cette action enverra un nouveau mot de passe à l'utilisateur.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-4">
+            <p>Confirmez-vous la réinitialisation du mot de passe pour {selectedUser?.name}?</p>
+          </div>
+          <DialogFooter>
+            <Button onClick={confirmResetPassword}>Confirmer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete User Dialog */}
+      <Dialog open={deleteUserDialogOpen} onOpenChange={setDeleteUserDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supprimer l'utilisateur</DialogTitle>
+            <DialogDescription>
+              Cette action est irréversible. L'utilisateur sera définitivement supprimé.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-4">
+            <p>Êtes-vous sûr de vouloir supprimer {selectedUser?.name}?</p>
+          </div>
+          <DialogFooter>
+            <Button variant="destructive" onClick={confirmDeleteUser}>Supprimer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AddUserForm open={addUserDialogOpen} onOpenChange={setAddUserDialogOpen} />
     </div>
   );
 };
