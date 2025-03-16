@@ -2,9 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -12,60 +10,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { FileText, Download, Eye, Search, Upload, Filter, Calendar } from 'lucide-react';
+import { Search, Upload, Filter } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-
-interface Document {
-  id: string;
-  name: string;
-  type: 'permis' | 'carte-pro' | 'medical' | 'formation' | 'contrat';
-  status: 'valid' | 'expiring-soon' | 'expired';
-  employee: string;
-  uploadDate: Date;
-  expiryDate: Date | null;
-}
-
-const getDocumentTypeName = (type: string): string => {
-  switch (type) {
-    case 'permis': return 'Permis de conduire';
-    case 'carte-pro': return 'Carte professionnelle';
-    case 'medical': return 'Certificat médical';
-    case 'formation': return 'Attestation de formation';
-    case 'contrat': return 'Contrat de travail';
-    default: return type;
-  }
-};
-
-const getStatusBadge = (status: string) => {
-  switch (status) {
-    case 'valid':
-      return <Badge className="bg-green-500">Valide</Badge>;
-    case 'expiring-soon':
-      return <Badge className="bg-amber-500">Expire bientôt</Badge>;
-    case 'expired':
-      return <Badge className="bg-red-500">Expiré</Badge>;
-    default:
-      return <Badge>Inconnu</Badge>;
-  }
-};
+import { Document } from './documents/types';
+import DocumentTable from './documents/DocumentTable';
+import DocumentViewer from './documents/DocumentViewer';
+import UploadDialog from './documents/UploadDialog';
 
 const DocumentManager: React.FC = () => {
   const [documents, setDocuments] = useState<Document[]>([
@@ -127,7 +77,6 @@ const DocumentManager: React.FC = () => {
   const [documentType, setDocumentType] = useState<'permis' | 'carte-pro' | 'medical' | 'formation' | 'contrat'>('permis');
   const [employeeName, setEmployeeName] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // View document state
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
@@ -161,12 +110,6 @@ const DocumentManager: React.FC = () => {
     return true;
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
-    }
-  };
-
   const handleUploadDocument = () => {
     if (!documentName || !documentType || !employeeName) {
       toast.error("Veuillez remplir tous les champs obligatoires");
@@ -192,7 +135,6 @@ const DocumentManager: React.FC = () => {
     setDocumentType('permis');
     setEmployeeName('');
     setExpiryDate('');
-    setSelectedFile(null);
   };
 
   const handleViewDocument = (document: Document) => {
@@ -219,100 +161,24 @@ const DocumentManager: React.FC = () => {
               className="pl-10"
             />
           </div>
-          <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <Upload size={16} />
-                <span>Nouveau document</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Télécharger un document</DialogTitle>
-                <DialogDescription>
-                  Remplissez les informations et téléchargez le fichier du document.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="documentName" className="text-right">
-                    Nom
-                  </Label>
-                  <Input
-                    id="documentName"
-                    value={documentName}
-                    onChange={(e) => setDocumentName(e.target.value)}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="documentType" className="text-right">
-                    Type
-                  </Label>
-                  <Select
-                    value={documentType}
-                    onValueChange={(value: any) => setDocumentType(value)}
-                  >
-                    <SelectTrigger id="documentType" className="col-span-3">
-                      <SelectValue placeholder="Sélectionner un type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="permis">Permis de conduire</SelectItem>
-                      <SelectItem value="carte-pro">Carte professionnelle</SelectItem>
-                      <SelectItem value="medical">Certificat médical</SelectItem>
-                      <SelectItem value="formation">Attestation de formation</SelectItem>
-                      <SelectItem value="contrat">Contrat de travail</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="employeeName" className="text-right">
-                    Employé
-                  </Label>
-                  <Select
-                    value={employeeName}
-                    onValueChange={setEmployeeName}
-                  >
-                    <SelectTrigger id="employeeName" className="col-span-3">
-                      <SelectValue placeholder="Sélectionner un employé" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Thomas Durand">Thomas Durand</SelectItem>
-                      <SelectItem value="Sophie Lefèvre">Sophie Lefèvre</SelectItem>
-                      <SelectItem value="Pierre Martin">Pierre Martin</SelectItem>
-                      <SelectItem value="Marie Lambert">Marie Lambert</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="expiryDate" className="text-right">
-                    Date d'expiration
-                  </Label>
-                  <Input
-                    id="expiryDate"
-                    type="date"
-                    value={expiryDate}
-                    onChange={(e) => setExpiryDate(e.target.value)}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="documentFile" className="text-right">
-                    Fichier
-                  </Label>
-                  <Input
-                    id="documentFile"
-                    type="file"
-                    onChange={handleFileChange}
-                    className="col-span-3"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button onClick={handleUploadDocument}>Télécharger</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <UploadDialog
+            open={uploadDialogOpen}
+            onOpenChange={setUploadDialogOpen}
+            documentName={documentName}
+            setDocumentName={setDocumentName}
+            documentType={documentType}
+            setDocumentType={setDocumentType}
+            employeeName={employeeName}
+            setEmployeeName={setEmployeeName}
+            expiryDate={expiryDate}
+            setExpiryDate={setExpiryDate}
+            onUpload={handleUploadDocument}
+          >
+            <Button className="flex items-center gap-2">
+              <Upload size={16} />
+              <span>Nouveau document</span>
+            </Button>
+          </UploadDialog>
         </div>
 
         <div className="flex flex-col md:flex-row gap-2">
@@ -399,132 +265,12 @@ const DocumentManager: React.FC = () => {
       </Tabs>
 
       {/* Document Viewer Dialog */}
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Visualisation du document</DialogTitle>
-            <DialogDescription>
-              {selectedDocument && `${selectedDocument.name} - ${selectedDocument.employee}`}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            {selectedDocument && (
-              <div className="space-y-4">
-                <div className="aspect-video bg-gray-100 rounded-md flex items-center justify-center">
-                  <FileText className="h-16 w-16 text-muted-foreground" />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="text-sm font-medium mb-1">Type de document</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {getDocumentTypeName(selectedDocument.type)}
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium mb-1">Statut</h4>
-                    <div>{getStatusBadge(selectedDocument.status)}</div>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium mb-1">Date de téléchargement</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {format(selectedDocument.uploadDate, 'dd/MM/yyyy')}
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium mb-1">Date d'expiration</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedDocument.expiryDate 
-                        ? format(selectedDocument.expiryDate, 'dd/MM/yyyy')
-                        : 'Non applicable'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setViewDialogOpen(false)}>Fermer</Button>
-            <Button onClick={() => selectedDocument && handleDownloadDocument(selectedDocument)}>
-              <Download className="mr-2 h-4 w-4" />
-              Télécharger
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
-
-interface DocumentTableProps {
-  documents: Document[];
-  onViewDocument: (document: Document) => void;
-  onDownloadDocument: (document: Document) => void;
-}
-
-const DocumentTable: React.FC<DocumentTableProps> = ({ documents, onViewDocument, onDownloadDocument }) => {
-  return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nom</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Employé</TableHead>
-            <TableHead>Statut</TableHead>
-            <TableHead>Date d'expiration</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {documents.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                Aucun document trouvé
-              </TableCell>
-            </TableRow>
-          ) : (
-            documents.map((document) => (
-              <TableRow key={document.id}>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <FileText size={16} className="text-muted-foreground" />
-                    <span>{document.name}</span>
-                  </div>
-                </TableCell>
-                <TableCell>{getDocumentTypeName(document.type)}</TableCell>
-                <TableCell>{document.employee}</TableCell>
-                <TableCell>{getStatusBadge(document.status)}</TableCell>
-                <TableCell>
-                  {document.expiryDate 
-                    ? format(document.expiryDate, 'dd/MM/yyyy')
-                    : 'Non applicable'}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => onViewDocument(document)}
-                    >
-                      <Eye size={16} />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => onDownloadDocument(document)}
-                    >
-                      <Download size={16} />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+      <DocumentViewer
+        open={viewDialogOpen}
+        onOpenChange={setViewDialogOpen}
+        document={selectedDocument}
+        onDownload={handleDownloadDocument}
+      />
     </div>
   );
 };

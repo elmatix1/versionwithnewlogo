@@ -9,35 +9,12 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Clock, UserCheck } from "lucide-react";
-
-interface Event {
-  id: string;
-  employee: string;
-  employeeId: string;
-  type: string;
-  date: Date;
-  startTime: string;
-  endTime: string;
-  description: string;
-}
-
-interface HRCalendarProps {
-  onSchedule?: () => void;
-}
+import { UserCheck } from "lucide-react";
+import { Event, HRCalendarProps } from './calendar/types';
+import EventsList from './calendar/EventsList';
+import EventDialog from './calendar/EventDialog';
+import { getEventTypeName, getEventBadgeColor } from './calendar/utils';
 
 const HRCalendar: React.FC<HRCalendarProps> = ({ onSchedule }) => {
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -123,26 +100,6 @@ const HRCalendar: React.FC<HRCalendarProps> = ({ onSchedule }) => {
     });
   };
 
-  const getEventTypeName = (type: string) => {
-    switch (type) {
-      case 'absence': return 'Absence';
-      case 'conge': return 'Congés payés';
-      case 'formation': return 'Formation';
-      case 'medical': return 'Rendez-vous médical';
-      default: return type;
-    }
-  };
-
-  const getEventBadgeColor = (type: string) => {
-    switch (type) {
-      case 'absence': return 'bg-amber-500';
-      case 'conge': return 'bg-blue-500';
-      case 'formation': return 'bg-green-500';
-      case 'medical': return 'bg-purple-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-4 items-start">
@@ -162,114 +119,27 @@ const HRCalendar: React.FC<HRCalendarProps> = ({ onSchedule }) => {
           </Select>
         </div>
         <div className="w-full md:w-1/3">
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full">
-                Planifier une absence / congé
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Planifier un évènement</DialogTitle>
-                <DialogDescription>
-                  Enregistrez une absence, un congé ou une formation.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="employee" className="text-right">
-                    Employé
-                  </Label>
-                  <Select value={eventEmployee} onValueChange={setEventEmployee}>
-                    <SelectTrigger id="employee" className="col-span-3">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Thomas Durand</SelectItem>
-                      <SelectItem value="2">Sophie Lefèvre</SelectItem>
-                      <SelectItem value="3">Pierre Martin</SelectItem>
-                      <SelectItem value="4">Marie Lambert</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="type" className="text-right">
-                    Type
-                  </Label>
-                  <Select value={eventType} onValueChange={setEventType}>
-                    <SelectTrigger id="type" className="col-span-3">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="absence">Absence</SelectItem>
-                      <SelectItem value="conge">Congé payé</SelectItem>
-                      <SelectItem value="formation">Formation</SelectItem>
-                      <SelectItem value="medical">Rendez-vous médical</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="event-date" className="text-right">
-                    Date
-                  </Label>
-                  <div className="col-span-3 flex items-center gap-2">
-                    <Input
-                      id="event-date"
-                      type="date"
-                      value={date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
-                      onChange={(e) => setDate(new Date(e.target.value))}
-                      className="flex-1"
-                    />
-                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="start-time" className="text-right">
-                    Début
-                  </Label>
-                  <div className="col-span-3 flex items-center gap-2">
-                    <Input
-                      id="start-time"
-                      type="time"
-                      value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
-                      className="flex-1"
-                    />
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="end-time" className="text-right">
-                    Fin
-                  </Label>
-                  <div className="col-span-3 flex items-center gap-2">
-                    <Input
-                      id="end-time"
-                      type="time"
-                      value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
-                      className="flex-1"
-                    />
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="description" className="text-right">
-                    Description
-                  </Label>
-                  <Input
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="col-span-3"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit" onClick={handleAddEvent}>Enregistrer</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <EventDialog
+            open={open}
+            onOpenChange={setOpen}
+            eventType={eventType}
+            setEventType={setEventType}
+            eventEmployee={eventEmployee}
+            setEventEmployee={setEventEmployee}
+            startTime={startTime}
+            setStartTime={setStartTime}
+            endTime={endTime}
+            setEndTime={setEndTime}
+            description={description}
+            setDescription={setDescription}
+            date={date}
+            setDate={(newDate) => setDate(newDate)}
+            onAddEvent={handleAddEvent}
+          >
+            <Button className="w-full">
+              Planifier une absence / congé
+            </Button>
+          </EventDialog>
         </div>
       </div>
 
@@ -293,44 +163,13 @@ const HRCalendar: React.FC<HRCalendarProps> = ({ onSchedule }) => {
         </div>
 
         <div className="md:col-span-1">
-          <div className="border rounded-md p-4 h-full bg-white">
-            <h3 className="text-lg font-medium mb-4">
-              Évènements pour {date ? date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'aujourd\'hui'}
-            </h3>
-            <div className="space-y-3">
-              {getFilteredEvents().length > 0 ? (
-                getFilteredEvents().map((event) => (
-                  <div key={event.id} className="p-3 border rounded-md flex items-center justify-between">
-                    <div>
-                      <span className="font-medium">{event.employee}</span>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge className={getEventBadgeColor(event.type)}>
-                          {getEventTypeName(event.type)}
-                        </Badge>
-                        {event.description && (
-                          <span className="text-sm text-muted-foreground">{event.description}</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-sm">
-                      {event.startTime} - {event.endTime}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>Aucun événement pour cette date</p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={() => setOpen(true)}
-                  >
-                    Ajouter un événement
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
+          <EventsList 
+            events={getFilteredEvents()} 
+            date={date} 
+            onOpenDialog={() => setOpen(true)}
+            getEventTypeName={getEventTypeName}
+            getEventBadgeColor={getEventBadgeColor}
+          />
         </div>
       </div>
     </div>
