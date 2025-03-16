@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -31,8 +31,62 @@ import {
   UserX,
   PlusCircle
 } from 'lucide-react';
+import AddDriverForm from '@/components/hr/AddDriverForm';
+import { toast } from "sonner";
+
+interface Driver {
+  id: number;
+  fullName: string;
+  status: "active" | "off-duty" | "sick-leave" | "vacation";
+  experience: string;
+  vehicles: string[];
+  documents: number;
+}
 
 const HRManagement: React.FC = () => {
+  const [drivers, setDrivers] = useState<Driver[]>([
+    { 
+      id: 1, 
+      fullName: "Thomas Durand", 
+      status: "active", 
+      experience: "5 ans", 
+      vehicles: ["TL-3045", "TL-1203"],
+      documents: 90
+    },
+    { 
+      id: 2, 
+      fullName: "Sophie Lefèvre", 
+      status: "active", 
+      experience: "3 ans", 
+      vehicles: ["TL-2189"],
+      documents: 100
+    },
+    { 
+      id: 3, 
+      fullName: "Pierre Martin", 
+      status: "off-duty", 
+      experience: "7 ans", 
+      vehicles: ["TL-1203", "TL-4023"],
+      documents: 75
+    }
+  ]);
+  
+  const [openAddDriver, setOpenAddDriver] = useState(false);
+  const [selectedTab, setSelectedTab] = useState("drivers");
+
+  const handleAddDriver = (driverData: any) => {
+    const newDriver: Driver = {
+      id: drivers.length + 1,
+      fullName: driverData.fullName,
+      status: driverData.status,
+      experience: driverData.experience,
+      vehicles: [],
+      documents: 0
+    };
+    
+    setDrivers(prev => [...prev, newDriver]);
+  };
+
   return (
     <div>
       <div className="mb-8">
@@ -40,7 +94,7 @@ const HRManagement: React.FC = () => {
         <p className="text-muted-foreground">Gestion des chauffeurs et des employés</p>
       </div>
 
-      <Tabs defaultValue="drivers">
+      <Tabs defaultValue="drivers" value={selectedTab} onValueChange={setSelectedTab}>
         <TabsList className="mb-6">
           <TabsTrigger value="drivers" className="flex items-center gap-1">
             <Users size={16} />
@@ -65,7 +119,7 @@ const HRManagement: React.FC = () => {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle>Chauffeurs</CardTitle>
-                <Button className="flex items-center gap-1">
+                <Button className="flex items-center gap-1" onClick={() => setOpenAddDriver(true)}>
                   <PlusCircle size={16} />
                   <span>Ajouter un chauffeur</span>
                 </Button>
@@ -85,40 +139,15 @@ const HRManagement: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {[
-                      { 
-                        id: 1, 
-                        name: "Thomas Durand", 
-                        status: "active", 
-                        experience: "5 ans", 
-                        vehicles: ["TL-3045", "TL-1203"],
-                        documents: 90
-                      },
-                      { 
-                        id: 2, 
-                        name: "Sophie Lefèvre", 
-                        status: "active", 
-                        experience: "3 ans", 
-                        vehicles: ["TL-2189"],
-                        documents: 100
-                      },
-                      { 
-                        id: 3, 
-                        name: "Pierre Martin", 
-                        status: "off-duty", 
-                        experience: "7 ans", 
-                        vehicles: ["TL-1203", "TL-4023"],
-                        documents: 75
-                      }
-                    ].map((driver) => (
+                    {drivers.map((driver) => (
                       <TableRow key={driver.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar>
-                              <AvatarFallback>{driver.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                              <AvatarFallback>{driver.fullName.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="font-medium">{driver.name}</div>
+                              <div className="font-medium">{driver.fullName}</div>
                               <div className="text-xs text-muted-foreground">{driver.experience} d'expérience</div>
                             </div>
                           </div>
@@ -181,7 +210,7 @@ const HRManagement: React.FC = () => {
                 <p className="text-muted-foreground max-w-md mx-auto mb-8">
                   Planifiez et gérez les disponibilités des chauffeurs pour une meilleure organisation des trajets.
                 </p>
-                <Button>Afficher le calendrier</Button>
+                <Button onClick={() => toast.info("Affichage du calendrier")}>Afficher le calendrier</Button>
               </div>
             </CardContent>
           </Card>
@@ -241,7 +270,7 @@ const HRManagement: React.FC = () => {
                 <p className="text-muted-foreground max-w-md mx-auto mb-8">
                   Gérez les permis, assurances et autres documents administratifs des chauffeurs.
                 </p>
-                <Button>Gérer les documents</Button>
+                <Button onClick={() => toast.info("Gestion des documents")}>Gérer les documents</Button>
               </div>
             </CardContent>
           </Card>
@@ -259,12 +288,18 @@ const HRManagement: React.FC = () => {
                 <p className="text-muted-foreground max-w-md mx-auto mb-8">
                   Suivez les présences, retards et absences de tous les employés.
                 </p>
-                <Button>Accéder au système de pointage</Button>
+                <Button onClick={() => toast.info("Accès au système de pointage")}>Accéder au système de pointage</Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+      
+      <AddDriverForm 
+        open={openAddDriver} 
+        onOpenChange={setOpenAddDriver} 
+        onAddDriver={handleAddDriver}
+      />
     </div>
   );
 };

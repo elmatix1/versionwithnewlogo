@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -28,6 +29,7 @@ import {
   Fuel,
   Plus
 } from 'lucide-react';
+import { toast } from "sonner";
 
 interface Vehicle {
   id: string;
@@ -40,61 +42,6 @@ interface Vehicle {
   driver?: string;
   location?: string;
 }
-
-const vehicles: Vehicle[] = [
-  {
-    id: "v1",
-    name: "TL-3045",
-    type: "Camion 19T",
-    status: "active",
-    lastMaintenance: "12/06/2023",
-    fuelLevel: 85,
-    nextService: "22/09/2023",
-    driver: "Thomas Durand",
-    location: "Route A7"
-  },
-  {
-    id: "v2",
-    name: "TL-2189",
-    type: "Camion 12T",
-    status: "active",
-    lastMaintenance: "05/05/2023",
-    fuelLevel: 62,
-    nextService: "05/08/2023",
-    driver: "Sophie Lefèvre",
-    location: "Dépôt Central"
-  },
-  {
-    id: "v3",
-    name: "TL-4023",
-    type: "Camion 24T",
-    status: "maintenance",
-    lastMaintenance: "28/07/2023",
-    fuelLevel: 30,
-    nextService: "Maintenance en cours",
-    location: "Garage Nord"
-  },
-  {
-    id: "v4",
-    name: "TL-1087",
-    type: "Utilitaire 3.5T",
-    status: "inactive",
-    lastMaintenance: "14/04/2023",
-    fuelLevel: 15,
-    nextService: "Indisponible",
-  },
-  {
-    id: "v5",
-    name: "TL-5632",
-    type: "Camion 19T",
-    status: "active",
-    lastMaintenance: "22/06/2023",
-    fuelLevel: 92,
-    nextService: "22/09/2023",
-    driver: "Pierre Martin",
-    location: "Livraison Marseille"
-  }
-];
 
 const statusColors = {
   active: "bg-green-500",
@@ -109,6 +56,98 @@ const statusLabels = {
 };
 
 const VehicleManagement: React.FC = () => {
+  const [vehicles, setVehicles] = useState<Vehicle[]>([
+    {
+      id: "v1",
+      name: "TL-3045",
+      type: "Camion 19T",
+      status: "active",
+      lastMaintenance: "12/06/2023",
+      fuelLevel: 85,
+      nextService: "22/09/2023",
+      driver: "Thomas Durand",
+      location: "Route A7"
+    },
+    {
+      id: "v2",
+      name: "TL-2189",
+      type: "Camion 12T",
+      status: "active",
+      lastMaintenance: "05/05/2023",
+      fuelLevel: 62,
+      nextService: "05/08/2023",
+      driver: "Sophie Lefèvre",
+      location: "Dépôt Central"
+    },
+    {
+      id: "v3",
+      name: "TL-4023",
+      type: "Camion 24T",
+      status: "maintenance",
+      lastMaintenance: "28/07/2023",
+      fuelLevel: 30,
+      nextService: "Maintenance en cours",
+      location: "Garage Nord"
+    },
+    {
+      id: "v4",
+      name: "TL-1087",
+      type: "Utilitaire 3.5T",
+      status: "inactive",
+      lastMaintenance: "14/04/2023",
+      fuelLevel: 15,
+      nextService: "Indisponible",
+    },
+    {
+      id: "v5",
+      name: "TL-5632",
+      type: "Camion 19T",
+      status: "active",
+      lastMaintenance: "22/06/2023",
+      fuelLevel: 92,
+      nextService: "22/09/2023",
+      driver: "Pierre Martin",
+      location: "Livraison Marseille"
+    }
+  ]);
+  
+  const [selectedTab, setSelectedTab] = useState("all");
+  
+  // Filtrer les véhicules en fonction de l'onglet sélectionné
+  const filteredVehicles = selectedTab === "all" 
+    ? vehicles 
+    : vehicles.filter(vehicle => vehicle.status === selectedTab);
+  
+  const handleAddVehicle = () => {
+    // Nous simulons juste l'ajout d'un véhicule pour l'instant
+    const newVehicle: Vehicle = {
+      id: `v${vehicles.length + 1}`,
+      name: `TL-${Math.floor(1000 + Math.random() * 9000)}`,
+      type: "Camion 19T",
+      status: "active",
+      lastMaintenance: new Date().toLocaleDateString(),
+      fuelLevel: 100,
+      nextService: "Dans 3 mois",
+    };
+    
+    setVehicles(prev => [...prev, newVehicle]);
+    toast.success("Véhicule ajouté avec succès", {
+      description: `Le véhicule ${newVehicle.name} a été ajouté à la flotte.`
+    });
+  };
+  
+  const handleViewCalendar = () => {
+    toast.info("Calendrier d'entretien", {
+      description: "Affichage du calendrier d'entretien des véhicules"
+    });
+  };
+  
+  const handleViewDocuments = () => {
+    toast.info("Documents des véhicules", {
+      description: "Accès aux documents administratifs des véhicules"
+    });
+  };
+
   return (
     <div>
       <div className="mb-8">
@@ -207,14 +246,14 @@ const VehicleManagement: React.FC = () => {
               <CardTitle>Flotte de véhicules</CardTitle>
               <CardDescription>Vue d'ensemble de tous les véhicules</CardDescription>
             </div>
-            <Button className="flex items-center gap-1">
+            <Button className="flex items-center gap-1" onClick={handleAddVehicle}>
               <Plus size={16} />
               <span>Ajouter un véhicule</span>
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="all">
+          <Tabs defaultValue="all" value={selectedTab} onValueChange={setSelectedTab}>
             <TabsList className="mb-4">
               <TabsTrigger value="all">Tous</TabsTrigger>
               <TabsTrigger value="active">En service</TabsTrigger>
@@ -238,7 +277,7 @@ const VehicleManagement: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {vehicles.map((vehicle) => (
+                    {filteredVehicles.map((vehicle) => (
                       <TableRow key={vehicle.id}>
                         <TableCell className="font-medium">{vehicle.name}</TableCell>
                         <TableCell>{vehicle.type}</TableCell>
@@ -269,26 +308,140 @@ const VehicleManagement: React.FC = () => {
             </TabsContent>
             
             <TabsContent value="active" className="m-0">
-              <div className="text-center p-6">
-                <Truck className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Véhicules en service</h3>
-                <p className="text-muted-foreground">Liste filtrée des véhicules actuellement en service.</p>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Immatriculation</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Carburant</TableHead>
+                      <TableHead>Dernier entretien</TableHead>
+                      <TableHead>Prochain entretien</TableHead>
+                      <TableHead>Chauffeur assigné</TableHead>
+                      <TableHead>Position</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredVehicles.map((vehicle) => (
+                      <TableRow key={vehicle.id}>
+                        <TableCell className="font-medium">{vehicle.name}</TableCell>
+                        <TableCell>{vehicle.type}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className={`h-2 w-2 rounded-full ${statusColors[vehicle.status]}`}></div>
+                            <span>{statusLabels[vehicle.status]}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Progress 
+                              value={vehicle.fuelLevel} 
+                              className="h-2 w-16" 
+                            />
+                            <span className="text-sm">{vehicle.fuelLevel}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{vehicle.lastMaintenance}</TableCell>
+                        <TableCell>{vehicle.nextService}</TableCell>
+                        <TableCell>{vehicle.driver || "—"}</TableCell>
+                        <TableCell>{vehicle.location || "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </TabsContent>
             
             <TabsContent value="maintenance" className="m-0">
-              <div className="text-center p-6">
-                <Wrench className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Véhicules en maintenance</h3>
-                <p className="text-muted-foreground">Liste filtrée des véhicules actuellement en maintenance.</p>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Immatriculation</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Carburant</TableHead>
+                      <TableHead>Dernier entretien</TableHead>
+                      <TableHead>Prochain entretien</TableHead>
+                      <TableHead>Chauffeur assigné</TableHead>
+                      <TableHead>Position</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredVehicles.map((vehicle) => (
+                      <TableRow key={vehicle.id}>
+                        <TableCell className="font-medium">{vehicle.name}</TableCell>
+                        <TableCell>{vehicle.type}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className={`h-2 w-2 rounded-full ${statusColors[vehicle.status]}`}></div>
+                            <span>{statusLabels[vehicle.status]}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Progress 
+                              value={vehicle.fuelLevel} 
+                              className="h-2 w-16" 
+                            />
+                            <span className="text-sm">{vehicle.fuelLevel}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{vehicle.lastMaintenance}</TableCell>
+                        <TableCell>{vehicle.nextService}</TableCell>
+                        <TableCell>{vehicle.driver || "—"}</TableCell>
+                        <TableCell>{vehicle.location || "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </TabsContent>
             
             <TabsContent value="inactive" className="m-0">
-              <div className="text-center p-6">
-                <Clock className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Véhicules hors service</h3>
-                <p className="text-muted-foreground">Liste filtrée des véhicules actuellement hors service.</p>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Immatriculation</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Carburant</TableHead>
+                      <TableHead>Dernier entretien</TableHead>
+                      <TableHead>Prochain entretien</TableHead>
+                      <TableHead>Chauffeur assigné</TableHead>
+                      <TableHead>Position</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredVehicles.map((vehicle) => (
+                      <TableRow key={vehicle.id}>
+                        <TableCell className="font-medium">{vehicle.name}</TableCell>
+                        <TableCell>{vehicle.type}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className={`h-2 w-2 rounded-full ${statusColors[vehicle.status]}`}></div>
+                            <span>{statusLabels[vehicle.status]}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Progress 
+                              value={vehicle.fuelLevel} 
+                              className="h-2 w-16" 
+                            />
+                            <span className="text-sm">{vehicle.fuelLevel}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{vehicle.lastMaintenance}</TableCell>
+                        <TableCell>{vehicle.nextService}</TableCell>
+                        <TableCell>{vehicle.driver || "—"}</TableCell>
+                        <TableCell>{vehicle.location || "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </TabsContent>
           </Tabs>
@@ -307,7 +460,7 @@ const VehicleManagement: React.FC = () => {
               <p className="text-muted-foreground max-w-md mx-auto mb-6">
                 Planifiez les entretiens réguliers et les réparations pour maintenir votre flotte en parfait état.
               </p>
-              <Button>Voir le calendrier</Button>
+              <Button onClick={handleViewCalendar}>Voir le calendrier</Button>
             </div>
           </CardContent>
         </Card>
@@ -323,7 +476,7 @@ const VehicleManagement: React.FC = () => {
               <p className="text-muted-foreground max-w-md mx-auto mb-6">
                 Accédez aux certificats d'immatriculation, assurances et autres documents administratifs de vos véhicules.
               </p>
-              <Button>Consulter les documents</Button>
+              <Button onClick={handleViewDocuments}>Consulter les documents</Button>
             </div>
           </CardContent>
         </Card>

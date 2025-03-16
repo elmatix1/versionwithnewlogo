@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -39,6 +39,7 @@ import {
   XCircle,
   ArrowUpRight
 } from 'lucide-react';
+import AddOrderForm from '@/components/orders/AddOrderForm';
 
 interface Order {
   id: string;
@@ -51,64 +52,6 @@ interface Order {
   priority: 'normal' | 'urgent' | 'basse';
   amount: string;
 }
-
-const orders: Order[] = [
-  {
-    id: "CMD-1038",
-    customer: "Société Dupont",
-    origin: "Lyon, Dépôt Central",
-    destination: "Paris, 15ème",
-    status: "en-cours",
-    date: "Aujourd'hui, 14:30",
-    createdAt: "Hier, 10:15",
-    priority: "urgent",
-    amount: "1 250,00 €"
-  },
-  {
-    id: "CMD-1037",
-    customer: "Entreprise Martin",
-    origin: "Marseille, Port",
-    destination: "Lyon, Centre",
-    status: "en-attente",
-    date: "Aujourd'hui, 16:45",
-    createdAt: "Hier, 09:30",
-    priority: "normal",
-    amount: "980,00 €"
-  },
-  {
-    id: "CMD-1036",
-    customer: "Distribution Rapide",
-    origin: "Lille, Entrepôt Nord",
-    destination: "Marseille, Port",
-    status: "livree",
-    date: "Hier, 15:30",
-    createdAt: "22/07/2023",
-    priority: "normal",
-    amount: "2 340,00 €"
-  },
-  {
-    id: "CMD-1035",
-    customer: "Transports Bernard",
-    origin: "Paris, Entrepôt Sud",
-    destination: "Bordeaux, Zone Industrielle",
-    status: "annulee",
-    date: "Annulée",
-    createdAt: "22/07/2023",
-    priority: "basse",
-    amount: "1 780,00 €"
-  },
-  {
-    id: "CMD-1034",
-    customer: "Logistique Express",
-    origin: "Nantes, Dépôt Central",
-    destination: "Strasbourg, Zone Est",
-    status: "livree",
-    date: "21/07/2023",
-    createdAt: "20/07/2023",
-    priority: "urgent",
-    amount: "1 560,00 €"
-  }
-];
 
 const statusConfig = {
   'en-attente': { 
@@ -130,7 +73,7 @@ const statusConfig = {
 };
 
 const priorityConfig = {
-  'normale': { 
+  'normal': { 
     label: 'Normale', 
     className: 'border-blue-500 text-blue-600' 
   },
@@ -145,6 +88,104 @@ const priorityConfig = {
 };
 
 const OrderManagement: React.FC = () => {
+  const [orders, setOrders] = useState<Order[]>([
+    {
+      id: "CMD-1038",
+      customer: "Société Dupont",
+      origin: "Lyon, Dépôt Central",
+      destination: "Paris, 15ème",
+      status: "en-cours",
+      date: "Aujourd'hui, 14:30",
+      createdAt: "Hier, 10:15",
+      priority: "urgent",
+      amount: "1 250,00 €"
+    },
+    {
+      id: "CMD-1037",
+      customer: "Entreprise Martin",
+      origin: "Marseille, Port",
+      destination: "Lyon, Centre",
+      status: "en-attente",
+      date: "Aujourd'hui, 16:45",
+      createdAt: "Hier, 09:30",
+      priority: "normal",
+      amount: "980,00 €"
+    },
+    {
+      id: "CMD-1036",
+      customer: "Distribution Rapide",
+      origin: "Lille, Entrepôt Nord",
+      destination: "Marseille, Port",
+      status: "livree",
+      date: "Hier, 15:30",
+      createdAt: "22/07/2023",
+      priority: "normal",
+      amount: "2 340,00 €"
+    },
+    {
+      id: "CMD-1035",
+      customer: "Transports Bernard",
+      origin: "Paris, Entrepôt Sud",
+      destination: "Bordeaux, Zone Industrielle",
+      status: "annulee",
+      date: "Annulée",
+      createdAt: "22/07/2023",
+      priority: "basse",
+      amount: "1 780,00 €"
+    },
+    {
+      id: "CMD-1034",
+      customer: "Logistique Express",
+      origin: "Nantes, Dépôt Central",
+      destination: "Strasbourg, Zone Est",
+      status: "livree",
+      date: "21/07/2023",
+      createdAt: "20/07/2023",
+      priority: "urgent",
+      amount: "1 560,00 €"
+    }
+  ]);
+  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTab, setSelectedTab] = useState("all");
+  const [isAddOrderOpen, setIsAddOrderOpen] = useState(false);
+  
+  // Filtrer les commandes en fonction de l'onglet et de la recherche
+  const filteredOrders = orders.filter(order => {
+    // Filtrer par statut si un onglet spécifique est sélectionné
+    if (selectedTab !== "all" && order.status !== selectedTab) {
+      return false;
+    }
+    
+    // Filtrer par recherche si une requête est entrée
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      return (
+        order.id.toLowerCase().includes(query) ||
+        order.customer.toLowerCase().includes(query) ||
+        order.destination.toLowerCase().includes(query)
+      );
+    }
+    
+    return true;
+  });
+  
+  const handleAddOrder = (orderData: any) => {
+    const newOrder: Order = {
+      id: `CMD-${1039 + orders.length}`,
+      customer: orderData.customer,
+      origin: orderData.origin,
+      destination: orderData.destination,
+      status: orderData.status,
+      date: orderData.deliveryDate.toLocaleDateString('fr-FR'),
+      createdAt: new Date().toLocaleDateString('fr-FR'),
+      priority: orderData.priority,
+      amount: `${orderData.amount} €`
+    };
+    
+    setOrders(prev => [newOrder, ...prev]);
+  };
+
   return (
     <div>
       <div className="mb-8">
@@ -214,7 +255,7 @@ const OrderManagement: React.FC = () => {
               <CardTitle>Commandes</CardTitle>
               <CardDescription>Gérez toutes les commandes de transport</CardDescription>
             </div>
-            <Button className="flex items-center gap-2">
+            <Button className="flex items-center gap-2" onClick={() => setIsAddOrderOpen(true)}>
               <Plus size={16} />
               <span>Nouvelle commande</span>
             </Button>
@@ -227,6 +268,8 @@ const OrderManagement: React.FC = () => {
               <Input 
                 placeholder="Rechercher par ID, client ou destination..." 
                 className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <Button variant="outline" className="flex items-center gap-2">
@@ -235,13 +278,13 @@ const OrderManagement: React.FC = () => {
             </Button>
           </div>
 
-          <Tabs defaultValue="all">
+          <Tabs defaultValue="all" value={selectedTab} onValueChange={setSelectedTab}>
             <TabsList className="mb-4">
               <TabsTrigger value="all">Toutes</TabsTrigger>
-              <TabsTrigger value="pending">En attente</TabsTrigger>
-              <TabsTrigger value="in-progress">En cours</TabsTrigger>
-              <TabsTrigger value="delivered">Livrées</TabsTrigger>
-              <TabsTrigger value="canceled">Annulées</TabsTrigger>
+              <TabsTrigger value="en-attente">En attente</TabsTrigger>
+              <TabsTrigger value="en-cours">En cours</TabsTrigger>
+              <TabsTrigger value="livree">Livrées</TabsTrigger>
+              <TabsTrigger value="annulee">Annulées</TabsTrigger>
             </TabsList>
             
             <TabsContent value="all" className="m-0">
@@ -261,7 +304,7 @@ const OrderManagement: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {orders.map((order) => (
+                    {filteredOrders.map((order) => (
                       <TableRow key={order.id}>
                         <TableCell className="font-medium">{order.id}</TableCell>
                         <TableCell>{order.customer}</TableCell>
@@ -310,40 +353,278 @@ const OrderManagement: React.FC = () => {
               </div>
             </TabsContent>
             
-            <TabsContent value="pending" className="m-0">
-              <div className="text-center p-6">
-                <Clock className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Commandes en attente</h3>
-                <p className="text-muted-foreground">Liste filtrée des commandes en attente de traitement.</p>
+            <TabsContent value="en-attente" className="m-0">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID Commande</TableHead>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Origine</TableHead>
+                      <TableHead>Destination</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Date de livraison</TableHead>
+                      <TableHead>Priorité</TableHead>
+                      <TableHead>Montant</TableHead>
+                      <TableHead className="w-[80px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredOrders.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-medium">{order.id}</TableCell>
+                        <TableCell>{order.customer}</TableCell>
+                        <TableCell className="max-w-[150px] truncate">{order.origin}</TableCell>
+                        <TableCell className="max-w-[150px] truncate">{order.destination}</TableCell>
+                        <TableCell>
+                          <Badge className={statusConfig[order.status].className}>
+                            {statusConfig[order.status].label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{order.date}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={priorityConfig[order.priority]?.className || ''}>
+                            {priorityConfig[order.priority]?.label || order.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{order.amount}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <ArrowUpRight className="h-4 w-4" />
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem>Voir les détails</DropdownMenuItem>
+                                <DropdownMenuItem>Modifier</DropdownMenuItem>
+                                <DropdownMenuItem>Suivi en temps réel</DropdownMenuItem>
+                                <DropdownMenuItem>Documents</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-destructive">Annuler</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </TabsContent>
             
-            <TabsContent value="in-progress" className="m-0">
-              <div className="text-center p-6">
-                <Truck className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Commandes en cours</h3>
-                <p className="text-muted-foreground">Liste filtrée des commandes en cours de livraison.</p>
+            <TabsContent value="en-cours" className="m-0">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID Commande</TableHead>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Origine</TableHead>
+                      <TableHead>Destination</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Date de livraison</TableHead>
+                      <TableHead>Priorité</TableHead>
+                      <TableHead>Montant</TableHead>
+                      <TableHead className="w-[80px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredOrders.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-medium">{order.id}</TableCell>
+                        <TableCell>{order.customer}</TableCell>
+                        <TableCell className="max-w-[150px] truncate">{order.origin}</TableCell>
+                        <TableCell className="max-w-[150px] truncate">{order.destination}</TableCell>
+                        <TableCell>
+                          <Badge className={statusConfig[order.status].className}>
+                            {statusConfig[order.status].label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{order.date}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={priorityConfig[order.priority]?.className || ''}>
+                            {priorityConfig[order.priority]?.label || order.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{order.amount}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <ArrowUpRight className="h-4 w-4" />
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem>Voir les détails</DropdownMenuItem>
+                                <DropdownMenuItem>Modifier</DropdownMenuItem>
+                                <DropdownMenuItem>Suivi en temps réel</DropdownMenuItem>
+                                <DropdownMenuItem>Documents</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-destructive">Annuler</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </TabsContent>
             
-            <TabsContent value="delivered" className="m-0">
-              <div className="text-center p-6">
-                <CheckCircle className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Commandes livrées</h3>
-                <p className="text-muted-foreground">Liste filtrée des commandes livrées avec succès.</p>
+            <TabsContent value="livree" className="m-0">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID Commande</TableHead>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Origine</TableHead>
+                      <TableHead>Destination</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Date de livraison</TableHead>
+                      <TableHead>Priorité</TableHead>
+                      <TableHead>Montant</TableHead>
+                      <TableHead className="w-[80px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredOrders.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-medium">{order.id}</TableCell>
+                        <TableCell>{order.customer}</TableCell>
+                        <TableCell className="max-w-[150px] truncate">{order.origin}</TableCell>
+                        <TableCell className="max-w-[150px] truncate">{order.destination}</TableCell>
+                        <TableCell>
+                          <Badge className={statusConfig[order.status].className}>
+                            {statusConfig[order.status].label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{order.date}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={priorityConfig[order.priority]?.className || ''}>
+                            {priorityConfig[order.priority]?.label || order.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{order.amount}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <ArrowUpRight className="h-4 w-4" />
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem>Voir les détails</DropdownMenuItem>
+                                <DropdownMenuItem>Modifier</DropdownMenuItem>
+                                <DropdownMenuItem>Suivi en temps réel</DropdownMenuItem>
+                                <DropdownMenuItem>Documents</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-destructive">Annuler</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </TabsContent>
             
-            <TabsContent value="canceled" className="m-0">
-              <div className="text-center p-6">
-                <XCircle className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Commandes annulées</h3>
-                <p className="text-muted-foreground">Liste filtrée des commandes qui ont été annulées.</p>
+            <TabsContent value="annulee" className="m-0">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID Commande</TableHead>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Origine</TableHead>
+                      <TableHead>Destination</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Date de livraison</TableHead>
+                      <TableHead>Priorité</TableHead>
+                      <TableHead>Montant</TableHead>
+                      <TableHead className="w-[80px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredOrders.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-medium">{order.id}</TableCell>
+                        <TableCell>{order.customer}</TableCell>
+                        <TableCell className="max-w-[150px] truncate">{order.origin}</TableCell>
+                        <TableCell className="max-w-[150px] truncate">{order.destination}</TableCell>
+                        <TableCell>
+                          <Badge className={statusConfig[order.status].className}>
+                            {statusConfig[order.status].label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{order.date}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={priorityConfig[order.priority]?.className || ''}>
+                            {priorityConfig[order.priority]?.label || order.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{order.amount}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <ArrowUpRight className="h-4 w-4" />
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem>Voir les détails</DropdownMenuItem>
+                                <DropdownMenuItem>Modifier</DropdownMenuItem>
+                                <DropdownMenuItem>Suivi en temps réel</DropdownMenuItem>
+                                <DropdownMenuItem>Documents</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-destructive">Annuler</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
+      
+      <AddOrderForm 
+        open={isAddOrderOpen} 
+        onOpenChange={setIsAddOrderOpen} 
+        onAddOrder={handleAddOrder}
+      />
     </div>
   );
 };
