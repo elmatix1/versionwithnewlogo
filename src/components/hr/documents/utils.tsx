@@ -13,7 +13,7 @@ export const getDocumentTypeName = (type: string): string => {
   }
 };
 
-export const getStatusBadge = (status: string) => {
+export const getStatusBadge = (status: string): React.ReactNode => {
   switch (status) {
     case 'valid':
       return <Badge className="bg-green-500">Valide</Badge>;
