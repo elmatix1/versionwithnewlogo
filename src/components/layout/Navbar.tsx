@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Menu, BellIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import UserMenu from './UserMenu';
@@ -15,7 +15,7 @@ interface NavbarProps {
 
 const Navbar = ({ setSidebarOpen }: NavbarProps) => {
   const location = useLocation();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const [pageTitle, setPageTitle] = useState("");
 

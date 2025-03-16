@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Table,
@@ -136,6 +135,14 @@ const UserManagement: React.FC = () => {
       deleteUser(selectedUser.id);
       setDeleteUserDialogOpen(false);
     }
+  };
+
+  const handleAddUser = (userData: any) => {
+    // Here you would typically call an API to add the user
+    // For now, just show a success message
+    toast.success(`Utilisateur ${userData.name} ajouté`, {
+      description: `Rôle: ${roleLabels[userData.role]}`
+    });
   };
 
   return (
@@ -334,7 +341,11 @@ const UserManagement: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      <AddUserForm open={addUserDialogOpen} onOpenChange={setAddUserDialogOpen} />
+      <AddUserForm 
+        open={addUserDialogOpen} 
+        onOpenChange={setAddUserDialogOpen} 
+        onAddUser={handleAddUser}
+      />
     </div>
   );
 };

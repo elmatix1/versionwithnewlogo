@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -101,7 +100,7 @@ const HRManagement: React.FC = () => {
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [editName, setEditName] = useState("");
   const [editExperience, setEditExperience] = useState("");
-  const [editStatus, setEditStatus] = useState<"active" | "off-duty">("active");
+  const [editStatus, setEditStatus] = useState<Driver['status']>("active");
 
   const handleAddDriver = (driverData: any) => {
     const newDriver: Driver = {
@@ -368,7 +367,6 @@ const HRManagement: React.FC = () => {
         onAddDriver={handleAddDriver}
       />
 
-      {/* Edit Driver Dialog */}
       <Dialog open={isEditDriverOpen} onOpenChange={setIsEditDriverOpen}>
         <DialogContent>
           <DialogHeader>
@@ -407,7 +405,6 @@ const HRManagement: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Change Status Dialog */}
       <Dialog open={isStatusChangeOpen} onOpenChange={setIsStatusChangeOpen}>
         <DialogContent>
           <DialogHeader>
@@ -423,7 +420,7 @@ const HRManagement: React.FC = () => {
               </Label>
               <Select
                 value={editStatus}
-                onValueChange={(value: "active" | "off-duty") => setEditStatus(value)}
+                onValueChange={(value: Driver['status']) => setEditStatus(value)}
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Sélectionner un statut" />
@@ -431,6 +428,8 @@ const HRManagement: React.FC = () => {
                 <SelectContent>
                   <SelectItem value="active">Actif</SelectItem>
                   <SelectItem value="off-duty">Hors service</SelectItem>
+                  <SelectItem value="sick-leave">Arrêt maladie</SelectItem>
+                  <SelectItem value="vacation">Congés</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -441,7 +440,6 @@ const HRManagement: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Driver Dialog */}
       <Dialog open={isDeleteDriverOpen} onOpenChange={setIsDeleteDriverOpen}>
         <DialogContent>
           <DialogHeader>
