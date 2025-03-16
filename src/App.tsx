@@ -14,6 +14,11 @@ import HRManagement from "./pages/HRManagement";
 import VehicleManagement from "./pages/VehicleManagement";
 import OrderManagement from "./pages/OrderManagement";
 import NotFound from "./pages/NotFound";
+import Inventory from "./pages/Inventory";
+import Planning from "./pages/Planning";
+import Maintenance from "./pages/Maintenance";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -36,7 +41,7 @@ const App = () => (
                 {/* Routes protégées par rôle */}
                 <Route element={<ProtectedRoute requiredRoles={['admin']} />}>
                   <Route path="/users" element={<UserManagement />} />
-                  <Route path="/settings" element={<NotFound />} />
+                  <Route path="/settings" element={<Settings />} />
                 </Route>
                 
                 <Route element={<ProtectedRoute requiredRoles={['admin', 'rh']} />}>
@@ -52,19 +57,19 @@ const App = () => (
                 </Route>
                 
                 <Route element={<ProtectedRoute requiredRoles={['admin', 'planificateur', 'exploitation']} />}>
-                  <Route path="/planning" element={<NotFound />} />
+                  <Route path="/planning" element={<Planning />} />
                 </Route>
                 
                 <Route element={<ProtectedRoute requiredRoles={['admin', 'approvisionneur']} />}>
-                  <Route path="/inventory" element={<NotFound />} />
+                  <Route path="/inventory" element={<Inventory />} />
                 </Route>
                 
                 <Route element={<ProtectedRoute requiredRoles={['admin', 'maintenance']} />}>
-                  <Route path="/maintenance" element={<NotFound />} />
+                  <Route path="/maintenance" element={<Maintenance />} />
                 </Route>
                 
                 <Route element={<ProtectedRoute requiredRoles={['admin', 'commercial']} />}>
-                  <Route path="/reports" element={<NotFound />} />
+                  <Route path="/reports" element={<Reports />} />
                 </Route>
               </Route>
             </Route>

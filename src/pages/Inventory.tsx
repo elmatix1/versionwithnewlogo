@@ -21,16 +21,15 @@ import {
   TableRow
 } from '@/components/ui/table';
 import {
-  Package,
   Search,
+  Package,
+  AlertTriangle,
   Plus,
   Filter,
-  AlertTriangle,
-  ShoppingCart,
-  Truck,
-  ArrowUpDown,
+  TrendingUp,
   BarChart,
-  Package2
+  FileText,
+  ShoppingBag
 } from 'lucide-react';
 
 interface InventoryItem {
@@ -38,98 +37,104 @@ interface InventoryItem {
   name: string;
   category: string;
   quantity: number;
-  threshold: number;
-  location: string;
-  lastUpdate: string;
   status: 'in-stock' | 'low-stock' | 'out-of-stock';
+  lastRestock: string;
+  location: string;
 }
 
 const inventoryItems: InventoryItem[] = [
   {
-    id: "INV-5012",
-    name: "Carton standard 40x30x20",
-    category: "Emballage",
-    quantity: 1250,
-    threshold: 500,
-    location: "Entrepôt A - Zone 3",
-    lastUpdate: "12/08/2023",
-    status: "in-stock"
+    id: "INV-1001",
+    name: "Huile moteur 5W30",
+    category: "Lubrifiant",
+    quantity: 45,
+    status: "in-stock",
+    lastRestock: "12/07/2023",
+    location: "Étagère A3"
   },
   {
-    id: "INV-4872",
-    name: "Carton renforcé 60x40x30",
-    category: "Emballage",
-    quantity: 480,
-    threshold: 400,
-    location: "Entrepôt A - Zone 3",
-    lastUpdate: "10/08/2023",
-    status: "low-stock"
+    id: "INV-1002",
+    name: "Filtre à air",
+    category: "Filtres",
+    quantity: 22,
+    status: "in-stock",
+    lastRestock: "05/08/2023",
+    location: "Étagère B2"
   },
   {
-    id: "INV-4210",
-    name: "Scotch d'emballage transparent",
-    category: "Fourniture",
-    quantity: 320,
-    threshold: 150,
-    location: "Entrepôt B - Zone 1",
-    lastUpdate: "08/08/2023",
-    status: "in-stock"
+    id: "INV-1003",
+    name: "Plaquettes de frein",
+    category: "Freinage",
+    quantity: 8,
+    status: "low-stock",
+    lastRestock: "01/09/2023",
+    location: "Étagère C1"
   },
   {
-    id: "INV-3982",
-    name: "Palette Europe",
-    category: "Logistique",
-    quantity: 85,
-    threshold: 50,
-    location: "Entrepôt C - Zone 2",
-    lastUpdate: "07/08/2023",
-    status: "low-stock"
-  },
-  {
-    id: "INV-3675",
-    name: "Film étirable",
-    category: "Emballage",
+    id: "INV-1004",
+    name: "Liquide de refroidissement",
+    category: "Liquides",
     quantity: 0,
-    threshold: 100,
-    location: "Entrepôt B - Zone 1",
-    lastUpdate: "05/08/2023",
-    status: "out-of-stock"
+    status: "out-of-stock",
+    lastRestock: "22/06/2023",
+    location: "Étagère A4"
+  },
+  {
+    id: "INV-1005",
+    name: "Balais d'essuie-glace",
+    category: "Accessoires",
+    quantity: 15,
+    status: "in-stock",
+    lastRestock: "17/08/2023",
+    location: "Étagère D2"
   }
 ];
 
 const statusConfig = {
-  'in-stock': {
-    label: 'En stock',
+  'in-stock': { 
+    label: 'En stock', 
     className: 'bg-green-500'
   },
-  'low-stock': {
-    label: 'Stock bas',
+  'low-stock': { 
+    label: 'Stock bas', 
     className: 'bg-amber-500'
   },
-  'out-of-stock': {
-    label: 'Rupture',
+  'out-of-stock': { 
+    label: 'Rupture', 
     className: 'bg-red-500'
   }
 };
 
 const Inventory: React.FC = () => {
+  const [searchTerm, setSearchTerm] = React.useState("");
+  
+  // Filtrer les articles en fonction du terme de recherche
+  const filteredItems = inventoryItems.filter(item => 
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-1">Gestion des stocks</h1>
-        <p className="text-muted-foreground">Suivez et gérez votre inventaire</p>
+        <h1 className="text-2xl font-bold mb-1">Gestion de l'inventaire</h1>
+        <p className="text-muted-foreground">Suivi et gestion des stocks de pièces et consommables</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card>
           <CardContent className="pt-6">
             <div className="flex justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total produits</p>
-                <p className="text-2xl font-bold">1,853</p>
+                <p className="text-sm text-muted-foreground">Articles en stock</p>
+                <p className="text-2xl font-bold">356</p>
+                <p className="text-xs text-green-500 flex items-center">
+                  <TrendingUp className="h-3 w-3 mr-1" /> +15 cette semaine
+                </p>
               </div>
-              <div className="rounded-full bg-primary/10 p-3 text-primary">
-                <Package2 className="h-5 w-5" />
+              <div className="rounded-full bg-green-100 p-3 text-green-600">
+                <Package className="h-5 w-5" />
               </div>
             </div>
           </CardContent>
@@ -139,7 +144,10 @@ const Inventory: React.FC = () => {
             <div className="flex justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Stock bas</p>
-                <p className="text-2xl font-bold">28</p>
+                <p className="text-2xl font-bold">24</p>
+                <p className="text-xs text-amber-500 flex items-center">
+                  <AlertTriangle className="h-3 w-3 mr-1" /> Nécessite attention
+                </p>
               </div>
               <div className="rounded-full bg-amber-100 p-3 text-amber-600">
                 <AlertTriangle className="h-5 w-5" />
@@ -151,40 +159,30 @@ const Inventory: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Commandes en attente</p>
-                <p className="text-2xl font-bold">12</p>
+                <p className="text-sm text-muted-foreground">Rupture de stock</p>
+                <p className="text-2xl font-bold">8</p>
+                <p className="text-xs text-red-500 flex items-center">
+                  <AlertTriangle className="h-3 w-3 mr-1" /> Commander rapidement
+                </p>
               </div>
-              <div className="rounded-full bg-blue-100 p-3 text-blue-600">
-                <ShoppingCart className="h-5 w-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Livraisons attendues</p>
-                <p className="text-2xl font-bold">7</p>
-              </div>
-              <div className="rounded-full bg-green-100 p-3 text-green-600">
-                <Truck className="h-5 w-5" />
+              <div className="rounded-full bg-red-100 p-3 text-red-600">
+                <AlertTriangle className="h-5 w-5" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
+      <Card className="mb-8">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Inventaire</CardTitle>
-              <CardDescription>Gestion complète de votre stock</CardDescription>
+              <CardTitle>Inventaire des pièces</CardTitle>
+              <CardDescription>Gestion des stocks et approvisionnement</CardDescription>
             </div>
             <Button className="flex items-center gap-2">
               <Plus size={16} />
-              <span>Ajouter un produit</span>
+              <span>Nouvel article</span>
             </Button>
           </div>
         </CardHeader>
@@ -192,9 +190,11 @@ const Inventory: React.FC = () => {
           <div className="flex flex-col md:flex-row gap-3 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Rechercher par ID, nom ou catégorie..."
+              <Input 
+                placeholder="Rechercher..." 
                 className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <Button variant="outline" className="flex items-center gap-2">
@@ -210,107 +210,105 @@ const Inventory: React.FC = () => {
               <TabsTrigger value="low-stock">Stock bas</TabsTrigger>
               <TabsTrigger value="out-of-stock">Rupture</TabsTrigger>
             </TabsList>
-
+            
             <TabsContent value="all" className="m-0">
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Produit</TableHead>
+                      <TableHead>Référence</TableHead>
+                      <TableHead>Article</TableHead>
                       <TableHead>Catégorie</TableHead>
                       <TableHead>Quantité</TableHead>
-                      <TableHead>Emplacement</TableHead>
-                      <TableHead>Dernière mise à jour</TableHead>
                       <TableHead>Statut</TableHead>
+                      <TableHead>Dernier réappro</TableHead>
+                      <TableHead>Emplacement</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {inventoryItems.map((item) => (
+                    {filteredItems.map((item) => (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.id}</TableCell>
                         <TableCell>{item.name}</TableCell>
                         <TableCell>{item.category}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Progress
-                              value={(item.quantity / item.threshold) * 100}
-                              max={200}
-                              className="h-2 w-16"
-                            />
-                            <span>{item.quantity}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{item.location}</TableCell>
-                        <TableCell>{item.lastUpdate}</TableCell>
+                        <TableCell>{item.quantity}</TableCell>
                         <TableCell>
                           <Badge className={statusConfig[item.status].className}>
                             {statusConfig[item.status].label}
                           </Badge>
                         </TableCell>
+                        <TableCell>{item.lastRestock}</TableCell>
+                        <TableCell>{item.location}</TableCell>
                       </TableRow>
                     ))}
+                    {filteredItems.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          Aucun article trouvé
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </div>
             </TabsContent>
-
+            
             <TabsContent value="in-stock" className="m-0">
               <div className="text-center p-6">
                 <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Produits en stock</h3>
-                <p className="text-muted-foreground">Liste des produits ayant un niveau de stock satisfaisant.</p>
+                <h3 className="text-lg font-medium mb-2">Articles en stock</h3>
+                <p className="text-muted-foreground">Liste des articles disponibles en quantité suffisante.</p>
               </div>
             </TabsContent>
-
+            
             <TabsContent value="low-stock" className="m-0">
               <div className="text-center p-6">
                 <AlertTriangle className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Produits en stock bas</h3>
-                <p className="text-muted-foreground">Liste des produits dont le stock est proche du seuil critique.</p>
+                <h3 className="text-lg font-medium mb-2">Stock bas</h3>
+                <p className="text-muted-foreground">Articles nécessitant un réapprovisionnement rapidement.</p>
               </div>
             </TabsContent>
-
+            
             <TabsContent value="out-of-stock" className="m-0">
               <div className="text-center p-6">
-                <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Produits en rupture</h3>
-                <p className="text-muted-foreground">Liste des produits en rupture de stock à commander rapidement.</p>
+                <AlertTriangle className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">Rupture de stock</h3>
+                <p className="text-muted-foreground">Articles épuisés nécessitant une commande immédiate.</p>
               </div>
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Commandes fournisseurs</CardTitle>
+            <CardTitle>Tendances de consommation</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-center p-6">
-              <ShoppingCart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Gérer les commandes</h3>
+              <BarChart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">Analyse des consommations</h3>
               <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                Créez et suivez vos commandes auprès des fournisseurs pour réapprovisionner votre stock.
+                Analysez les tendances de consommation pour anticiper vos besoins en approvisionnement.
               </p>
-              <Button>Passer une commande</Button>
+              <Button>Voir les statistiques</Button>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Analyse des stocks</CardTitle>
+            <CardTitle>Commandes d'approvisionnement</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-center p-6">
-              <BarChart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Statistiques et prévisions</h3>
+              <ShoppingBag className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">Gérer les commandes</h3>
               <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                Analysez la rotation des stocks et prévoyez les besoins futurs grâce à nos outils d'analyse.
+                Créez et suivez vos commandes d'approvisionnement auprès des fournisseurs.
               </p>
-              <Button>Voir les statistiques</Button>
+              <Button>Nouvelle commande</Button>
             </div>
           </CardContent>
         </Card>
