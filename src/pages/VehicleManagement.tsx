@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -128,6 +127,7 @@ const VehicleManagement: React.FC = () => {
   const [showMaintenanceCalendar, setShowMaintenanceCalendar] = useState(false);
   const [showDocuments, setShowDocuments] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [addVehicleDialogOpen, setAddVehicleDialogOpen] = useState(false);
   
   const filteredVehicles = selectedTab === "all" 
     ? vehicles 
@@ -268,7 +268,7 @@ const VehicleManagement: React.FC = () => {
               <CardTitle>Flotte de véhicules</CardTitle>
               <CardDescription>Vue d'ensemble de tous les véhicules</CardDescription>
             </div>
-            <Dialog>
+            <Dialog open={addVehicleDialogOpen} onOpenChange={setAddVehicleDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="flex items-center gap-1">
                   <Plus size={16} />
@@ -282,7 +282,11 @@ const VehicleManagement: React.FC = () => {
                     Complétez le formulaire pour ajouter un nouveau véhicule à votre flotte.
                   </DialogDescription>
                 </DialogHeader>
-                <AddVehicleForm onSubmit={handleAddVehicle} />
+                <AddVehicleForm 
+                  open={addVehicleDialogOpen} 
+                  onOpenChange={setAddVehicleDialogOpen} 
+                  onAddVehicle={handleAddVehicle} 
+                />
               </DialogContent>
             </Dialog>
           </div>
