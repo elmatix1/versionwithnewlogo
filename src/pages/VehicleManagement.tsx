@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -19,6 +18,15 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { 
   Truck, 
   AlertTriangle,
@@ -30,6 +38,10 @@ import {
   Plus
 } from 'lucide-react';
 import { toast } from "sonner";
+import { AddVehicleForm } from '@/components/vehicles/AddVehicleForm';
+import VehicleMaintenanceCalendar from '@/components/vehicles/VehicleMaintenanceCalendar';
+import VehicleDocuments from '@/components/vehicles/VehicleDocuments';
+import VehicleStatusChangeDialog from '@/components/vehicles/VehicleStatusChangeDialog';
 
 interface Vehicle {
   id: string;
@@ -112,40 +124,49 @@ const VehicleManagement: React.FC = () => {
   ]);
   
   const [selectedTab, setSelectedTab] = useState("all");
+  const [showMaintenanceCalendar, setShowMaintenanceCalendar] = useState(false);
+  const [showDocuments, setShowDocuments] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   
-  // Filtrer les véhicules en fonction de l'onglet sélectionné
   const filteredVehicles = selectedTab === "all" 
     ? vehicles 
     : vehicles.filter(vehicle => vehicle.status === selectedTab);
   
-  const handleAddVehicle = () => {
-    // Nous simulons juste l'ajout d'un véhicule pour l'instant
-    const newVehicle: Vehicle = {
-      id: `v${vehicles.length + 1}`,
-      name: `TL-${Math.floor(1000 + Math.random() * 9000)}`,
-      type: "Camion 19T",
-      status: "active",
-      lastMaintenance: new Date().toLocaleDateString(),
-      fuelLevel: 100,
-      nextService: "Dans 3 mois",
-    };
-    
+  const handleAddVehicle = (newVehicle: Vehicle) => {
     setVehicles(prev => [...prev, newVehicle]);
     toast.success("Véhicule ajouté avec succès", {
       description: `Le véhicule ${newVehicle.name} a été ajouté à la flotte.`
     });
   };
   
-  const handleViewCalendar = () => {
-    toast.info("Calendrier d'entretien", {
-      description: "Affichage du calendrier d'entretien des véhicules"
+  const handleStatusChange = (vehicleId: string, newStatus: 'active' | 'maintenance' | 'inactive') => {
+    setVehicles(prev => 
+      prev.map(vehicle => 
+        vehicle.id === vehicleId 
+          ? { ...vehicle, status: newStatus } 
+          : vehicle
+      )
+    );
+    
+    const statusMessage = {
+      active: "mis en service",
+      maintenance: "placé en maintenance",
+      inactive: "mis hors service"
+    };
+    
+    const vehicleName = vehicles.find(v => v.id === vehicleId)?.name || "";
+    
+    toast.success("Statut modifié", {
+      description: `Le véhicule ${vehicleName} a été ${statusMessage[newStatus]}.`
     });
   };
   
+  const handleViewCalendar = () => {
+    setShowMaintenanceCalendar(true);
+  };
+  
   const handleViewDocuments = () => {
-    toast.info("Documents des véhicules", {
-      description: "Accès aux documents administratifs des véhicules"
-    });
+    setShowDocuments(true);
   };
 
   return (
@@ -246,10 +267,23 @@ const VehicleManagement: React.FC = () => {
               <CardTitle>Flotte de véhicules</CardTitle>
               <CardDescription>Vue d'ensemble de tous les véhicules</CardDescription>
             </div>
-            <Button className="flex items-center gap-1" onClick={handleAddVehicle}>
-              <Plus size={16} />
-              <span>Ajouter un véhicule</span>
-            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-1">
+                  <Plus size={16} />
+                  <span>Ajouter un véhicule</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px]">
+                <DialogHeader>
+                  <DialogTitle>Ajouter un nouveau véhicule</DialogTitle>
+                  <DialogDescription>
+                    Complétez le formulaire pour ajouter un nouveau véhicule à votre flotte.
+                  </DialogDescription>
+                </DialogHeader>
+                <AddVehicleForm onSubmit={handleAddVehicle} />
+              </DialogContent>
+            </Dialog>
           </div>
         </CardHeader>
         <CardContent>
@@ -274,6 +308,7 @@ const VehicleManagement: React.FC = () => {
                       <TableHead>Prochain entretien</TableHead>
                       <TableHead>Chauffeur assigné</TableHead>
                       <TableHead>Position</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -300,6 +335,12 @@ const VehicleManagement: React.FC = () => {
                         <TableCell>{vehicle.nextService}</TableCell>
                         <TableCell>{vehicle.driver || "—"}</TableCell>
                         <TableCell>{vehicle.location || "—"}</TableCell>
+                        <TableCell>
+                          <VehicleStatusChangeDialog
+                            vehicle={vehicle}
+                            onStatusChange={handleStatusChange}
+                          />
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -320,6 +361,7 @@ const VehicleManagement: React.FC = () => {
                       <TableHead>Prochain entretien</TableHead>
                       <TableHead>Chauffeur assigné</TableHead>
                       <TableHead>Position</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -346,6 +388,12 @@ const VehicleManagement: React.FC = () => {
                         <TableCell>{vehicle.nextService}</TableCell>
                         <TableCell>{vehicle.driver || "—"}</TableCell>
                         <TableCell>{vehicle.location || "—"}</TableCell>
+                        <TableCell>
+                          <VehicleStatusChangeDialog
+                            vehicle={vehicle}
+                            onStatusChange={handleStatusChange}
+                          />
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -366,6 +414,7 @@ const VehicleManagement: React.FC = () => {
                       <TableHead>Prochain entretien</TableHead>
                       <TableHead>Chauffeur assigné</TableHead>
                       <TableHead>Position</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -392,6 +441,12 @@ const VehicleManagement: React.FC = () => {
                         <TableCell>{vehicle.nextService}</TableCell>
                         <TableCell>{vehicle.driver || "—"}</TableCell>
                         <TableCell>{vehicle.location || "—"}</TableCell>
+                        <TableCell>
+                          <VehicleStatusChangeDialog
+                            vehicle={vehicle}
+                            onStatusChange={handleStatusChange}
+                          />
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -412,6 +467,7 @@ const VehicleManagement: React.FC = () => {
                       <TableHead>Prochain entretien</TableHead>
                       <TableHead>Chauffeur assigné</TableHead>
                       <TableHead>Position</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -438,6 +494,12 @@ const VehicleManagement: React.FC = () => {
                         <TableCell>{vehicle.nextService}</TableCell>
                         <TableCell>{vehicle.driver || "—"}</TableCell>
                         <TableCell>{vehicle.location || "—"}</TableCell>
+                        <TableCell>
+                          <VehicleStatusChangeDialog
+                            vehicle={vehicle}
+                            onStatusChange={handleStatusChange}
+                          />
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -461,6 +523,18 @@ const VehicleManagement: React.FC = () => {
                 Planifiez les entretiens réguliers et les réparations pour maintenir votre flotte en parfait état.
               </p>
               <Button onClick={handleViewCalendar}>Voir le calendrier</Button>
+              
+              <Dialog open={showMaintenanceCalendar} onOpenChange={setShowMaintenanceCalendar}>
+                <DialogContent className="sm:max-w-[800px]">
+                  <DialogHeader>
+                    <DialogTitle>Calendrier d'entretien</DialogTitle>
+                    <DialogDescription>
+                      Consultez et planifiez les entretiens pour votre flotte.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <VehicleMaintenanceCalendar vehicles={vehicles} />
+                </DialogContent>
+              </Dialog>
             </div>
           </CardContent>
         </Card>
@@ -477,6 +551,18 @@ const VehicleManagement: React.FC = () => {
                 Accédez aux certificats d'immatriculation, assurances et autres documents administratifs de vos véhicules.
               </p>
               <Button onClick={handleViewDocuments}>Consulter les documents</Button>
+              
+              <Dialog open={showDocuments} onOpenChange={setShowDocuments}>
+                <DialogContent className="sm:max-w-[800px]">
+                  <DialogHeader>
+                    <DialogTitle>Documents des véhicules</DialogTitle>
+                    <DialogDescription>
+                      Consultez tous les documents administratifs de votre flotte.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <VehicleDocuments vehicles={vehicles} />
+                </DialogContent>
+              </Dialog>
             </div>
           </CardContent>
         </Card>
