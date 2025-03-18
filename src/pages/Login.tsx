@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Truck, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -28,7 +28,7 @@ const Login: React.FC = () => {
   const { login } = useAuth();
 
   // Déterminer l'URL de redirection après connexion
-  const from = location.state?.from?.pathname || '/';
+  const from = location.state?.from?.pathname || '/dashboard';
 
   // Initialisation du formulaire avec React Hook Form
   const form = useForm<LoginFormValues>({
@@ -62,11 +62,8 @@ const Login: React.FC = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Truck className="h-6 w-6 text-primary" />
-            </div>
+            <img src="/lovable-uploads/logo.png" alt="SmartLogi" className="h-10" />
           </div>
-          <CardTitle className="text-2xl font-bold">TransLogica</CardTitle>
           <CardDescription>
             Connectez-vous pour accéder à votre tableau de bord
           </CardDescription>

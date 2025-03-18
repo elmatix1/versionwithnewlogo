@@ -6,7 +6,7 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Redirect to the dashboard on load
+    // Redirect to the landing page on load
     navigate("/", { replace: true });
   }, [navigate]);
 

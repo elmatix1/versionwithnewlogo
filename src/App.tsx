@@ -19,6 +19,7 @@ import Planning from "./pages/Planning";
 import Maintenance from "./pages/Maintenance";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import LandingPage from "./pages/LandingPage";
 
 const queryClient = new QueryClient();
 
@@ -30,13 +31,14 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            {/* Route publique */}
+            {/* Landing page and public routes */}
+            <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             
             {/* Routes protégées de base - accessibles à tous les utilisateurs authentifiés */}
             <Route element={<ProtectedRoute />}>
               <Route element={<MainLayout />}>
-                <Route path="/" element={<Dashboard />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 
                 {/* Routes protégées par rôle */}
                 <Route element={<ProtectedRoute requiredRoles={['admin']} />}>

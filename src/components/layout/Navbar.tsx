@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Menu, BellIcon } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -22,7 +22,7 @@ const Navbar = ({ setSidebarOpen }: NavbarProps) => {
   useEffect(() => {
     // Get page title based on path
     const path = location.pathname;
-    if (path === "/") {
+    if (path === "/dashboard") {
       setPageTitle("Tableau de bord");
     } else if (path.includes("users")) {
       setPageTitle("Gestion des utilisateurs");
@@ -62,7 +62,10 @@ const Navbar = ({ setSidebarOpen }: NavbarProps) => {
             <Menu className="h-5 w-5" />
           </Button>
         )}
-        <h1 className="text-lg font-medium">{pageTitle}</h1>
+        <div className="flex items-center">
+          <img src="/lovable-uploads/logo.png" alt="SmartLogi" className="h-8 mr-3 hidden md:block" />
+          <h1 className="text-lg font-medium">{pageTitle}</h1>
+        </div>
       </div>
 
       {user && (
