@@ -1,3 +1,4 @@
+
 import { useEffect, useState, createContext, useContext, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
@@ -19,6 +20,9 @@ interface User {
   name: string;
   email: string;
   role: UserRole;
+  cin?: string;
+  city?: string;
+  address?: string;
 }
 
 interface AuthContextType {
@@ -38,6 +42,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const USERS_STORAGE_KEY = 'tms-users';
+const AUTH_USER_KEY = 'tms-auth-user';
+const AUTH_STATUS_KEY = 'tms-auth-status';
 
 // Liste des utilisateurs par défaut
 const DEFAULT_USERS = [
@@ -47,7 +53,10 @@ const DEFAULT_USERS = [
     password: 'admin123',
     name: 'Administrateur',
     email: 'admin@translogica.fr',
-    role: 'admin' as UserRole
+    role: 'admin' as UserRole,
+    cin: 'AB123456',
+    city: 'Casablanca',
+    address: 'Boulevard Mohammed V'
   },
   {
     id: '2',
@@ -55,7 +64,10 @@ const DEFAULT_USERS = [
     password: 'admin123',
     name: 'Responsable RH',
     email: 'rh@translogica.fr',
-    role: 'rh' as UserRole
+    role: 'rh' as UserRole,
+    cin: 'K456789',
+    city: 'Rabat',
+    address: 'Rue Hassan II'
   },
   {
     id: '3',
@@ -63,7 +75,10 @@ const DEFAULT_USERS = [
     password: 'admin123',
     name: 'Planificateur',
     email: 'planificateur@translogica.fr',
-    role: 'planificateur' as UserRole
+    role: 'planificateur' as UserRole,
+    cin: 'X987654',
+    city: 'Marrakech',
+    address: 'Avenue des FAR'
   },
   {
     id: '4',
@@ -71,7 +86,10 @@ const DEFAULT_USERS = [
     password: 'admin123',
     name: 'Commercial',
     email: 'commercial@translogica.fr',
-    role: 'commercial' as UserRole
+    role: 'commercial' as UserRole,
+    cin: 'J234567',
+    city: 'Fès',
+    address: 'Boulevard Zerktouni'
   },
   {
     id: '5',
@@ -79,7 +97,10 @@ const DEFAULT_USERS = [
     password: 'admin123',
     name: 'Approvisionneur',
     email: 'approvisionneur@translogica.fr',
-    role: 'approvisionneur' as UserRole
+    role: 'approvisionneur' as UserRole,
+    cin: 'BE789012',
+    city: 'Tanger',
+    address: 'Avenue Mohammed VI'
   },
   {
     id: '6',
@@ -87,7 +108,10 @@ const DEFAULT_USERS = [
     password: 'admin123',
     name: 'Chargé d\'exploitation',
     email: 'exploitation@translogica.fr',
-    role: 'exploitation' as UserRole
+    role: 'exploitation' as UserRole,
+    cin: 'C345678',
+    city: 'Agadir',
+    address: 'Boulevard Anfa'
   },
   {
     id: '7',
@@ -95,7 +119,10 @@ const DEFAULT_USERS = [
     password: 'admin123',
     name: 'Chargé de maintenance',
     email: 'maintenance@translogica.fr',
-    role: 'maintenance' as UserRole
+    role: 'maintenance' as UserRole,
+    cin: 'D901234',
+    city: 'Meknès',
+    address: 'Rue Ibn Batouta'
   }
 ];
 
@@ -136,11 +163,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Vérifier si l'utilisateur est déjà connecté
     const checkAuth = () => {
-      const storedUser = localStorage.getItem('user');
-      const storedAuth = localStorage.getItem('isAuthenticated');
+      const storedUser = loadFromLocalStorage<User | null>(AUTH_USER_KEY, null);
+      const storedAuth = loadFromLocalStorage<boolean>(AUTH_STATUS_KEY, false);
       
-      if (storedUser && storedAuth === 'true') {
-        setUser(JSON.parse(storedUser));
+      if (storedUser && storedAuth) {
+        setUser(storedUser);
         setIsAuthenticated(true);
       }
       
@@ -182,13 +209,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         username: foundUser.username,
         name: foundUser.name,
         email: foundUser.email,
-        role: foundUser.role
+        role: foundUser.role,
+        cin: foundUser.cin,
+        city: foundUser.city,
+        address: foundUser.address
       };
       
       setUser(secureUser);
       setIsAuthenticated(true);
-      localStorage.setItem('user', JSON.stringify(secureUser));
-      localStorage.setItem('isAuthenticated', 'true');
+      saveToLocalStorage(AUTH_USER_KEY, secureUser);
+      saveToLocalStorage(AUTH_STATUS_KEY, true);
       
       toast.success(`Bienvenue, ${secureUser.name}`, {
         description: `Vous êtes connecté en tant que ${secureUser.role}`,
@@ -209,8 +239,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('user');
-    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem(AUTH_USER_KEY);
+    localStorage.removeItem(AUTH_STATUS_KEY);
     toast.info("Déconnecté", {
       description: "Vous avez été déconnecté avec succès",
     });
@@ -245,7 +275,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ...userData
     };
     
-    setAllUsers(prev => [...prev, newUser]);
+    const updatedUsers = [...allUsers, newUser];
+    setAllUsers(updatedUsers);
+    
+    // Enregistrer dans localStorage
+    saveToLocalStorage(USERS_STORAGE_KEY, updatedUsers);
+    
     toast.success("Utilisateur ajouté", { description: `${newUser.name} a été ajouté avec succès` });
   };
 
@@ -255,9 +290,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     
-    setAllUsers(prev => 
-      prev.map(user => user.id === id ? { ...user, ...userData } : user)
+    const updatedUsers = allUsers.map(user => 
+      user.id === id ? { ...user, ...userData } : user
     );
+    
+    setAllUsers(updatedUsers);
+    
+    // Enregistrer dans localStorage
+    saveToLocalStorage(USERS_STORAGE_KEY, updatedUsers);
+    
     toast.success("Utilisateur mis à jour", { description: "Les informations ont été mises à jour avec succès" });
   };
 
@@ -267,7 +308,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     
-    setAllUsers(prev => prev.filter(user => user.id !== id));
+    const updatedUsers = allUsers.filter(user => user.id !== id);
+    setAllUsers(updatedUsers);
+    
+    // Enregistrer dans localStorage
+    saveToLocalStorage(USERS_STORAGE_KEY, updatedUsers);
+    
     toast.success("Utilisateur supprimé", { description: "L'utilisateur a été supprimé avec succès" });
   };
 

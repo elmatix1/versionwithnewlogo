@@ -3,7 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { filterSuggestions, moroccanData } from '@/utils/moroccanData';
+import { filterSuggestions, moroccanData, getRandomSuggestion } from '@/utils/moroccanData';
+import { Check, RefreshCw } from 'lucide-react';
 
 interface MoroccanSuggestionInputProps {
   label: string;
@@ -34,9 +35,9 @@ const MoroccanSuggestionInput: React.FC<MoroccanSuggestionInputProps> = ({
   // Mettre à jour les suggestions lorsque la valeur change
   useEffect(() => {
     if (value.length > 0) {
-      setSuggestions(filterSuggestions(dataType, value));
+      setSuggestions(filterSuggestions(dataType, value).slice(0, 6));
     } else {
-      setSuggestions(moroccanData[dataType].slice(0, 5));
+      setSuggestions(moroccanData[dataType].slice(0, 6));
     }
   }, [value, dataType]);
 
@@ -62,7 +63,7 @@ const MoroccanSuggestionInput: React.FC<MoroccanSuggestionInputProps> = ({
   const handleInputFocus = () => {
     setIsFocused(true);
     if (value.length === 0) {
-      setSuggestions(moroccanData[dataType].slice(0, 5));
+      setSuggestions(moroccanData[dataType].slice(0, 6));
     }
   };
 
@@ -70,9 +71,9 @@ const MoroccanSuggestionInput: React.FC<MoroccanSuggestionInputProps> = ({
     const newValue = e.target.value;
     onChange(newValue);
     if (newValue.length > 0) {
-      setSuggestions(filterSuggestions(dataType, newValue));
+      setSuggestions(filterSuggestions(dataType, newValue).slice(0, 6));
     } else {
-      setSuggestions(moroccanData[dataType].slice(0, 5));
+      setSuggestions(moroccanData[dataType].slice(0, 6));
     }
     setIsFocused(true);
   };
@@ -85,22 +86,48 @@ const MoroccanSuggestionInput: React.FC<MoroccanSuggestionInputProps> = ({
     }
   };
 
+  const handleRandomSuggestion = () => {
+    const randomValue = getRandomSuggestion(dataType);
+    onChange(randomValue);
+    setIsFocused(false);
+  };
+
   return (
     <div className={`relative ${className}`}>
-      <Label htmlFor={id} className="block mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
-      </Label>
-      <Input
-        ref={inputRef}
-        id={id}
-        type="text"
-        value={value}
-        onChange={handleInputChange}
-        onFocus={handleInputFocus}
-        placeholder={placeholder}
-        className="w-full"
-        required={required}
-      />
+      {label && (
+        <Label htmlFor={id} className="block mb-1">
+          {label} {required && <span className="text-red-500">*</span>}
+        </Label>
+      )}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Input
+            ref={inputRef}
+            id={id}
+            type="text"
+            value={value}
+            onChange={handleInputChange}
+            onFocus={handleInputFocus}
+            placeholder={placeholder}
+            className="w-full pr-10"
+            required={required}
+          />
+          {value && (
+            <Check 
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-500" 
+            />
+          )}
+        </div>
+        <Button 
+          type="button" 
+          variant="outline" 
+          size="icon"
+          onClick={handleRandomSuggestion}
+          title="Proposition aléatoire"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
       
       {isFocused && suggestions.length > 0 && (
         <div 

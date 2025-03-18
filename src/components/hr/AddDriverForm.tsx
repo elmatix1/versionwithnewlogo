@@ -9,6 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import MoroccanSuggestionInput from '@/components/shared/MoroccanSuggestionInput';
+import { saveToLocalStorage, loadFromLocalStorage } from '@/utils/localStorage';
 
 // Définition du schéma de validation
 const driverFormSchema = z.object({
@@ -18,7 +20,14 @@ const driverFormSchema = z.object({
   status: z.enum(['active', 'off-duty', 'sick-leave', 'vacation']),
   phone: z.string().min(10, { message: "Un numéro de téléphone valide est requis" }),
   email: z.string().email({ message: "Adresse email invalide" }),
-  address: z.string().min(5, { message: "L'adresse est requise" })
+  address: z.string().min(5, { message: "L'adresse est requise" }),
+  cin: z.string()
+    .regex(/^[A-Z]{1,2}[0-9]{6}$/, { 
+      message: "Format CIN invalide. Format attendu: deux lettres suivies de 6 chiffres (ex: AB123456)"
+    })
+    .optional()
+    .or(z.literal('')),
+  city: z.string().optional()
 });
 
 type DriverFormValues = z.infer<typeof driverFormSchema>;
@@ -41,6 +50,9 @@ const experienceOptions = [
   '6 ans', '7 ans', '8 ans', '9 ans', '10+ ans'
 ];
 
+// Storage key for persisting drivers
+const DRIVERS_STORAGE_KEY = 'tms-drivers';
+
 const AddDriverForm: React.FC<AddDriverFormProps> = ({ open, onOpenChange, onAddDriver }) => {
   const form = useForm<DriverFormValues>({
     resolver: zodResolver(driverFormSchema),
@@ -51,11 +63,18 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ open, onOpenChange, onAdd
       status: "active",
       phone: "",
       email: "",
-      address: ""
+      address: "",
+      cin: "",
+      city: ""
     },
   });
 
   function onSubmit(values: DriverFormValues) {
+    // Save driver to localStorage
+    const drivers = loadFromLocalStorage<DriverFormValues[]>(DRIVERS_STORAGE_KEY, []);
+    const newDrivers = [...drivers, { ...values, id: Date.now().toString() }];
+    saveToLocalStorage(DRIVERS_STORAGE_KEY, newDrivers);
+    
     onAddDriver(values);
     form.reset();
     onOpenChange(false);
@@ -84,7 +103,16 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ open, onOpenChange, onAdd
                   <FormItem>
                     <FormLabel>Nom complet</FormLabel>
                     <FormControl>
-                      <Input placeholder="Jean Dupont" {...field} />
+                      <MoroccanSuggestionInput
+                        id="fullName"
+                        label=""
+                        value={field.value}
+                        onChange={field.onChange}
+                        dataType="names"
+                        placeholder="Ex: Mohamed Amine, Fatima Zahra"
+                        required
+                        className="mt-0"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -93,12 +121,58 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ open, onOpenChange, onAdd
               
               <FormField
                 control={form.control}
+                name="cin"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Carte Nationale d'Identité (CIN)</FormLabel>
+                    <FormControl>
+                      <MoroccanSuggestionInput
+                        id="cin"
+                        label=""
+                        value={field.value}
+                        onChange={field.onChange}
+                        dataType="cin"
+                        placeholder="Ex: AB123456"
+                        className="mt-0"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
                 name="licenseNumber"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Numéro de permis</FormLabel>
                     <FormControl>
                       <Input placeholder="12AB34567" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Téléphone</FormLabel>
+                    <FormControl>
+                      <MoroccanSuggestionInput
+                        id="phone"
+                        label=""
+                        value={field.value}
+                        onChange={field.onChange}
+                        dataType="phoneNumbers"
+                        placeholder="Ex: +212 6 12 34 56 78"
+                        className="mt-0"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -157,12 +231,20 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ open, onOpenChange, onAdd
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="phone"
+                name="city"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Téléphone</FormLabel>
+                    <FormLabel>Ville</FormLabel>
                     <FormControl>
-                      <Input placeholder="+33 6 12 34 56 78" {...field} />
+                      <MoroccanSuggestionInput
+                        id="city"
+                        label=""
+                        value={field.value}
+                        onChange={field.onChange}
+                        dataType="cities"
+                        placeholder="Ex: Casablanca, Rabat"
+                        className="mt-0"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -176,7 +258,7 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ open, onOpenChange, onAdd
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="jean.dupont@exemple.fr" {...field} />
+                      <Input type="email" placeholder="exemple@translogica.fr" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -191,7 +273,15 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ open, onOpenChange, onAdd
                 <FormItem>
                   <FormLabel>Adresse</FormLabel>
                   <FormControl>
-                    <Input placeholder="123 rue des Transports, 75001 Paris" {...field} />
+                    <MoroccanSuggestionInput
+                      id="address"
+                      label=""
+                      value={field.value}
+                      onChange={field.onChange}
+                      dataType="streets"
+                      placeholder="Ex: Boulevard Mohammed V, Rue Hassan II"
+                      className="mt-0"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Table,
@@ -40,6 +41,9 @@ import { Label } from '@/components/ui/label';
 import { UserRole } from '@/hooks/useAuth';
 import AddUserForm from '@/components/users/AddUserForm';
 import { saveToLocalStorage, loadFromLocalStorage } from '@/utils/localStorage';
+import MoroccanSuggestionInput from '@/components/shared/MoroccanSuggestionInput';
+
+const USERS_STORAGE_KEY = 'tms-users';
 
 const getRoleName = (role: UserRole) => {
   const roleNames: Record<UserRole, string> = {
@@ -78,7 +82,7 @@ const roleLabels: Record<UserRole, string> = {
 };
 
 const UserManagement: React.FC = () => {
-  const { allUsers, updateUser, deleteUser, hasActionPermission } = useAuth();
+  const { allUsers, updateUser, deleteUser, hasActionPermission, addUser } = useAuth();
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
   const [editUserDialogOpen, setEditUserDialogOpen] = useState(false);
   const [changeRoleDialogOpen, setChangeRoleDialogOpen] = useState(false);
@@ -89,11 +93,17 @@ const UserManagement: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  const [editCIN, setEditCIN] = useState('');
+  const [editCity, setEditCity] = useState('');
+  const [editAddress, setEditAddress] = useState('');
 
   const handleEdit = (user: any) => {
     setSelectedUser(user);
-    setEditName(user.name);
-    setEditEmail(user.email);
+    setEditName(user.name || '');
+    setEditEmail(user.email || '');
+    setEditCIN(user.cin || '');
+    setEditCity(user.city || '');
+    setEditAddress(user.address || '');
     setEditUserDialogOpen(true);
   };
 
@@ -118,9 +128,19 @@ const UserManagement: React.FC = () => {
     if (selectedUser) {
       updateUser(selectedUser.id, {
         name: editName,
-        email: editEmail
+        email: editEmail,
+        cin: editCIN,
+        city: editCity,
+        address: editAddress
       });
       setEditUserDialogOpen(false);
+      
+      // Sauvegarde des utilisateurs dans localStorage
+      saveToLocalStorage(USERS_STORAGE_KEY, allUsers);
+      
+      toast.success("Utilisateur mis à jour", {
+        description: `Les informations de ${editName} ont été mises à jour.`
+      });
     }
   };
 
@@ -128,13 +148,22 @@ const UserManagement: React.FC = () => {
     if (selectedUser) {
       updateUser(selectedUser.id, { role: newRole });
       setChangeRoleDialogOpen(false);
+      
+      // Sauvegarde des utilisateurs dans localStorage
+      saveToLocalStorage(USERS_STORAGE_KEY, allUsers);
+      
+      toast.success("Rôle mis à jour", {
+        description: `Le rôle de ${selectedUser.name} a été changé en ${roleLabels[newRole]}.`
+      });
     }
   };
 
   const confirmResetPassword = () => {
     if (selectedUser) {
+      // Simuler la réinitialisation du mot de passe
+      const newRandomPassword = Math.random().toString(36).slice(-8);
       toast.success(`Mot de passe réinitialisé pour ${selectedUser.name}`, {
-        description: 'Un nouveau mot de passe a été envoyé à l\'utilisateur.'
+        description: `Un nouveau mot de passe a été envoyé à l'utilisateur.`
       });
       setResetPasswordDialogOpen(false);
     }
@@ -142,14 +171,31 @@ const UserManagement: React.FC = () => {
 
   const confirmDeleteUser = () => {
     if (selectedUser) {
+      const userName = selectedUser.name;
       deleteUser(selectedUser.id);
       setDeleteUserDialogOpen(false);
+      
+      // Sauvegarde des utilisateurs dans localStorage après suppression
+      setTimeout(() => {
+        saveToLocalStorage(USERS_STORAGE_KEY, allUsers);
+      }, 100);
+      
+      toast.success(`Utilisateur supprimé`, {
+        description: `${userName} a été supprimé avec succès.`
+      });
     }
   };
 
   const handleAddUser = (userData: any) => {
+    addUser(userData);
+    
+    // Sauvegarde des utilisateurs dans localStorage après ajout
+    setTimeout(() => {
+      saveToLocalStorage(USERS_STORAGE_KEY, allUsers);
+    }, 100);
+    
     toast.success(`Utilisateur ${userData.name} ajouté`, {
-      description: `Rôle: ${roleLabels[userData.role]}`
+      description: `Rôle: ${roleLabels[userData.role as UserRole]}`
     });
   };
 
@@ -181,6 +227,8 @@ const UserManagement: React.FC = () => {
               <TableHead>Nom</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Rôle</TableHead>
+              <TableHead>CIN</TableHead>
+              <TableHead>Ville</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -201,6 +249,8 @@ const UserManagement: React.FC = () => {
                     {getRoleName(user.role)}
                   </Badge>
                 </TableCell>
+                <TableCell>{user.cin || "-"}</TableCell>
+                <TableCell>{user.city || "-"}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -237,7 +287,7 @@ const UserManagement: React.FC = () => {
 
       {/* Edit User Dialog */}
       <Dialog open={editUserDialogOpen} onOpenChange={setEditUserDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Modifier l'utilisateur</DialogTitle>
             <DialogDescription>
@@ -245,27 +295,88 @@ const UserManagement: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Nom
-              </Label>
-              <Input
-                id="name"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="col-span-3"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Nom
+                </Label>
+                <div className="col-span-3">
+                  <MoroccanSuggestionInput
+                    id="edit-name"
+                    label=""
+                    value={editName}
+                    onChange={setEditName}
+                    dataType="names"
+                    placeholder="Ex: Mohamed Amine"
+                    className="mt-0"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="email" className="text-right">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
             </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="cin" className="text-right">
+                  CIN
+                </Label>
+                <div className="col-span-3">
+                  <MoroccanSuggestionInput
+                    id="edit-cin"
+                    label=""
+                    value={editCIN}
+                    onChange={setEditCIN}
+                    dataType="cin"
+                    placeholder="Ex: AB123456"
+                    className="mt-0"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="city" className="text-right">
+                  Ville
+                </Label>
+                <div className="col-span-3">
+                  <MoroccanSuggestionInput
+                    id="edit-city"
+                    label=""
+                    value={editCity}
+                    onChange={setEditCity}
+                    dataType="cities"
+                    placeholder="Ex: Casablanca"
+                    className="mt-0"
+                  />
+                </div>
+              </div>
+            </div>
+            
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">
-                Email
+              <Label htmlFor="address" className="text-right">
+                Adresse
               </Label>
-              <Input
-                id="email"
-                value={editEmail}
-                onChange={(e) => setEditEmail(e.target.value)}
-                className="col-span-3"
-              />
+              <div className="col-span-3">
+                <MoroccanSuggestionInput
+                  id="edit-address"
+                  label=""
+                  value={editAddress}
+                  onChange={setEditAddress}
+                  dataType="streets"
+                  placeholder="Ex: Boulevard Mohammed V"
+                  className="mt-0"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
