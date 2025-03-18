@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -38,7 +39,7 @@ import {
   Plus
 } from 'lucide-react';
 import { toast } from "sonner";
-import { AddVehicleForm } from '@/components/vehicles/AddVehicleForm';
+import AddVehicleForm from '@/components/vehicles/AddVehicleForm';
 import VehicleMaintenanceCalendar from '@/components/vehicles/VehicleMaintenanceCalendar';
 import VehicleDocuments from '@/components/vehicles/VehicleDocuments';
 import VehicleStatusChangeDialog from '@/components/vehicles/VehicleStatusChangeDialog';

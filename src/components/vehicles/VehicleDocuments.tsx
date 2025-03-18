@@ -13,7 +13,14 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { FilePdf, FileText, Download, Eye, Search, UploadCloud, AlertCircle } from 'lucide-react';
+import { 
+  FileText, 
+  Download, 
+  Eye, 
+  Search, 
+  UploadCloud, 
+  AlertCircle 
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Vehicle {
@@ -166,7 +173,7 @@ const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicles }) => {
   };
 
   const fileIcons = {
-    pdf: <FilePdf className="h-4 w-4 text-red-500" />,
+    pdf: <FileText className="h-4 w-4 text-red-500" />,
     doc: <FileText className="h-4 w-4 text-blue-500" />,
     image: <FileText className="h-4 w-4 text-green-500" />
   };
