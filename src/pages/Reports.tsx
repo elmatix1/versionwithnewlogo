@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import MetricsCards from '@/components/reports/MetricsCards';
@@ -30,6 +29,7 @@ import {
   TableCell 
 } from '@/components/ui/table';
 import { FileDown, FileText, BarChart, PieChart, Calendar, Eye } from 'lucide-react';
+import { saveToLocalStorage, loadFromLocalStorage } from '@/utils/localStorage';
 
 interface Report {
   id: string;
@@ -40,32 +40,27 @@ interface Report {
   status: string;
 }
 
+const STORAGE_KEY = 'tms-reports';
+
 const Reports: React.FC = () => {
   const [reportType, setReportType] = useState<string>("");
   const [reportPeriod, setReportPeriod] = useState<string>("");
-  const [reports, setReports] = useState<Report[]>([
-    { id: "RPT-2023-001", name: "Bilan commercial", type: "commercial", period: "mois", date: "01/05/2023", status: "Disponible" },
-    { id: "RPT-2023-002", name: "Activité logistique", type: "operationnel", period: "trimestre", date: "15/04/2023", status: "Disponible" },
-    { id: "RPT-2023-003", name: "État financier", type: "financier", period: "annee", date: "31/03/2023", status: "Disponible" },
-    { id: "RPT-2023-004", name: "Rapport mensuel RH", type: "rh", period: "mois", date: "01/05/2023", status: "Disponible" },
-  ]);
+  const [reports, setReports] = useState<Report[]>(() => 
+    loadFromLocalStorage<Report[]>(STORAGE_KEY, [
+      { id: "RPT-2023-001", name: "Bilan commercial", type: "commercial", period: "mois", date: "01/05/2023", status: "Disponible" },
+      { id: "RPT-2023-002", name: "Activité logistique", type: "operationnel", period: "trimestre", date: "15/04/2023", status: "Disponible" },
+      { id: "RPT-2023-003", name: "État financier", type: "financier", period: "annee", date: "31/03/2023", status: "Disponible" },
+      { id: "RPT-2023-004", name: "Rapport mensuel RH", type: "rh", period: "mois", date: "01/05/2023", status: "Disponible" },
+    ])
+  );
   const [showAllReports, setShowAllReports] = useState(false);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [detailChartType, setDetailChartType] = useState("");
   const [configureScheduleDialog, setConfigureScheduleDialog] = useState(false);
   
-  // Persistance locale des rapports
+  // Persistance des rapports lors des modifications
   useEffect(() => {
-    // Charger les rapports existants au démarrage
-    const savedReports = localStorage.getItem('tms-reports');
-    if (savedReports) {
-      setReports(JSON.parse(savedReports));
-    }
-  }, []);
-  
-  // Sauvegarder automatiquement les rapports lors des modifications
-  useEffect(() => {
-    localStorage.setItem('tms-reports', JSON.stringify(reports));
+    saveToLocalStorage(STORAGE_KEY, reports);
   }, [reports]);
   
   const handleViewAllReports = () => {

@@ -1,7 +1,7 @@
-
 import { useEffect, useState, createContext, useContext, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
+import { saveToLocalStorage, loadFromLocalStorage } from '@/utils/localStorage';
 
 // Définition des rôles disponibles
 export type UserRole = 
@@ -36,6 +36,8 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+const USERS_STORAGE_KEY = 'tms-users';
 
 // Liste des utilisateurs par défaut
 const DEFAULT_USERS = [
@@ -142,15 +144,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsAuthenticated(true);
       }
       
-      // Initialiser la liste des utilisateurs (sans les mots de passe)
-      const initialUsers = DEFAULT_USERS.map(({ password, ...user }) => user);
-      setAllUsers(initialUsers);
+      // Initialiser la liste des utilisateurs depuis localStorage ou utiliser defaults si vide
+      const storedAllUsers = loadFromLocalStorage<User[]>(
+        USERS_STORAGE_KEY, 
+        DEFAULT_USERS.map(({ password, ...user }) => user)
+      );
       
+      setAllUsers(storedAllUsers);
       setIsLoading(false);
     };
     
     checkAuth();
   }, []);
+
+  // Persist users when they change
+  useEffect(() => {
+    if (allUsers.length > 0) {
+      saveToLocalStorage(USERS_STORAGE_KEY, allUsers);
+    }
+  }, [allUsers]);
 
   const login = async (username: string, password: string): Promise<boolean> => {
     setIsLoading(true);

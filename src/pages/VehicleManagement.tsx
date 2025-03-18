@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -42,6 +43,7 @@ import AddVehicleForm from '@/components/vehicles/AddVehicleForm';
 import VehicleMaintenanceCalendar from '@/components/vehicles/VehicleMaintenanceCalendar';
 import VehicleDocuments from '@/components/vehicles/VehicleDocuments';
 import VehicleStatusChangeDialog from '@/components/vehicles/VehicleStatusChangeDialog';
+import { saveToLocalStorage, loadFromLocalStorage } from '@/utils/localStorage';
 
 interface Vehicle {
   id: string;
@@ -67,13 +69,15 @@ const statusLabels = {
   inactive: "Hors service"
 };
 
+const STORAGE_KEY = 'tms-vehicles';
+
 const VehicleManagement: React.FC = () => {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([
+  const defaultVehicles = [
     {
       id: "v1",
       name: "TL-3045",
       type: "Camion 19T",
-      status: "active",
+      status: "active" as const,
       lastMaintenance: "12/06/2023",
       fuelLevel: 85,
       nextService: "22/09/2023",
@@ -84,7 +88,7 @@ const VehicleManagement: React.FC = () => {
       id: "v2",
       name: "TL-2189",
       type: "Camion 12T",
-      status: "active",
+      status: "active" as const,
       lastMaintenance: "05/05/2023",
       fuelLevel: 62,
       nextService: "05/08/2023",
@@ -95,7 +99,7 @@ const VehicleManagement: React.FC = () => {
       id: "v3",
       name: "TL-4023",
       type: "Camion 24T",
-      status: "maintenance",
+      status: "maintenance" as const,
       lastMaintenance: "28/07/2023",
       fuelLevel: 30,
       nextService: "Maintenance en cours",
@@ -105,7 +109,7 @@ const VehicleManagement: React.FC = () => {
       id: "v4",
       name: "TL-1087",
       type: "Utilitaire 3.5T",
-      status: "inactive",
+      status: "inactive" as const,
       lastMaintenance: "14/04/2023",
       fuelLevel: 15,
       nextService: "Indisponible",
@@ -114,20 +118,29 @@ const VehicleManagement: React.FC = () => {
       id: "v5",
       name: "TL-5632",
       type: "Camion 19T",
-      status: "active",
+      status: "active" as const,
       lastMaintenance: "22/06/2023",
       fuelLevel: 92,
       nextService: "22/09/2023",
       driver: "Pierre Martin",
       location: "Livraison Marseille"
     }
-  ]);
+  ];
+
+  const [vehicles, setVehicles] = useState<Vehicle[]>(() => 
+    loadFromLocalStorage<Vehicle[]>(STORAGE_KEY, defaultVehicles)
+  );
   
   const [selectedTab, setSelectedTab] = useState("all");
   const [showMaintenanceCalendar, setShowMaintenanceCalendar] = useState(false);
   const [showDocuments, setShowDocuments] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [addVehicleDialogOpen, setAddVehicleDialogOpen] = useState(false);
+  
+  // Persist vehicle data when it changes
+  useEffect(() => {
+    saveToLocalStorage(STORAGE_KEY, vehicles);
+  }, [vehicles]);
   
   const filteredVehicles = selectedTab === "all" 
     ? vehicles 
