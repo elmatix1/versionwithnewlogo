@@ -19,7 +19,6 @@ import Planning from "./pages/Planning";
 import Maintenance from "./pages/Maintenance";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
-import LandingPage from "./pages/LandingPage";
 
 const queryClient = new QueryClient();
 
@@ -31,14 +30,13 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            {/* Landing page and public routes */}
-            <Route path="/" element={<LandingPage />} />
+            {/* Route publique */}
             <Route path="/login" element={<Login />} />
             
             {/* Routes protégées de base - accessibles à tous les utilisateurs authentifiés */}
             <Route element={<ProtectedRoute />}>
               <Route element={<MainLayout />}>
-                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/" element={<Dashboard />} />
                 
                 {/* Routes protégées par rôle */}
                 <Route element={<ProtectedRoute requiredRoles={['admin']} />}>

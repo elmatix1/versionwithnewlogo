@@ -128,13 +128,13 @@ const DEFAULT_USERS = [
 
 // Cartographie des permissions d'accès par rôle
 const ROLE_ACCESS_MAP: Record<UserRole, string[]> = {
-  'admin': ['/', '/dashboard', '/users', '/hr', '/vehicles', '/planning', '/orders', '/inventory', '/maintenance', '/reports', '/settings'],
-  'rh': ['/', '/dashboard', '/hr'],
-  'planificateur': ['/', '/dashboard', '/planning', '/vehicles'],
-  'commercial': ['/', '/dashboard', '/orders', '/reports'],
-  'approvisionneur': ['/', '/dashboard', '/inventory', '/orders'],
-  'exploitation': ['/', '/dashboard', '/vehicles', '/planning'],
-  'maintenance': ['/', '/dashboard', '/vehicles', '/maintenance']
+  'admin': ['/', '/users', '/hr', '/vehicles', '/planning', '/orders', '/inventory', '/maintenance', '/reports', '/settings'],
+  'rh': ['/', '/hr'],
+  'planificateur': ['/', '/planning', '/vehicles'],
+  'commercial': ['/', '/orders', '/reports'],
+  'approvisionneur': ['/', '/inventory', '/orders'],
+  'exploitation': ['/', '/vehicles', '/planning'],
+  'maintenance': ['/', '/vehicles', '/maintenance']
 };
 
 // Cartographie des actions permises par rôle
@@ -244,7 +244,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     toast.info("Déconnecté", {
       description: "Vous avez été déconnecté avec succès",
     });
-    navigate('/');
+    navigate('/login');
   };
 
   // Vérifier si l'utilisateur a les permissions requises
