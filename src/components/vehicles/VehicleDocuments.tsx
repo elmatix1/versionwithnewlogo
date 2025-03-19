@@ -1,24 +1,27 @@
 
 import React, { useState } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Download, FileText, Eye, Filter } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-interface VehicleDocument {
-  id: string;
-  vehicleId: string;
-  vehicleName: string;
-  name: string;
-  type: 'registration' | 'insurance' | 'maintenance' | 'inspection';
-  status: 'valid' | 'expiring' | 'expired';
-  date: string;
-  expiryDate: string | null;
-}
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { 
+  FileText, 
+  Download, 
+  Eye, 
+  Search, 
+  UploadCloud, 
+  AlertCircle 
+} from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Vehicle {
   id: string;
@@ -32,271 +35,249 @@ interface Vehicle {
   location?: string;
 }
 
+interface VehicleDocument {
+  id: string;
+  vehicleId: string;
+  name: string;
+  type: 'registration' | 'insurance' | 'technical' | 'maintenance' | 'other';
+  status: 'valid' | 'expiring-soon' | 'expired';
+  date: string;
+  expiryDate: string;
+  fileType: 'pdf' | 'doc' | 'image';
+}
+
 interface VehicleDocumentsProps {
   vehicles: Vehicle[];
 }
 
 const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicles }) => {
-  const [viewDocument, setViewDocument] = useState<VehicleDocument | null>(null);
-  const [isDownloading, setIsDownloading] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Sample documents for demonstration
+  // Exemple de documents
   const documents: VehicleDocument[] = [
     {
-      id: 'vdoc1',
+      id: 'doc1',
       vehicleId: 'v1',
-      vehicleName: 'TL-3045',
-      name: 'Carte grise',
+      name: 'Certificat d\'immatriculation',
       type: 'registration',
       status: 'valid',
-      date: '15/05/2022',
-      expiryDate: '15/05/2025'
+      date: '10/05/2022',
+      expiryDate: '10/05/2032',
+      fileType: 'pdf'
     },
     {
-      id: 'vdoc2',
+      id: 'doc2',
       vehicleId: 'v1',
-      vehicleName: 'TL-3045',
       name: 'Assurance',
       type: 'insurance',
-      status: 'expiring',
-      date: '01/06/2023',
-      expiryDate: '01/06/2024'
-    },
-    {
-      id: 'vdoc3',
-      vehicleId: 'v2',
-      vehicleName: 'TL-2189',
-      name: 'Contrôle technique',
-      type: 'inspection',
       status: 'valid',
-      date: '10/10/2023',
-      expiryDate: '10/10/2024'
+      date: '01/01/2023',
+      expiryDate: '31/12/2023',
+      fileType: 'pdf'
     },
     {
-      id: 'vdoc4',
+      id: 'doc3',
+      vehicleId: 'v2',
+      name: 'Certificat d\'immatriculation',
+      type: 'registration',
+      status: 'valid',
+      date: '15/03/2021',
+      expiryDate: '15/03/2031',
+      fileType: 'pdf'
+    },
+    {
+      id: 'doc4',
+      vehicleId: 'v2',
+      name: 'Assurance',
+      type: 'insurance',
+      status: 'expiring-soon',
+      date: '01/07/2023',
+      expiryDate: '30/06/2024',
+      fileType: 'pdf'
+    },
+    {
+      id: 'doc5',
       vehicleId: 'v3',
-      vehicleName: 'TL-4023',
-      name: 'Carnet d\'entretien',
+      name: 'Rapport de maintenance',
       type: 'maintenance',
+      status: 'valid',
+      date: '28/07/2023',
+      expiryDate: 'N/A',
+      fileType: 'doc'
+    },
+    {
+      id: 'doc6',
+      vehicleId: 'v4',
+      name: 'Contrôle technique',
+      type: 'technical',
       status: 'expired',
-      date: '20/03/2022',
-      expiryDate: '20/03/2023'
+      date: '14/04/2022',
+      expiryDate: '14/04/2023',
+      fileType: 'pdf'
     }
   ];
 
+  // Filtrer les documents
   const filteredDocuments = documents.filter(doc => {
-    if (activeTab !== 'all' && doc.status !== activeTab) {
-      return false;
-    }
+    const matchesTab = activeTab === 'all' || doc.type === activeTab;
+    const matchesSearch = doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      vehicles.find(v => v.id === doc.vehicleId)?.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      false;
     
-    if (searchQuery && !(
-      doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.vehicleName.toLowerCase().includes(searchQuery.toLowerCase())
-    )) {
-      return false;
-    }
-    
-    return true;
+    return matchesTab && matchesSearch;
   });
 
-  const handleDownloadDocument = (document: VehicleDocument) => {
-    setIsDownloading(document.id);
-    
-    setTimeout(() => {
-      try {
-        // Create a fake download
-        const blob = new Blob([`${document.name} pour ${document.vehicleName}`], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = window.document.createElement('a');
-        a.href = url;
-        a.download = `${document.name}_${document.vehicleName}.txt`;
-        window.document.body.appendChild(a);
-        a.click();
-        window.document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        toast.success('Document téléchargé', {
-          description: `${document.name} a été téléchargé avec succès`,
-        });
-      } catch (error) {
-        console.error('Error downloading document:', error);
-        toast.error('Erreur de téléchargement', {
-          description: 'Le document n\'a pas pu être téléchargé',
-        });
-      } finally {
-        setIsDownloading(null);
-      }
-    }, 800);
+  const handleDownload = (documentId: string) => {
+    const document = documents.find(doc => doc.id === documentId);
+    if (document) {
+      toast.success("Document téléchargé", {
+        description: `Le document ${document.name} a été téléchargé.`
+      });
+    }
+  };
+  
+  const handleView = (documentId: string) => {
+    const document = documents.find(doc => doc.id === documentId);
+    if (document) {
+      toast.info("Visualisation du document", {
+        description: `Affichage du document ${document.name}.`
+      });
+    }
+  };
+  
+  const handleUpload = () => {
+    toast.success("Document téléversé", {
+      description: "Le document a été téléversé avec succès."
+    });
   };
 
-  const statusStyles = {
-    valid: "bg-green-100 text-green-800 border-green-200",
-    expiring: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    expired: "bg-red-100 text-red-800 border-red-200",
+  const typeLabels = {
+    registration: 'Immatriculation',
+    insurance: 'Assurance',
+    technical: 'Contrôle technique',
+    maintenance: 'Maintenance',
+    other: 'Autre'
+  };
+
+  const statusColors = {
+    valid: 'bg-green-500',
+    'expiring-soon': 'bg-amber-500',
+    expired: 'bg-red-500'
   };
 
   const statusLabels = {
-    valid: "Valide",
-    expiring: "Expire bientôt",
-    expired: "Expiré",
+    valid: 'Valide',
+    'expiring-soon': 'Expire bientôt',
+    expired: 'Expiré'
+  };
+
+  const fileIcons = {
+    pdf: <FileText className="h-4 w-4 text-red-500" />,
+    doc: <FileText className="h-4 w-4 text-blue-500" />,
+    image: <FileText className="h-4 w-4 text-green-500" />
   };
 
   return (
-    <div className="space-y-4 p-4">
-      <div className="flex items-center space-x-2 mb-4">
-        <div className="relative flex-1">
-          <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Rechercher un document..."
+            className="pl-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
           />
         </div>
+        <Button className="flex items-center gap-2" onClick={handleUpload}>
+          <UploadCloud size={16} />
+          <span>Téléverser</span>
+        </Button>
       </div>
 
-      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="all">Tous</TabsTrigger>
-          <TabsTrigger value="valid">Valides</TabsTrigger>
-          <TabsTrigger value="expiring">Expirent bientôt</TabsTrigger>
-          <TabsTrigger value="expired">Expirés</TabsTrigger>
+          <TabsTrigger value="registration">Immatriculation</TabsTrigger>
+          <TabsTrigger value="insurance">Assurance</TabsTrigger>
+          <TabsTrigger value="technical">Contrôle technique</TabsTrigger>
+          <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
         </TabsList>
-
+        
         <TabsContent value={activeTab} className="mt-4">
-          <div className="border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Véhicule</TableHead>
-                  <TableHead>Document</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Date d'émission</TableHead>
-                  <TableHead>Date d'expiration</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredDocuments.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
-                      Aucun document trouvé
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredDocuments.map((doc) => (
-                    <TableRow key={doc.id}>
-                      <TableCell className="font-medium">{doc.vehicleName}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <FileText size={16} className="text-muted-foreground" />
-                          {doc.name}
-                        </div>
-                      </TableCell>
-                      <TableCell>{doc.type}</TableCell>
-                      <TableCell>{doc.date}</TableCell>
-                      <TableCell>{doc.expiryDate || 'N/A'}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={statusStyles[doc.status]}>
-                          {statusLabels[doc.status]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setViewDocument(doc)}
-                            className="flex items-center"
-                          >
-                            <Eye size={16} className="mr-1" />
-                            Visualiser
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDownloadDocument(doc)}
-                            disabled={isDownloading === doc.id}
-                            className="flex items-center"
-                          >
-                            <Download size={16} className="mr-1" />
-                            {isDownloading === doc.id ? 'Téléchargement...' : 'Télécharger'}
-                          </Button>
-                        </div>
-                      </TableCell>
+          {filteredDocuments.length > 0 ? (
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Véhicule</TableHead>
+                      <TableHead>Document</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Expiration</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredDocuments.map((document) => {
+                      const vehicle = vehicles.find(v => v.id === document.vehicleId);
+                      
+                      return (
+                        <TableRow key={document.id}>
+                          <TableCell>{vehicle?.name || "—"}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {fileIcons[document.fileType]}
+                              <span>{document.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{typeLabels[document.type]}</TableCell>
+                          <TableCell>{document.date}</TableCell>
+                          <TableCell>{document.expiryDate}</TableCell>
+                          <TableCell>
+                            <Badge className={statusColors[document.status]}>
+                              {statusLabels[document.status]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleView(document.id)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDownload(document.id)}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <AlertCircle className="h-10 w-10 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">Aucun document trouvé</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Essayez de modifier vos critères de recherche ou d'ajouter de nouveaux documents
+              </p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
-
-      {/* Document Viewer Dialog */}
-      <Dialog open={!!viewDocument} onOpenChange={(open) => !open && setViewDocument(null)}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>{viewDocument?.name}</DialogTitle>
-            <DialogDescription>
-              Document pour {viewDocument?.vehicleName}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="py-4">
-            <div className="space-y-4">
-              <div className="aspect-video bg-gray-100 rounded-md flex items-center justify-center">
-                <FileText className="h-16 w-16 text-muted-foreground" />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="text-sm font-medium mb-1">Type de document</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {viewDocument?.type}
-                  </p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium mb-1">Statut</h4>
-                  <div>
-                    {viewDocument && (
-                      <Badge variant="outline" className={statusStyles[viewDocument.status]}>
-                        {statusLabels[viewDocument.status]}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium mb-1">Date d'émission</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {viewDocument?.date}
-                  </p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium mb-1">Date d'expiration</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {viewDocument?.expiryDate || 'N/A'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end mt-4">
-            <Button 
-              onClick={() => viewDocument && handleDownloadDocument(viewDocument)}
-              disabled={isDownloading === viewDocument?.id}
-              className="flex items-center gap-2"
-            >
-              <Download size={16} />
-              {isDownloading === viewDocument?.id ? 'Téléchargement...' : 'Télécharger ce document'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

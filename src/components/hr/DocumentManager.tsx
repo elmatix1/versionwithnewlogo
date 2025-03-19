@@ -14,6 +14,7 @@ import { Search, Upload, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import { Document } from './documents/types';
 import DocumentTable from './documents/DocumentTable';
+import DocumentViewer from './documents/DocumentViewer';
 import UploadDialog from './documents/UploadDialog';
 
 const DocumentManager: React.FC = () => {
@@ -26,17 +27,15 @@ const DocumentManager: React.FC = () => {
       employee: 'Thomas Durand',
       uploadDate: new Date(2023, 3, 15),
       expiryDate: new Date(2025, 3, 15),
-      issueDate: '15/04/2023',
     },
     {
       id: 'doc-002',
       name: 'Certificat médical',
       type: 'medical',
-      status: 'expiring',
+      status: 'expiring-soon',
       employee: 'Thomas Durand',
       uploadDate: new Date(2023, 7, 10),
       expiryDate: new Date(2023, 9, 10),
-      issueDate: '10/08/2023',
     },
     {
       id: 'doc-003',
@@ -46,7 +45,6 @@ const DocumentManager: React.FC = () => {
       employee: 'Sophie Lefèvre',
       uploadDate: new Date(2023, 5, 20),
       expiryDate: new Date(2026, 5, 20),
-      issueDate: '20/06/2023',
     },
     {
       id: 'doc-004',
@@ -56,7 +54,6 @@ const DocumentManager: React.FC = () => {
       employee: 'Pierre Martin',
       uploadDate: new Date(2022, 11, 5),
       expiryDate: new Date(2023, 5, 5),
-      issueDate: '05/12/2022',
     },
     {
       id: 'doc-005',
@@ -66,7 +63,6 @@ const DocumentManager: React.FC = () => {
       employee: 'Sophie Lefèvre',
       uploadDate: new Date(2022, 8, 1),
       expiryDate: null,
-      issueDate: '01/09/2022',
     },
   ]);
 
@@ -74,7 +70,6 @@ const DocumentManager: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [employeeFilter, setEmployeeFilter] = useState<string>('all');
   const [documentTypeFilter, setDocumentTypeFilter] = useState<string>('all');
-  const [viewDocument, setViewDocument] = useState<Document | null>(null);
 
   // Upload document state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -82,6 +77,10 @@ const DocumentManager: React.FC = () => {
   const [documentType, setDocumentType] = useState<'permis' | 'carte-pro' | 'medical' | 'formation' | 'contrat'>('permis');
   const [employeeName, setEmployeeName] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
+
+  // View document state
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
 
   const filteredDocuments = documents.filter(doc => {
     // Filter by tab
@@ -125,7 +124,6 @@ const DocumentManager: React.FC = () => {
       employee: employeeName,
       uploadDate: new Date(),
       expiryDate: expiryDate ? new Date(expiryDate) : null,
-      issueDate: new Date().toLocaleDateString(),
     };
 
     setDocuments([...documents, newDocument]);
@@ -140,23 +138,13 @@ const DocumentManager: React.FC = () => {
   };
 
   const handleViewDocument = (document: Document) => {
-    setViewDocument(document);
+    setSelectedDocument(document);
+    setViewDialogOpen(true);
   };
 
   const handleDownloadDocument = (document: Document) => {
-    // Create a fake download by creating a blob and triggering a download
-    const blob = new Blob([`Contenu du document ${document.name}`], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = window.document.createElement('a');
-    a.href = url;
-    a.download = document.name;
-    window.document.body.appendChild(a);
-    a.click();
-    window.document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast.success('Document téléchargé', {
-      description: `${document.name} a été téléchargé avec succès`,
+    toast.success(`Téléchargement du document: ${document.name}`, {
+      description: `Le document a été téléchargé avec succès.`
     });
   };
 
@@ -239,14 +227,13 @@ const DocumentManager: React.FC = () => {
         <TabsList>
           <TabsTrigger value="all">Tous</TabsTrigger>
           <TabsTrigger value="valid">Valides</TabsTrigger>
-          <TabsTrigger value="expiring">Expirent bientôt</TabsTrigger>
+          <TabsTrigger value="expiring-soon">Expirent bientôt</TabsTrigger>
           <TabsTrigger value="expired">Expirés</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="mt-4">
           <DocumentTable
             documents={filteredDocuments}
-            title="Tous les documents"
             onViewDocument={handleViewDocument}
             onDownloadDocument={handleDownloadDocument}
           />
@@ -255,16 +242,14 @@ const DocumentManager: React.FC = () => {
         <TabsContent value="valid" className="mt-4">
           <DocumentTable
             documents={filteredDocuments}
-            title="Documents valides"
             onViewDocument={handleViewDocument}
             onDownloadDocument={handleDownloadDocument}
           />
         </TabsContent>
         
-        <TabsContent value="expiring" className="mt-4">
+        <TabsContent value="expiring-soon" className="mt-4">
           <DocumentTable
             documents={filteredDocuments}
-            title="Documents expirant bientôt"
             onViewDocument={handleViewDocument}
             onDownloadDocument={handleDownloadDocument}
           />
@@ -273,12 +258,19 @@ const DocumentManager: React.FC = () => {
         <TabsContent value="expired" className="mt-4">
           <DocumentTable
             documents={filteredDocuments}
-            title="Documents expirés"
             onViewDocument={handleViewDocument}
             onDownloadDocument={handleDownloadDocument}
           />
         </TabsContent>
       </Tabs>
+
+      {/* Document Viewer Dialog */}
+      <DocumentViewer
+        open={viewDialogOpen}
+        onOpenChange={setViewDialogOpen}
+        document={selectedDocument}
+        onDownload={handleDownloadDocument}
+      />
     </div>
   );
 };

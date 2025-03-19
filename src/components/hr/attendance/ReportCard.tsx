@@ -11,7 +11,6 @@ import { FileText } from 'lucide-react';
 import ReportDialog from './ReportDialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { AttendanceReport } from './types';
 
 const ReportCard: React.FC = () => {
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
@@ -19,34 +18,11 @@ const ReportCard: React.FC = () => {
   const [reportStartDate, setReportStartDate] = useState<Date>(new Date());
   const [reportEndDate, setReportEndDate] = useState<Date>(new Date());
 
-  const handleGenerateReport = (type: string, startDate: Date, endDate: Date): AttendanceReport => {
-    const report: AttendanceReport = {
-      id: `report-${Date.now()}`,
-      type: type,
-      startDate,
-      endDate,
-      generatedAt: new Date(),
-      stats: {
-        present: 8,
-        absent: 1,
-        late: 1,
-        halfDay: 0,
-        total: 10
-      },
-      records: [],
-      summary: {
-        totalWorkDays: 10,
-        totalAbsences: 1,
-        totalLate: 1,
-        attendanceRate: 80,
-      }
-    };
-    
+  const handleGenerateReport = () => {
     toast.success("Rapport de présence généré avec succès", {
-      description: `Période: ${format(startDate, 'dd/MM/yyyy')} - ${format(endDate, 'dd/MM/yyyy')}`
+      description: `Période: ${format(reportStartDate, 'dd/MM/yyyy')} - ${format(reportEndDate, 'dd/MM/yyyy')}`
     });
-    
-    return report;
+    setIsReportDialogOpen(false);
   };
 
   const setPeriod = (period: 'day' | 'week' | 'month') => {
@@ -71,6 +47,12 @@ const ReportCard: React.FC = () => {
         <ReportDialog
           open={isReportDialogOpen}
           onOpenChange={setIsReportDialogOpen}
+          reportPeriod={reportPeriod}
+          setPeriod={setPeriod}
+          reportStartDate={reportStartDate}
+          setReportStartDate={setReportStartDate}
+          reportEndDate={reportEndDate}
+          setReportEndDate={setReportEndDate}
           onGenerateReport={handleGenerateReport}
         >
           <Button size="sm" className="h-8">
