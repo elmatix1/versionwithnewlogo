@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Download, FileText, Eye, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -107,7 +107,7 @@ const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicles }) => {
     setTimeout(() => {
       try {
         // Create a fake download
-        const blob = new Blob([`${document.name} for ${document.vehicleName}`], { type: 'text/plain' });
+        const blob = new Blob([`${document.name} pour ${document.vehicleName}`], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = window.document.createElement('a');
         a.href = url;
@@ -210,6 +210,7 @@ const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicles }) => {
                             variant="outline"
                             size="sm"
                             onClick={() => setViewDocument(doc)}
+                            className="flex items-center"
                           >
                             <Eye size={16} className="mr-1" />
                             Visualiser
@@ -219,6 +220,7 @@ const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicles }) => {
                             size="sm"
                             onClick={() => handleDownloadDocument(doc)}
                             disabled={isDownloading === doc.id}
+                            className="flex items-center"
                           >
                             <Download size={16} className="mr-1" />
                             {isDownloading === doc.id ? 'Téléchargement...' : 'Télécharger'}
@@ -287,8 +289,9 @@ const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicles }) => {
             <Button 
               onClick={() => viewDocument && handleDownloadDocument(viewDocument)}
               disabled={isDownloading === viewDocument?.id}
+              className="flex items-center gap-2"
             >
-              <Download size={16} className="mr-2" />
+              <Download size={16} />
               {isDownloading === viewDocument?.id ? 'Téléchargement...' : 'Télécharger ce document'}
             </Button>
           </div>

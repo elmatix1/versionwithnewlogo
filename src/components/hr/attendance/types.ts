@@ -1,33 +1,37 @@
 
+import { Employee } from '../../users/types';
+
 export interface AttendanceRecord {
   id: string;
-  employee: string;
   date: Date;
-  timeIn: string;
-  timeOut: string | null;
+  employee: string;
+  employeeId: string;
   status: 'present' | 'absent' | 'late' | 'half-day';
-  notes: string;
+  timeIn: string | null;
+  timeOut: string | null;
+  notes: string | null;
 }
 
-export interface Employee {
-  id: string;
-  name: string;
+export interface AttendanceStats {
+  present: number;
+  absent: number;
+  late: number;
+  halfDay: number;
+  total: number;
 }
 
 export interface AttendanceReport {
   id: string;
-  name: string;
-  period: string;
+  type: string;
   startDate: Date;
   endDate: Date;
-  generatedOn: Date;
+  generatedAt: Date;
+  stats: AttendanceStats;
   records: AttendanceRecord[];
   summary: {
-    totalDays: number;
-    presentDays: number;
-    absentDays: number;
-    lateDays: number;
-    averageTimeIn: string;
-    averageTimeOut: string;
+    totalWorkDays: number;
+    totalAbsences: number;
+    totalLate: number;
+    attendanceRate: number;
   };
 }

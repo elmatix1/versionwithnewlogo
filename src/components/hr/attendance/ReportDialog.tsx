@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -181,11 +182,11 @@ const ReportDialog: React.FC<ReportDialogProps> = ({
           {report && (
             <Button 
               variant="outline" 
-              className="mr-auto"
+              className="mr-auto flex items-center gap-2"
               onClick={handleDownloadReport}
               disabled={isDownloading}
             >
-              <Download className="mr-2 h-4 w-4" />
+              <Download className="h-4 w-4" />
               {isDownloading ? "Téléchargement..." : "Télécharger le rapport"}
             </Button>
           )}

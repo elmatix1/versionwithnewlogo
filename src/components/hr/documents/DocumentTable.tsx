@@ -37,7 +37,7 @@ const DocumentTable: React.FC<DocumentTableProps> = ({
     setTimeout(() => {
       try {
         // Create a fake download by creating a blob and triggering a download
-        const blob = new Blob([`This is the content of ${document.name}`], { type: 'text/plain' });
+        const blob = new Blob([`Contenu du document ${document.name}`], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = window.document.createElement('a');
         a.href = url;
@@ -69,7 +69,7 @@ const DocumentTable: React.FC<DocumentTableProps> = ({
 
   const statusLabels = {
     valid: "Valide",
-    expiring: "Expiration proche",
+    expiring: "Expire bientôt",
     expired: "Expiré",
   };
 
@@ -119,6 +119,7 @@ const DocumentTable: React.FC<DocumentTableProps> = ({
                         variant="outline"
                         size="sm"
                         onClick={() => onViewDocument ? onViewDocument(doc) : setViewDocument(doc)}
+                        className="flex items-center"
                       >
                         <Eye size={16} className="mr-1" />
                         Visualiser
@@ -128,6 +129,7 @@ const DocumentTable: React.FC<DocumentTableProps> = ({
                         size="sm"
                         onClick={() => handleDownload(doc)}
                         disabled={isDownloading === doc.id}
+                        className="flex items-center"
                       >
                         <Download size={16} className="mr-1" />
                         {isDownloading === doc.id ? 'Téléchargement...' : 'Télécharger'}
@@ -153,7 +155,7 @@ const DocumentTable: React.FC<DocumentTableProps> = ({
           </DialogHeader>
           {viewDocument && (
             <DocumentViewer 
-              document={viewDocument} 
+              document={viewDocument}
               open={!!viewDocument}
               onOpenChange={(open) => !open && setViewDocument(null)}
               onDownload={handleDownload}
@@ -163,8 +165,9 @@ const DocumentTable: React.FC<DocumentTableProps> = ({
             <Button 
               onClick={() => viewDocument && handleDownload(viewDocument)}
               disabled={isDownloading === viewDocument?.id}
+              className="flex items-center gap-2"
             >
-              <Download size={16} className="mr-2" />
+              <Download size={16} />
               {isDownloading === viewDocument?.id ? 'Téléchargement...' : 'Télécharger ce document'}
             </Button>
           </div>

@@ -74,6 +74,7 @@ const DocumentManager: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [employeeFilter, setEmployeeFilter] = useState<string>('all');
   const [documentTypeFilter, setDocumentTypeFilter] = useState<string>('all');
+  const [viewDocument, setViewDocument] = useState<Document | null>(null);
 
   // Upload document state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -136,6 +137,27 @@ const DocumentManager: React.FC = () => {
     setDocumentType('permis');
     setEmployeeName('');
     setExpiryDate('');
+  };
+
+  const handleViewDocument = (document: Document) => {
+    setViewDocument(document);
+  };
+
+  const handleDownloadDocument = (document: Document) => {
+    // Create a fake download by creating a blob and triggering a download
+    const blob = new Blob([`Contenu du document ${document.name}`], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = window.document.createElement('a');
+    a.href = url;
+    a.download = document.name;
+    window.document.body.appendChild(a);
+    a.click();
+    window.document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success('Document téléchargé', {
+      description: `${document.name} a été téléchargé avec succès`,
+    });
   };
 
   return (
@@ -225,6 +247,8 @@ const DocumentManager: React.FC = () => {
           <DocumentTable
             documents={filteredDocuments}
             title="Tous les documents"
+            onViewDocument={handleViewDocument}
+            onDownloadDocument={handleDownloadDocument}
           />
         </TabsContent>
         
@@ -232,6 +256,8 @@ const DocumentManager: React.FC = () => {
           <DocumentTable
             documents={filteredDocuments}
             title="Documents valides"
+            onViewDocument={handleViewDocument}
+            onDownloadDocument={handleDownloadDocument}
           />
         </TabsContent>
         
@@ -239,6 +265,8 @@ const DocumentManager: React.FC = () => {
           <DocumentTable
             documents={filteredDocuments}
             title="Documents expirant bientôt"
+            onViewDocument={handleViewDocument}
+            onDownloadDocument={handleDownloadDocument}
           />
         </TabsContent>
         
@@ -246,6 +274,8 @@ const DocumentManager: React.FC = () => {
           <DocumentTable
             documents={filteredDocuments}
             title="Documents expirés"
+            onViewDocument={handleViewDocument}
+            onDownloadDocument={handleDownloadDocument}
           />
         </TabsContent>
       </Tabs>
