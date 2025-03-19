@@ -1,4 +1,3 @@
-
 import { useEffect, useState, createContext, useContext, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
@@ -12,7 +11,13 @@ import {
   AUTH_STATUS_KEY 
 } from './auth/types';
 import { checkRolePermission, checkActionPermission } from './auth/permissions';
-import { addUser as addUserUtil, updateUser as updateUserUtil, deleteUser as deleteUserUtil } from './auth/userManagement';
+import { 
+  addUser as addUserUtil, 
+  updateUser as updateUserUtil, 
+  deleteUser as deleteUserUtil,
+  changeUserRole as changeUserRoleUtil,
+  resetUserPassword as resetUserPasswordUtil
+} from './auth/userManagement';
 
 // Re-export types for convenience
 export type { UserRole } from './auth/types';
@@ -29,6 +34,8 @@ interface AuthContextType {
   addUser: (user: Omit<User, 'id'>) => void;
   updateUser: (id: string, userData: Partial<User>) => void;
   deleteUser: (id: string) => void;
+  changeUserRole: (id: string, newRole: UserRole) => void;
+  resetUserPassword: (id: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -41,7 +48,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Vérifier si l'utilisateur est déjà connecté
     const checkAuth = () => {
       const storedUser = loadFromLocalStorage<User | null>(AUTH_USER_KEY, null);
       const storedAuth = loadFromLocalStorage<boolean>(AUTH_STATUS_KEY, false);
@@ -51,7 +57,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsAuthenticated(true);
       }
       
-      // Initialiser la liste des utilisateurs depuis localStorage ou utiliser defaults si vide
       const storedAllUsers = loadFromLocalStorage<User[]>(
         USERS_STORAGE_KEY, 
         DEFAULT_USERS.map(({ password, ...user }) => user)
@@ -64,7 +69,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     checkAuth();
   }, []);
 
-  // Persist users when they change
   useEffect(() => {
     if (allUsers.length > 0) {
       saveToLocalStorage(USERS_STORAGE_KEY, allUsers);
@@ -74,16 +78,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (username: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     
-    // Simulation d'un délai réseau
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Recherche de l'utilisateur par nom d'utilisateur et mot de passe
     const foundUser = DEFAULT_USERS.find(
       u => u.username === username && u.password === password
     );
     
     if (foundUser) {
-      // Créer un objet utilisateur sans le mot de passe pour le stockage
       const secureUser = {
         id: foundUser.id,
         username: foundUser.username,
@@ -127,17 +128,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     navigate('/login');
   };
 
-  // Vérifier si l'utilisateur a les permissions requises
   const hasPermission = (requiredRoles: UserRole[]): boolean => {
     return checkRolePermission(user?.role, requiredRoles);
   };
 
-  // Vérifier si l'utilisateur a la permission pour une action spécifique
   const hasActionPermission = (action: string): boolean => {
     return checkActionPermission(user?.role, action);
   };
 
-  // Functions for user management
   const handleAddUser = (userData: Omit<User, 'id'>) => {
     const result = addUserUtil(userData, allUsers, user?.role);
     if (result) setAllUsers(result);
@@ -153,6 +151,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (result) setAllUsers(result);
   };
 
+  const handleChangeUserRole = (id: string, newRole: UserRole) => {
+    const result = changeUserRoleUtil(id, newRole, allUsers, user?.role);
+    if (result) setAllUsers(result);
+  };
+
+  const handleResetUserPassword = (id: string): boolean => {
+    return resetUserPasswordUtil(id, allUsers, user?.role);
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -165,7 +172,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       allUsers,
       addUser: handleAddUser,
       updateUser: handleUpdateUser,
-      deleteUser: handleDeleteUser
+      deleteUser: handleDeleteUser,
+      changeUserRole: handleChangeUserRole,
+      resetUserPassword: handleResetUserPassword
     }}>
       {children}
     </AuthContext.Provider>

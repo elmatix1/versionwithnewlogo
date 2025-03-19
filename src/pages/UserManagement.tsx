@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Table,
@@ -38,12 +37,9 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { UserRole } from '@/hooks/useAuth';
+import { UserRole } from '@/hooks/auth/types';
 import AddUserForm from '@/components/users/AddUserForm';
-import { saveToLocalStorage, loadFromLocalStorage } from '@/utils/localStorage';
 import MoroccanSuggestionInput from '@/components/shared/MoroccanSuggestionInput';
-
-const USERS_STORAGE_KEY = 'tms-users';
 
 const getRoleName = (role: UserRole) => {
   const roleNames: Record<UserRole, string> = {
@@ -90,12 +86,18 @@ const UserManagement: React.FC = () => {
   const [deleteUserDialogOpen, setDeleteUserDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [newRole, setNewRole] = useState<UserRole>('admin');
-  const [newPassword, setNewPassword] = useState('');
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editCIN, setEditCIN] = useState('');
   const [editCity, setEditCity] = useState('');
   const [editAddress, setEditAddress] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    if (!editUserDialogOpen && !changeRoleDialogOpen && !resetPasswordDialogOpen && !deleteUserDialogOpen) {
+      setIsProcessing(false);
+    }
+  }, [editUserDialogOpen, changeRoleDialogOpen, resetPasswordDialogOpen, deleteUserDialogOpen]);
 
   const handleEdit = (user: any) => {
     setSelectedUser(user);
@@ -115,7 +117,6 @@ const UserManagement: React.FC = () => {
 
   const handleResetPassword = (user: any) => {
     setSelectedUser(user);
-    setNewPassword('');
     setResetPasswordDialogOpen(true);
   };
 
@@ -125,78 +126,107 @@ const UserManagement: React.FC = () => {
   };
 
   const confirmEditUser = () => {
-    if (selectedUser) {
-      updateUser(selectedUser.id, {
-        name: editName,
-        email: editEmail,
-        cin: editCIN,
-        city: editCity,
-        address: editAddress
-      });
-      setEditUserDialogOpen(false);
+    if (selectedUser && !isProcessing) {
+      setIsProcessing(true);
       
-      // Sauvegarde des utilisateurs dans localStorage
-      saveToLocalStorage(USERS_STORAGE_KEY, allUsers);
-      
-      toast.success("Utilisateur mis à jour", {
-        description: `Les informations de ${editName} ont été mises à jour.`
-      });
+      try {
+        updateUser(selectedUser.id, {
+          name: editName,
+          email: editEmail,
+          cin: editCIN,
+          city: editCity,
+          address: editAddress
+        });
+        
+        setEditUserDialogOpen(false);
+      } catch (error) {
+        console.error("Erreur lors de la modification de l'utilisateur:", error);
+        toast.error("Erreur", { description: "Une erreur s'est produite lors de la modification de l'utilisateur" });
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
   const confirmChangeRole = () => {
-    if (selectedUser) {
-      updateUser(selectedUser.id, { role: newRole });
-      setChangeRoleDialogOpen(false);
+    if (selectedUser && !isProcessing) {
+      setIsProcessing(true);
       
-      // Sauvegarde des utilisateurs dans localStorage
-      saveToLocalStorage(USERS_STORAGE_KEY, allUsers);
-      
-      toast.success("Rôle mis à jour", {
-        description: `Le rôle de ${selectedUser.name} a été changé en ${roleLabels[newRole]}.`
-      });
+      try {
+        updateUser(selectedUser.id, { role: newRole });
+        
+        setChangeRoleDialogOpen(false);
+        
+        toast.success("Rôle mis à jour", {
+          description: `Le rôle de ${selectedUser.name} a été changé en ${roleLabels[newRole]}.`
+        });
+      } catch (error) {
+        console.error("Erreur lors du changement de rôle:", error);
+        toast.error("Erreur", { description: "Une erreur s'est produite lors du changement de rôle" });
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
   const confirmResetPassword = () => {
-    if (selectedUser) {
-      // Simuler la réinitialisation du mot de passe
-      const newRandomPassword = Math.random().toString(36).slice(-8);
-      toast.success(`Mot de passe réinitialisé pour ${selectedUser.name}`, {
-        description: `Un nouveau mot de passe a été envoyé à l'utilisateur.`
-      });
-      setResetPasswordDialogOpen(false);
+    if (selectedUser && !isProcessing) {
+      setIsProcessing(true);
+      
+      try {
+        const newRandomPassword = Math.random().toString(36).slice(-8);
+        
+        toast.success(`Mot de passe réinitialisé pour ${selectedUser.name}`, {
+          description: `Un nouveau mot de passe a été envoyé à l'utilisateur.`
+        });
+        
+        setResetPasswordDialogOpen(false);
+      } catch (error) {
+        console.error("Erreur lors de la réinitialisation du mot de passe:", error);
+        toast.error("Erreur", { description: "Une erreur s'est produite lors de la réinitialisation du mot de passe" });
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
   const confirmDeleteUser = () => {
-    if (selectedUser) {
-      const userName = selectedUser.name;
-      deleteUser(selectedUser.id);
-      setDeleteUserDialogOpen(false);
+    if (selectedUser && !isProcessing) {
+      setIsProcessing(true);
       
-      // Sauvegarde des utilisateurs dans localStorage après suppression
-      setTimeout(() => {
-        saveToLocalStorage(USERS_STORAGE_KEY, allUsers);
-      }, 100);
-      
-      toast.success(`Utilisateur supprimé`, {
-        description: `${userName} a été supprimé avec succès.`
-      });
+      try {
+        const userName = selectedUser.name;
+        deleteUser(selectedUser.id);
+        
+        setDeleteUserDialogOpen(false);
+      } catch (error) {
+        console.error("Erreur lors de la suppression de l'utilisateur:", error);
+        toast.error("Erreur", { description: "Une erreur s'est produite lors de la suppression de l'utilisateur" });
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
   const handleAddUser = (userData: any) => {
-    addUser(userData);
-    
-    // Sauvegarde des utilisateurs dans localStorage après ajout
-    setTimeout(() => {
-      saveToLocalStorage(USERS_STORAGE_KEY, allUsers);
-    }, 100);
-    
-    toast.success(`Utilisateur ${userData.name} ajouté`, {
-      description: `Rôle: ${roleLabels[userData.role as UserRole]}`
-    });
+    if (!isProcessing) {
+      setIsProcessing(true);
+      
+      try {
+        addUser(userData);
+        
+        setAddUserDialogOpen(false);
+        
+        toast.success(`Utilisateur ${userData.name} ajouté`, {
+          description: `Rôle: ${roleLabels[userData.role as UserRole]}`
+        });
+      } catch (error) {
+        console.error("Erreur lors de l'ajout de l'utilisateur:", error);
+        toast.error("Erreur", { description: "Une erreur s'est produite lors de l'ajout de l'utilisateur" });
+      } finally {
+        setIsProcessing(false);
+      }
+    }
   };
 
   return (
@@ -213,7 +243,11 @@ const UserManagement: React.FC = () => {
           </p>
         </div>
         {hasActionPermission('add-user') && (
-          <Button onClick={() => setAddUserDialogOpen(true)} className="flex items-center gap-1">
+          <Button 
+            onClick={() => setAddUserDialogOpen(true)} 
+            className="flex items-center gap-1"
+            disabled={isProcessing}
+          >
             <Plus className="h-4 w-4" />
             <span>Nouvel utilisateur</span>
           </Button>
@@ -254,25 +288,38 @@ const UserManagement: React.FC = () => {
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" disabled={isProcessing}>
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(user)} disabled={!hasActionPermission('edit-user')}>
+                      <DropdownMenuItem 
+                        onClick={() => handleEdit(user)} 
+                        disabled={!hasActionPermission('edit-user') || isProcessing}
+                      >
                         <Pencil className="mr-2 h-4 w-4" />
                         <span>Modifier</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleChangeRole(user)} disabled={!hasActionPermission('manage-roles')}>
+                      <DropdownMenuItem 
+                        onClick={() => handleChangeRole(user)} 
+                        disabled={!hasActionPermission('manage-roles') || isProcessing}
+                      >
                         <UserCog className="mr-2 h-4 w-4" />
                         <span>Changer de rôle</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleResetPassword(user)} disabled={!hasActionPermission('edit-user')}>
+                      <DropdownMenuItem 
+                        onClick={() => handleResetPassword(user)} 
+                        disabled={!hasActionPermission('edit-user') || isProcessing}
+                      >
                         <KeyRound className="mr-2 h-4 w-4" />
                         <span>Réinitialiser mot de passe</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => handleDelete(user)} disabled={!hasActionPermission('delete-user')} className="text-red-600">
+                      <DropdownMenuItem 
+                        onClick={() => handleDelete(user)} 
+                        disabled={!hasActionPermission('delete-user') || isProcessing} 
+                        className="text-red-600"
+                      >
                         <Trash className="mr-2 h-4 w-4" />
                         <span>Supprimer</span>
                       </DropdownMenuItem>
@@ -285,8 +332,9 @@ const UserManagement: React.FC = () => {
         </Table>
       </div>
 
-      {/* Edit User Dialog */}
-      <Dialog open={editUserDialogOpen} onOpenChange={setEditUserDialogOpen}>
+      <Dialog open={editUserDialogOpen} onOpenChange={(open) => {
+        if (!isProcessing) setEditUserDialogOpen(open);
+      }}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Modifier l'utilisateur</DialogTitle>
@@ -380,13 +428,16 @@ const UserManagement: React.FC = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={confirmEditUser}>Enregistrer</Button>
+            <Button onClick={confirmEditUser} disabled={isProcessing}>
+              {isProcessing ? "Enregistrement..." : "Enregistrer"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Change Role Dialog */}
-      <Dialog open={changeRoleDialogOpen} onOpenChange={setChangeRoleDialogOpen}>
+      <Dialog open={changeRoleDialogOpen} onOpenChange={(open) => {
+        if (!isProcessing) setChangeRoleDialogOpen(open);
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Changer le rôle</DialogTitle>
@@ -402,6 +453,7 @@ const UserManagement: React.FC = () => {
               <Select
                 value={newRole}
                 onValueChange={(value: any) => setNewRole(value)}
+                disabled={isProcessing}
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Sélectionner un rôle" />
@@ -419,13 +471,16 @@ const UserManagement: React.FC = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={confirmChangeRole}>Enregistrer</Button>
+            <Button onClick={confirmChangeRole} disabled={isProcessing}>
+              {isProcessing ? "Enregistrement..." : "Enregistrer"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Reset Password Dialog */}
-      <Dialog open={resetPasswordDialogOpen} onOpenChange={setResetPasswordDialogOpen}>
+      <Dialog open={resetPasswordDialogOpen} onOpenChange={(open) => {
+        if (!isProcessing) setResetPasswordDialogOpen(open);
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Réinitialiser le mot de passe</DialogTitle>
@@ -437,13 +492,16 @@ const UserManagement: React.FC = () => {
             <p>Confirmez-vous la réinitialisation du mot de passe pour {selectedUser?.name}?</p>
           </div>
           <DialogFooter>
-            <Button onClick={confirmResetPassword}>Confirmer</Button>
+            <Button onClick={confirmResetPassword} disabled={isProcessing}>
+              {isProcessing ? "Traitement..." : "Confirmer"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete User Dialog */}
-      <Dialog open={deleteUserDialogOpen} onOpenChange={setDeleteUserDialogOpen}>
+      <Dialog open={deleteUserDialogOpen} onOpenChange={(open) => {
+        if (!isProcessing) setDeleteUserDialogOpen(open);
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Supprimer l'utilisateur</DialogTitle>
@@ -455,14 +513,18 @@ const UserManagement: React.FC = () => {
             <p>Êtes-vous sûr de vouloir supprimer {selectedUser?.name}?</p>
           </div>
           <DialogFooter>
-            <Button variant="destructive" onClick={confirmDeleteUser}>Supprimer</Button>
+            <Button variant="destructive" onClick={confirmDeleteUser} disabled={isProcessing}>
+              {isProcessing ? "Suppression..." : "Supprimer"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <AddUserForm 
         open={addUserDialogOpen} 
-        onOpenChange={setAddUserDialogOpen} 
+        onOpenChange={(open) => {
+          if (!isProcessing) setAddUserDialogOpen(open);
+        }} 
         onAddUser={handleAddUser}
       />
     </div>
