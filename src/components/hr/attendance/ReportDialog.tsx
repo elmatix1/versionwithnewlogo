@@ -1,154 +1,198 @@
 
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalendarIcon, Download } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { toast } from "sonner";
+import { AttendanceReport } from "./types";
 
 interface ReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  reportPeriod: 'day' | 'week' | 'month';
-  setPeriod: (period: 'day' | 'week' | 'month') => void;
-  reportStartDate: Date;
-  setReportStartDate: (date: Date) => void;
-  reportEndDate: Date;
-  setReportEndDate: (date: Date) => void;
-  onGenerateReport: () => void;
-  children: React.ReactNode;
+  onGenerateReport: (type: string, startDate: Date, endDate: Date) => AttendanceReport;
 }
 
 const ReportDialog: React.FC<ReportDialogProps> = ({
   open,
   onOpenChange,
-  reportPeriod,
-  setPeriod,
-  reportStartDate,
-  setReportStartDate,
-  reportEndDate,
-  setReportEndDate,
   onGenerateReport,
-  children
 }) => {
+  const [reportType, setReportType] = useState("daily");
+  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [endDate, setEndDate] = useState<Date>(new Date());
+  const [report, setReport] = useState<AttendanceReport | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleGenerateReport = () => {
+    setIsGenerating(true);
+    setTimeout(() => {
+      try {
+        const generatedReport = onGenerateReport(reportType, startDate, endDate);
+        setReport(generatedReport);
+        toast.success("Rapport généré avec succès");
+      } catch (error) {
+        toast.error("Erreur lors de la génération du rapport");
+      } finally {
+        setIsGenerating(false);
+      }
+    }, 1000);
+  };
+
+  const handleDownloadReport = () => {
+    if (!report) return;
+    
+    setIsDownloading(true);
+    
+    setTimeout(() => {
+      try {
+        // Create a blob with the report data
+        const reportData = JSON.stringify(report, null, 2);
+        const blob = new Blob([reportData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        // Create an anchor element and trigger download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `rapport-pointage-${format(startDate, 'yyyy-MM-dd')}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        toast.success("Rapport téléchargé avec succès");
+      } catch (error) {
+        console.error("Erreur lors du téléchargement:", error);
+        toast.error("Erreur lors du téléchargement du rapport");
+      } finally {
+        setIsDownloading(false);
+      }
+    }, 800);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle>Générer un rapport de présence</DialogTitle>
+          <DialogTitle>Générer un rapport de pointage</DialogTitle>
           <DialogDescription>
-            Sélectionnez la période et les paramètres du rapport.
+            Sélectionnez le type de rapport et la période pour générer un rapport de pointage
           </DialogDescription>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="reportPeriod" className="text-right">
-              Période
-            </Label>
-            <Select
-              value={reportPeriod}
-              onValueChange={(value: 'day' | 'week' | 'month') => setPeriod(value)}
+          <div className="grid gap-2">
+            <label htmlFor="report-type" className="text-sm font-medium">
+              Type de rapport
+            </label>
+            <Select 
+              value={reportType} 
+              onValueChange={setReportType}
             >
-              <SelectTrigger id="reportPeriod" className="col-span-3">
-                <SelectValue placeholder="Sélectionner une période" />
+              <SelectTrigger id="report-type">
+                <SelectValue placeholder="Sélectionner le type de rapport" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="day">Jour</SelectItem>
-                <SelectItem value="week">Semaine</SelectItem>
-                <SelectItem value="month">Mois</SelectItem>
+                <SelectItem value="daily">Journalier</SelectItem>
+                <SelectItem value="weekly">Hebdomadaire</SelectItem>
+                <SelectItem value="monthly">Mensuel</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="startDate" className="text-right">
-              Date de début
-            </Label>
-            <div className="col-span-3 flex items-center gap-2">
-              <Input 
-                id="startDate"
-                type="date"
-                value={format(reportStartDate, 'yyyy-MM-dd')}
-                onChange={(e) => setReportStartDate(new Date(e.target.value))}
-                className="flex-1"
-              />
-              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <label htmlFor="start-date" className="text-sm font-medium">
+                Date de début
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="start-date"
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !startDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? (
+                      format(startDate, "PPP", { locale: fr })
+                    ) : (
+                      <span>Sélectionner une date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(date) => date && setStartDate(date)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
-          </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="endDate" className="text-right">
-              Date de fin
-            </Label>
-            <div className="col-span-3 flex items-center gap-2">
-              <Input 
-                id="endDate"
-                type="date"
-                value={format(reportEndDate, 'yyyy-MM-dd')}
-                onChange={(e) => setReportEndDate(new Date(e.target.value))}
-                className="flex-1"
-              />
-              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+            
+            <div className="grid gap-2">
+              <label htmlFor="end-date" className="text-sm font-medium">
+                Date de fin
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="end-date"
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !endDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {endDate ? (
+                      format(endDate, "PPP", { locale: fr })
+                    ) : (
+                      <span>Sélectionner une date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={(date) => date && setEndDate(date)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
-          </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="employeeReport" className="text-right">
-              Employé
-            </Label>
-            <Select defaultValue="all">
-              <SelectTrigger id="employeeReport" className="col-span-3">
-                <SelectValue placeholder="Tous les employés" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les employés</SelectItem>
-                <SelectItem value="Thomas Durand">Thomas Durand</SelectItem>
-                <SelectItem value="Sophie Lefèvre">Sophie Lefèvre</SelectItem>
-                <SelectItem value="Pierre Martin">Pierre Martin</SelectItem>
-                <SelectItem value="Marie Lambert">Marie Lambert</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="reportFormat" className="text-right">
-              Format
-            </Label>
-            <Select defaultValue="pdf">
-              <SelectTrigger id="reportFormat" className="col-span-3">
-                <SelectValue placeholder="Sélectionner un format" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pdf">PDF</SelectItem>
-                <SelectItem value="excel">Excel</SelectItem>
-                <SelectItem value="csv">CSV</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
         
-        <DialogFooter>
-          <Button onClick={onGenerateReport}>Générer</Button>
+        <DialogFooter className="gap-2 sm:gap-0">
+          {report && (
+            <Button 
+              variant="outline" 
+              className="mr-auto"
+              onClick={handleDownloadReport}
+              disabled={isDownloading}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              {isDownloading ? "Téléchargement..." : "Télécharger le rapport"}
+            </Button>
+          )}
+          <Button 
+            onClick={handleGenerateReport} 
+            disabled={isGenerating}
+          >
+            {isGenerating ? "Génération en cours..." : "Générer le rapport"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
