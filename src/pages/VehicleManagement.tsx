@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
@@ -137,7 +136,6 @@ const VehicleManagement: React.FC = () => {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [addVehicleDialogOpen, setAddVehicleDialogOpen] = useState(false);
   
-  // Persist vehicle data when it changes
   useEffect(() => {
     saveToLocalStorage(STORAGE_KEY, vehicles);
   }, [vehicles]);

@@ -12,13 +12,25 @@ import DocumentViewer from './DocumentViewer';
 interface DocumentTableProps {
   documents: Document[];
   title: string;
+  onViewDocument?: (document: Document) => void;
+  onDownloadDocument?: (document: Document) => void;
 }
 
-const DocumentTable: React.FC<DocumentTableProps> = ({ documents, title }) => {
+const DocumentTable: React.FC<DocumentTableProps> = ({ 
+  documents, 
+  title,
+  onViewDocument,
+  onDownloadDocument 
+}) => {
   const [viewDocument, setViewDocument] = useState<Document | null>(null);
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
 
   const handleDownload = (document: Document) => {
+    if (onDownloadDocument) {
+      onDownloadDocument(document);
+      return;
+    }
+
     setIsDownloading(document.id);
     
     // Create a simulated delay to mimic download process
@@ -27,12 +39,12 @@ const DocumentTable: React.FC<DocumentTableProps> = ({ documents, title }) => {
         // Create a fake download by creating a blob and triggering a download
         const blob = new Blob([`This is the content of ${document.name}`], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = window.document.createElement('a');
         a.href = url;
         a.download = document.name;
-        document.body.appendChild(a);
+        window.document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
+        window.document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
         toast.success('Document téléchargé', {
@@ -106,7 +118,7 @@ const DocumentTable: React.FC<DocumentTableProps> = ({ documents, title }) => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setViewDocument(doc)}
+                        onClick={() => onViewDocument ? onViewDocument(doc) : setViewDocument(doc)}
                       >
                         <Eye size={16} className="mr-1" />
                         Visualiser
