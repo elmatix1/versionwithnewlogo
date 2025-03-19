@@ -22,19 +22,23 @@ const ReportCard: React.FC = () => {
   const handleGenerateReport = (type: string, startDate: Date, endDate: Date): AttendanceReport => {
     const report: AttendanceReport = {
       id: `report-${Date.now()}`,
-      name: `Rapport de présence - ${format(startDate, 'dd/MM/yyyy')} à ${format(endDate, 'dd/MM/yyyy')}`,
-      period: type,
+      type: type,
       startDate,
       endDate,
-      generatedOn: new Date(),
+      generatedAt: new Date(),
+      stats: {
+        present: 8,
+        absent: 1,
+        late: 1,
+        halfDay: 0,
+        total: 10
+      },
       records: [],
       summary: {
-        totalDays: 10,
-        presentDays: 8,
-        absentDays: 1,
-        lateDays: 1,
-        averageTimeIn: '08:15',
-        averageTimeOut: '17:45',
+        totalWorkDays: 10,
+        totalAbsences: 1,
+        totalLate: 1,
+        attendanceRate: 80,
       }
     };
     

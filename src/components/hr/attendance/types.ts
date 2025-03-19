@@ -1,5 +1,8 @@
 
-import { Employee } from '../../users/types';
+export interface Employee {
+  id: string;
+  name: string;
+}
 
 export interface AttendanceRecord {
   id: string;

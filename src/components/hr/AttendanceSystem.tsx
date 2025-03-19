@@ -15,6 +15,7 @@ const AttendanceSystem: React.FC = () => {
     {
       id: 'att-001',
       employee: 'Thomas Durand',
+      employeeId: '1',
       date: new Date(),
       timeIn: '08:15',
       timeOut: '17:30',
@@ -24,6 +25,7 @@ const AttendanceSystem: React.FC = () => {
     {
       id: 'att-002',
       employee: 'Sophie Lefèvre',
+      employeeId: '2',
       date: new Date(),
       timeIn: '09:05',
       timeOut: '17:45',
@@ -33,6 +35,7 @@ const AttendanceSystem: React.FC = () => {
     {
       id: 'att-003',
       employee: 'Pierre Martin',
+      employeeId: '3',
       date: new Date(),
       timeIn: '',
       timeOut: null,
@@ -42,6 +45,7 @@ const AttendanceSystem: React.FC = () => {
     {
       id: 'att-004',
       employee: 'Marie Lambert',
+      employeeId: '4',
       date: new Date(),
       timeIn: '08:00',
       timeOut: '13:15',
