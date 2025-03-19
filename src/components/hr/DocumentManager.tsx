@@ -14,7 +14,6 @@ import { Search, Upload, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import { Document } from './documents/types';
 import DocumentTable from './documents/DocumentTable';
-import DocumentViewer from './documents/DocumentViewer';
 import UploadDialog from './documents/UploadDialog';
 
 const DocumentManager: React.FC = () => {
@@ -27,15 +26,17 @@ const DocumentManager: React.FC = () => {
       employee: 'Thomas Durand',
       uploadDate: new Date(2023, 3, 15),
       expiryDate: new Date(2025, 3, 15),
+      issueDate: '15/04/2023',
     },
     {
       id: 'doc-002',
       name: 'Certificat médical',
       type: 'medical',
-      status: 'expiring-soon',
+      status: 'expiring',
       employee: 'Thomas Durand',
       uploadDate: new Date(2023, 7, 10),
       expiryDate: new Date(2023, 9, 10),
+      issueDate: '10/08/2023',
     },
     {
       id: 'doc-003',
@@ -45,6 +46,7 @@ const DocumentManager: React.FC = () => {
       employee: 'Sophie Lefèvre',
       uploadDate: new Date(2023, 5, 20),
       expiryDate: new Date(2026, 5, 20),
+      issueDate: '20/06/2023',
     },
     {
       id: 'doc-004',
@@ -54,6 +56,7 @@ const DocumentManager: React.FC = () => {
       employee: 'Pierre Martin',
       uploadDate: new Date(2022, 11, 5),
       expiryDate: new Date(2023, 5, 5),
+      issueDate: '05/12/2022',
     },
     {
       id: 'doc-005',
@@ -63,6 +66,7 @@ const DocumentManager: React.FC = () => {
       employee: 'Sophie Lefèvre',
       uploadDate: new Date(2022, 8, 1),
       expiryDate: null,
+      issueDate: '01/09/2022',
     },
   ]);
 
@@ -77,10 +81,6 @@ const DocumentManager: React.FC = () => {
   const [documentType, setDocumentType] = useState<'permis' | 'carte-pro' | 'medical' | 'formation' | 'contrat'>('permis');
   const [employeeName, setEmployeeName] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
-
-  // View document state
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
 
   const filteredDocuments = documents.filter(doc => {
     // Filter by tab
@@ -124,6 +124,7 @@ const DocumentManager: React.FC = () => {
       employee: employeeName,
       uploadDate: new Date(),
       expiryDate: expiryDate ? new Date(expiryDate) : null,
+      issueDate: new Date().toLocaleDateString(),
     };
 
     setDocuments([...documents, newDocument]);
@@ -135,17 +136,6 @@ const DocumentManager: React.FC = () => {
     setDocumentType('permis');
     setEmployeeName('');
     setExpiryDate('');
-  };
-
-  const handleViewDocument = (document: Document) => {
-    setSelectedDocument(document);
-    setViewDialogOpen(true);
-  };
-
-  const handleDownloadDocument = (document: Document) => {
-    toast.success(`Téléchargement du document: ${document.name}`, {
-      description: `Le document a été téléchargé avec succès.`
-    });
   };
 
   return (
@@ -227,50 +217,38 @@ const DocumentManager: React.FC = () => {
         <TabsList>
           <TabsTrigger value="all">Tous</TabsTrigger>
           <TabsTrigger value="valid">Valides</TabsTrigger>
-          <TabsTrigger value="expiring-soon">Expirent bientôt</TabsTrigger>
+          <TabsTrigger value="expiring">Expirent bientôt</TabsTrigger>
           <TabsTrigger value="expired">Expirés</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="mt-4">
           <DocumentTable
             documents={filteredDocuments}
-            onViewDocument={handleViewDocument}
-            onDownloadDocument={handleDownloadDocument}
+            title="Tous les documents"
           />
         </TabsContent>
         
         <TabsContent value="valid" className="mt-4">
           <DocumentTable
             documents={filteredDocuments}
-            onViewDocument={handleViewDocument}
-            onDownloadDocument={handleDownloadDocument}
+            title="Documents valides"
           />
         </TabsContent>
         
-        <TabsContent value="expiring-soon" className="mt-4">
+        <TabsContent value="expiring" className="mt-4">
           <DocumentTable
             documents={filteredDocuments}
-            onViewDocument={handleViewDocument}
-            onDownloadDocument={handleDownloadDocument}
+            title="Documents expirant bientôt"
           />
         </TabsContent>
         
         <TabsContent value="expired" className="mt-4">
           <DocumentTable
             documents={filteredDocuments}
-            onViewDocument={handleViewDocument}
-            onDownloadDocument={handleDownloadDocument}
+            title="Documents expirés"
           />
         </TabsContent>
       </Tabs>
-
-      {/* Document Viewer Dialog */}
-      <DocumentViewer
-        open={viewDialogOpen}
-        onOpenChange={setViewDialogOpen}
-        document={selectedDocument}
-        onDownload={handleDownloadDocument}
-      />
     </div>
   );
 };

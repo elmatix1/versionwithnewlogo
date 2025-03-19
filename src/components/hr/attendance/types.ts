@@ -13,3 +13,21 @@ export interface Employee {
   id: string;
   name: string;
 }
+
+export interface AttendanceReport {
+  id: string;
+  name: string;
+  period: string;
+  startDate: Date;
+  endDate: Date;
+  generatedOn: Date;
+  records: AttendanceRecord[];
+  summary: {
+    totalDays: number;
+    presentDays: number;
+    absentDays: number;
+    lateDays: number;
+    averageTimeIn: string;
+    averageTimeOut: string;
+  };
+}

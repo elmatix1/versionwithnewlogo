@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Document, DocumentStatus } from './types';
+import { Document } from './types';
 import DocumentViewer from './DocumentViewer';
 
 interface DocumentTableProps {
@@ -94,8 +94,8 @@ const DocumentTable: React.FC<DocumentTableProps> = ({ documents, title }) => {
                       {doc.name}
                     </div>
                   </TableCell>
-                  <TableCell>{doc.issueDate}</TableCell>
-                  <TableCell>{doc.expiryDate}</TableCell>
+                  <TableCell>{doc.issueDate || (doc.uploadDate ? doc.uploadDate.toLocaleDateString() : 'N/A')}</TableCell>
+                  <TableCell>{doc.expiryDate ? doc.expiryDate.toLocaleDateString() : 'N/A'}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className={statusStyles[doc.status]}>
                       {statusLabels[doc.status]}
@@ -135,10 +135,18 @@ const DocumentTable: React.FC<DocumentTableProps> = ({ documents, title }) => {
           <DialogHeader>
             <DialogTitle>{viewDocument?.name}</DialogTitle>
             <DialogDescription>
-              Émis le {viewDocument?.issueDate} - Expire le {viewDocument?.expiryDate}
+              Émis le {viewDocument?.issueDate || (viewDocument?.uploadDate ? viewDocument.uploadDate.toLocaleDateString() : 'N/A')} - 
+              {viewDocument?.expiryDate ? ` Expire le ${viewDocument.expiryDate.toLocaleDateString()}` : ' Sans date d\'expiration'}
             </DialogDescription>
           </DialogHeader>
-          {viewDocument && <DocumentViewer document={viewDocument} />}
+          {viewDocument && (
+            <DocumentViewer 
+              document={viewDocument} 
+              open={!!viewDocument}
+              onOpenChange={(open) => !open && setViewDocument(null)}
+              onDownload={handleDownload}
+            />
+          )}
           <div className="flex justify-end mt-4">
             <Button 
               onClick={() => viewDocument && handleDownload(viewDocument)}

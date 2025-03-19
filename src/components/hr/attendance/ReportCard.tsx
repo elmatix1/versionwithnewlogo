@@ -11,6 +11,7 @@ import { FileText } from 'lucide-react';
 import ReportDialog from './ReportDialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { AttendanceReport } from './types';
 
 const ReportCard: React.FC = () => {
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
@@ -18,11 +19,30 @@ const ReportCard: React.FC = () => {
   const [reportStartDate, setReportStartDate] = useState<Date>(new Date());
   const [reportEndDate, setReportEndDate] = useState<Date>(new Date());
 
-  const handleGenerateReport = () => {
+  const handleGenerateReport = (type: string, startDate: Date, endDate: Date): AttendanceReport => {
+    const report: AttendanceReport = {
+      id: `report-${Date.now()}`,
+      name: `Rapport de présence - ${format(startDate, 'dd/MM/yyyy')} à ${format(endDate, 'dd/MM/yyyy')}`,
+      period: type,
+      startDate,
+      endDate,
+      generatedOn: new Date(),
+      records: [],
+      summary: {
+        totalDays: 10,
+        presentDays: 8,
+        absentDays: 1,
+        lateDays: 1,
+        averageTimeIn: '08:15',
+        averageTimeOut: '17:45',
+      }
+    };
+    
     toast.success("Rapport de présence généré avec succès", {
-      description: `Période: ${format(reportStartDate, 'dd/MM/yyyy')} - ${format(reportEndDate, 'dd/MM/yyyy')}`
+      description: `Période: ${format(startDate, 'dd/MM/yyyy')} - ${format(endDate, 'dd/MM/yyyy')}`
     });
-    setIsReportDialogOpen(false);
+    
+    return report;
   };
 
   const setPeriod = (period: 'day' | 'week' | 'month') => {
@@ -47,12 +67,6 @@ const ReportCard: React.FC = () => {
         <ReportDialog
           open={isReportDialogOpen}
           onOpenChange={setIsReportDialogOpen}
-          reportPeriod={reportPeriod}
-          setPeriod={setPeriod}
-          reportStartDate={reportStartDate}
-          setReportStartDate={setReportStartDate}
-          reportEndDate={reportEndDate}
-          setReportEndDate={setReportEndDate}
           onGenerateReport={handleGenerateReport}
         >
           <Button size="sm" className="h-8">

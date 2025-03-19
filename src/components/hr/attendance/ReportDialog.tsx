@@ -16,12 +16,14 @@ interface ReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onGenerateReport: (type: string, startDate: Date, endDate: Date) => AttendanceReport;
+  children?: React.ReactNode;
 }
 
 const ReportDialog: React.FC<ReportDialogProps> = ({
   open,
   onOpenChange,
   onGenerateReport,
+  children
 }) => {
   const [reportType, setReportType] = useState("daily");
   const [startDate, setStartDate] = useState<Date>(new Date());
@@ -78,6 +80,9 @@ const ReportDialog: React.FC<ReportDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
+        {children}
+      </DialogTrigger>
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle>Générer un rapport de pointage</DialogTitle>
