@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
@@ -47,6 +46,9 @@ import {
   BarChart
 } from 'lucide-react';
 import { toast } from "sonner";
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import TaskCreationForm from '@/components/maintenance/TaskCreationForm';
 
 interface MaintenanceTask {
   id: string;
@@ -210,17 +212,17 @@ const Maintenance: React.FC = () => {
     });
   };
 
-  const handleAddNewTask = () => {
+  const handleAddNewTask = (formData: any) => {
     const newTask: MaintenanceTask = {
       id: `MT-${Math.floor(1000 + Math.random() * 9000)}`,
-      vehicle: `TL-${Math.floor(1000 + Math.random() * 9000)}`,
-      type: "preventive",
-      description: "Nouvelle tâche de maintenance",
-      status: "planned",
-      priority: "medium",
-      assignedTo: "Non assigné",
-      scheduledDate: new Date().toLocaleDateString('fr-FR'),
-      estimatedDuration: "2h"
+      vehicle: formData.vehicle,
+      type: formData.type,
+      description: formData.description,
+      status: formData.status,
+      priority: formData.priority,
+      assignedTo: formData.assignedTo,
+      scheduledDate: format(formData.scheduledDate, 'dd/MM/yyyy', { locale: fr }),
+      estimatedDuration: formData.estimatedDuration
     };
     
     setMaintenanceTasks(prev => [...prev, newTask]);
@@ -251,6 +253,12 @@ const Maintenance: React.FC = () => {
     return maintenanceTasks.filter(task => task.status === status);
   };
 
+  // Compteurs pour les tâches par statut
+  const plannedTasksCount = maintenanceTasks.filter(t => t.status === 'planned').length;
+  const inProgressTasksCount = maintenanceTasks.filter(t => t.status === 'in-progress').length;
+  const completedTasksCount = maintenanceTasks.filter(t => t.status === 'completed').length;
+  const delayedTasksCount = maintenanceTasks.filter(t => t.status === 'delayed').length;
+
   return (
     <div>
       <div className="mb-8">
@@ -264,7 +272,7 @@ const Maintenance: React.FC = () => {
             <div className="flex justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Tâches planifiées</p>
-                <p className="text-2xl font-bold">{maintenanceTasks.filter(t => t.status === 'planned').length}</p>
+                <p className="text-2xl font-bold">{plannedTasksCount}</p>
               </div>
               <div className="rounded-full bg-blue-100 p-3 text-blue-600">
                 <Calendar className="h-5 w-5" />
@@ -277,7 +285,7 @@ const Maintenance: React.FC = () => {
             <div className="flex justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">En cours</p>
-                <p className="text-2xl font-bold">{maintenanceTasks.filter(t => t.status === 'in-progress').length}</p>
+                <p className="text-2xl font-bold">{inProgressTasksCount}</p>
               </div>
               <div className="rounded-full bg-amber-100 p-3 text-amber-600">
                 <Wrench className="h-5 w-5" />
@@ -290,7 +298,7 @@ const Maintenance: React.FC = () => {
             <div className="flex justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Terminées (ce mois)</p>
-                <p className="text-2xl font-bold">{maintenanceTasks.filter(t => t.status === 'completed').length}</p>
+                <p className="text-2xl font-bold">{completedTasksCount}</p>
               </div>
               <div className="rounded-full bg-green-100 p-3 text-green-600">
                 <CheckCircle className="h-5 w-5" />
@@ -303,7 +311,7 @@ const Maintenance: React.FC = () => {
             <div className="flex justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Retardées</p>
-                <p className="text-2xl font-bold">{maintenanceTasks.filter(t => t.status === 'delayed').length}</p>
+                <p className="text-2xl font-bold">{delayedTasksCount}</p>
               </div>
               <div className="rounded-full bg-red-100 p-3 text-red-600">
                 <AlertTriangle className="h-5 w-5" />
@@ -327,23 +335,17 @@ const Maintenance: React.FC = () => {
                   <span>Nouvelle tâche</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Créer une nouvelle tâche</DialogTitle>
                   <DialogDescription>
-                    Ajoutez une nouvelle tâche de maintenance
+                    Remplissez les informations pour créer une nouvelle tâche de maintenance
                   </DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
-                  <p className="text-center text-muted-foreground mb-4">
-                    Cette action va créer une nouvelle tâche de maintenance avec des valeurs par défaut. 
-                    Vous pourrez la modifier par la suite.
-                  </p>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setNewTaskDialogOpen(false)}>Annuler</Button>
-                  <Button onClick={handleAddNewTask}>Créer</Button>
-                </DialogFooter>
+                <TaskCreationForm 
+                  onSubmit={handleAddNewTask}
+                  onCancel={() => setNewTaskDialogOpen(false)}
+                />
               </DialogContent>
             </Dialog>
           </div>
