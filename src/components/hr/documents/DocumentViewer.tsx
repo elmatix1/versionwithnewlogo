@@ -11,14 +11,14 @@ import {
 } from "@/components/ui/dialog";
 import { Download, FileText } from 'lucide-react';
 import { format } from 'date-fns';
-import { Document } from './types';
+import { HRDocument } from './types';
 import { getDocumentTypeName, getStatusBadge } from './utils';
 
 interface DocumentViewerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  document: Document | null;
-  onDownload: (document: Document) => void;
+  document: HRDocument | null;
+  onDownload: (document: HRDocument) => void;
 }
 
 const DocumentViewer: React.FC<DocumentViewerProps> = ({ 
