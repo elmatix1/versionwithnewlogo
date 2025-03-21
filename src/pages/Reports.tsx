@@ -58,7 +58,6 @@ const Reports: React.FC = () => {
   const [detailChartType, setDetailChartType] = useState("");
   const [configureScheduleDialog, setConfigureScheduleDialog] = useState(false);
   
-  // Persistance des rapports lors des modifications
   useEffect(() => {
     saveToLocalStorage(STORAGE_KEY, reports);
   }, [reports]);
@@ -71,17 +70,58 @@ const Reports: React.FC = () => {
   };
   
   const handleDownloadReport = (reportName: string) => {
-    // Simuler un délai de téléchargement
-    toast.loading("Téléchargement en cours...", {
-      description: `Préparation du rapport ${reportName}.`,
-      duration: 2000,
-    });
-    
-    setTimeout(() => {
+    try {
+      const content = generateReportContent(reportName);
+      
+      const blob = new Blob([content], { type: 'application/pdf' });
+      
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${reportName.replace(/\s+/g, '_')}.pdf`;
+      
+      document.body.appendChild(link);
+      link.click();
+      
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+      
       toast.success("Téléchargement du rapport", {
         description: `Le rapport ${reportName} a été téléchargé.`
       });
-    }, 2000);
+    } catch (error) {
+      console.error("Erreur lors du téléchargement:", error);
+      toast.error("Erreur de téléchargement", {
+        description: "Une erreur est survenue lors du téléchargement du rapport."
+      });
+    }
+  };
+
+  const generateReportContent = (reportName: string): string => {
+    const header = `${reportName}\n\n`;
+    const date = `Date de génération: ${new Date().toLocaleDateString('fr-FR')}\n\n`;
+    
+    let content = "Contenu du rapport:\n\n";
+    
+    if (reportName.includes("mensuel")) {
+      content += "Statistiques mensuelles:\n";
+      content += "- Nombre de livraisons: 245\n";
+      content += "- Taux de ponctualité: 92%\n";
+      content += "- Satisfaction client: 4.7/5\n";
+    } else if (reportName.includes("trimestriel")) {
+      content += "Statistiques trimestrielles:\n";
+      content += "- Nombre de livraisons: 712\n";
+      content += "- Performance moyenne: 89%\n";
+      content += "- Rentabilité: +12.5%\n";
+    } else if (reportName.includes("annuel")) {
+      content += "Statistiques annuelles:\n";
+      content += "- Chiffre d'affaires: 1,245,000 €\n";
+      content += "- Croissance: 15%\n";
+      content += "- Nouveaux clients: 87\n";
+    }
+    
+    return header + date + content + "\nCe rapport est généré automatiquement à des fins de démonstration.";
   };
   
   const handleCreateReport = () => {
@@ -92,7 +132,6 @@ const Reports: React.FC = () => {
       return;
     }
     
-    // Créer un nouveau rapport
     const newReport: Report = {
       id: `RPT-${new Date().getFullYear()}-${String(reports.length + 1).padStart(3, '0')}`,
       name: `Rapport ${reportType} - ${reportPeriod}`,
@@ -108,7 +147,6 @@ const Reports: React.FC = () => {
       description: `Votre rapport ${reportType} pour la période ${reportPeriod} a été généré.`
     });
     
-    // Réinitialiser le formulaire
     setReportType("");
     setReportPeriod("");
   };
@@ -165,7 +203,6 @@ const Reports: React.FC = () => {
         />
       </div>
       
-      {/* Dialog pour afficher tous les rapports */}
       <Dialog open={showAllReports} onOpenChange={setShowAllReports}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
@@ -229,7 +266,6 @@ const Reports: React.FC = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Dialog pour afficher les détails de visualisation */}
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
@@ -351,7 +387,6 @@ const Reports: React.FC = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Dialog pour configurer la planification des rapports */}
       <Dialog open={configureScheduleDialog} onOpenChange={setConfigureScheduleDialog}>
         <DialogContent>
           <DialogHeader>
@@ -395,3 +430,4 @@ const Reports: React.FC = () => {
 };
 
 export default Reports;
+

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -71,24 +70,20 @@ const DocumentManager: React.FC = () => {
   const [employeeFilter, setEmployeeFilter] = useState<string>('all');
   const [documentTypeFilter, setDocumentTypeFilter] = useState<string>('all');
 
-  // Upload document state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [documentName, setDocumentName] = useState('');
   const [documentType, setDocumentType] = useState<'permis' | 'carte-pro' | 'medical' | 'formation' | 'contrat'>('permis');
   const [employeeName, setEmployeeName] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
 
-  // View document state
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
 
   const filteredDocuments = documents.filter(doc => {
-    // Filter by tab
     if (selectedTab !== 'all' && doc.status !== selectedTab) {
       return false;
     }
 
-    // Filter by search query
     if (
       searchQuery &&
       !doc.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
@@ -97,12 +92,10 @@ const DocumentManager: React.FC = () => {
       return false;
     }
 
-    // Filter by employee
     if (employeeFilter !== 'all' && doc.employee !== employeeFilter) {
       return false;
     }
 
-    // Filter by document type
     if (documentTypeFilter !== 'all' && doc.type !== documentTypeFilter) {
       return false;
     }
@@ -130,7 +123,6 @@ const DocumentManager: React.FC = () => {
     toast.success("Document téléchargé avec succès");
     setUploadDialogOpen(false);
     
-    // Reset form
     setDocumentName('');
     setDocumentType('permis');
     setEmployeeName('');
@@ -143,9 +135,44 @@ const DocumentManager: React.FC = () => {
   };
 
   const handleDownloadDocument = (document: Document) => {
-    toast.success(`Téléchargement du document: ${document.name}`, {
-      description: `Le document a été téléchargé avec succès.`
-    });
+    try {
+      const content = generateDocumentContent(document);
+      
+      const blob = new Blob([content], { type: 'application/pdf' });
+      
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${document.name.replace(/\s+/g, '_')}_${document.id}.pdf`;
+      
+      document.body.appendChild(link);
+      link.click();
+      
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+      
+      toast.success(`Téléchargement du document: ${document.name}`, {
+        description: `Le document a été téléchargé avec succès.`
+      });
+    } catch (error) {
+      console.error("Erreur lors du téléchargement:", error);
+      toast.error("Erreur de téléchargement", {
+        description: "Une erreur est survenue lors du téléchargement du document."
+      });
+    }
+  };
+
+  const generateDocumentContent = (doc: Document): string => {
+    const header = `Document: ${doc.name}\n`;
+    const type = `Type: ${doc.type}\n`;
+    const employee = `Employé: ${doc.employee}\n`;
+    const uploadDate = `Date de téléchargement: ${doc.uploadDate.toLocaleDateString('fr-FR')}\n`;
+    const expiryDate = doc.expiryDate ? `Date d'expiration: ${doc.expiryDate.toLocaleDateString('fr-FR')}\n` : 'Pas de date d\'expiration\n';
+    const status = `Statut: ${doc.status}\n`;
+    
+    return header + type + employee + uploadDate + expiryDate + status + 
+      "\nCe document est généré automatiquement à des fins de démonstration.";
   };
 
   return (
@@ -264,7 +291,6 @@ const DocumentManager: React.FC = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Document Viewer Dialog */}
       <DocumentViewer
         open={viewDialogOpen}
         onOpenChange={setViewDialogOpen}

@@ -13,6 +13,13 @@ const PeriodicReports: React.FC<PeriodicReportsProps> = ({
   handleDownloadReport,
   handleViewAllReports
 }) => {
+  // Fonction qui gère le téléchargement localement pour éviter la propagation
+  const onDownload = (reportName: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleDownloadReport(reportName);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -28,7 +35,7 @@ const PeriodicReports: React.FC<PeriodicReportsProps> = ({
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={() => handleDownloadReport("Rapport mensuel - Juillet 2023")}
+              onClick={(e) => onDownload("Rapport mensuel - Juillet 2023", e)}
             >
               <Download className="h-4 w-4" />
             </Button>
@@ -41,7 +48,7 @@ const PeriodicReports: React.FC<PeriodicReportsProps> = ({
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={() => handleDownloadReport("Rapport trimestriel - Q2 2023")}
+              onClick={(e) => onDownload("Rapport trimestriel - Q2 2023", e)}
             >
               <Download className="h-4 w-4" />
             </Button>
@@ -54,7 +61,7 @@ const PeriodicReports: React.FC<PeriodicReportsProps> = ({
             <Button 
               variant="ghost" 
               size="icon"
-              onClick={() => handleDownloadReport("Rapport annuel - 2022")}
+              onClick={(e) => onDownload("Rapport annuel - 2022", e)}
             >
               <Download className="h-4 w-4" />
             </Button>

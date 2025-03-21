@@ -19,10 +19,56 @@ const ReportCard: React.FC = () => {
   const [reportEndDate, setReportEndDate] = useState<Date>(new Date());
 
   const handleGenerateReport = () => {
-    toast.success("Rapport de présence généré avec succès", {
-      description: `Période: ${format(reportStartDate, 'dd/MM/yyyy')} - ${format(reportEndDate, 'dd/MM/yyyy')}`
-    });
+    try {
+      // Création d'un contenu de rapport factice
+      const content = generateReportContent(reportStartDate, reportEndDate);
+      
+      // Création d'un Blob
+      const blob = new Blob([content], { type: 'application/pdf' });
+      
+      // Création d'une URL pour le Blob
+      const url = URL.createObjectURL(blob);
+      
+      // Création d'un élément a (lien) pour déclencher le téléchargement
+      const link = document.createElement('a');
+      link.href = url;
+      const fileName = `Rapport_Presence_${format(reportStartDate, 'yyyyMMdd')}_${format(reportEndDate, 'yyyyMMdd')}.pdf`;
+      link.download = fileName;
+      
+      // Ajout du lien à la page et simulation du clic
+      document.body.appendChild(link);
+      link.click();
+      
+      // Nettoyage après le téléchargement
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+      
+      toast.success("Rapport de présence généré avec succès", {
+        description: `Période: ${format(reportStartDate, 'dd/MM/yyyy')} - ${format(reportEndDate, 'dd/MM/yyyy')}`
+      });
+    } catch (error) {
+      console.error("Erreur lors de la génération:", error);
+      toast.error("Erreur de génération", {
+        description: "Une erreur est survenue lors de la génération du rapport."
+      });
+    }
+    
     setIsReportDialogOpen(false);
+  };
+
+  // Génération du contenu du rapport basé sur les dates
+  const generateReportContent = (startDate: Date, endDate: Date): string => {
+    const header = `Rapport de présence\n\n`;
+    const period = `Période: ${format(startDate, 'dd/MM/yyyy')} - ${format(endDate, 'dd/MM/yyyy')}\n\n`;
+    
+    let content = "Statistiques de présence:\n\n";
+    content += "- Taux de présence global: 83%\n";
+    content += "- Taux de ponctualité: 91%\n";
+    content += "- Jours travaillés: 21\n";
+    content += "- Absences justifiées: 3\n";
+    content += "- Absences non justifiées: 1\n";
+    
+    return header + period + content + "\nCe rapport est généré automatiquement à des fins de démonstration.";
   };
 
   const setPeriod = (period: 'day' | 'week' | 'month') => {
@@ -38,6 +84,41 @@ const ReportCard: React.FC = () => {
       end.setMonth(end.getMonth() + 1);
     }
     setReportEndDate(end);
+  };
+
+  const handleDownloadReport = (reportName: string) => {
+    try {
+      // Création d'un contenu de rapport factice
+      const content = `Rapport: ${reportName}\n\nCe rapport est généré automatiquement à des fins de démonstration.`;
+      
+      // Création d'un Blob
+      const blob = new Blob([content], { type: 'application/pdf' });
+      
+      // Création d'une URL pour le Blob
+      const url = URL.createObjectURL(blob);
+      
+      // Création d'un élément a (lien) pour déclencher le téléchargement
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${reportName.replace(/\s+/g, '_')}.pdf`;
+      
+      // Ajout du lien à la page et simulation du clic
+      document.body.appendChild(link);
+      link.click();
+      
+      // Nettoyage après le téléchargement
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+      
+      toast.success(`Téléchargement: ${reportName}`, {
+        description: `Le rapport a été téléchargé avec succès.`
+      });
+    } catch (error) {
+      console.error("Erreur lors du téléchargement:", error);
+      toast.error("Erreur de téléchargement", {
+        description: "Une erreur est survenue lors du téléchargement du rapport."
+      });
+    }
   };
 
   return (
@@ -92,14 +173,26 @@ const ReportCard: React.FC = () => {
                   <FileText className="h-4 w-4 text-muted-foreground" />
                   <span>Rapport de juillet 2023</span>
                 </div>
-                <Button variant="ghost" size="sm">Télécharger</Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => handleDownloadReport("Rapport de juillet 2023")}
+                >
+                  Télécharger
+                </Button>
               </div>
               <div className="flex items-center justify-between border rounded-md p-3">
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4 text-muted-foreground" />
                   <span>Rapport de juin 2023</span>
                 </div>
-                <Button variant="ghost" size="sm">Télécharger</Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => handleDownloadReport("Rapport de juin 2023")}
+                >
+                  Télécharger
+                </Button>
               </div>
             </div>
           </div>

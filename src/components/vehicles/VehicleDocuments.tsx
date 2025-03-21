@@ -131,10 +131,54 @@ const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicles }) => {
   const handleDownload = (documentId: string) => {
     const document = documents.find(doc => doc.id === documentId);
     if (document) {
-      toast.success("Document téléchargé", {
-        description: `Le document ${document.name} a été téléchargé.`
-      });
+      try {
+        // Création d'un contenu de document factice
+        const content = generateDocumentContent(document);
+        
+        // Création d'un Blob
+        const blob = new Blob([content], { type: 'application/pdf' });
+        
+        // Création d'une URL pour le Blob
+        const url = URL.createObjectURL(blob);
+        
+        // Création d'un élément a (lien) pour déclencher le téléchargement
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${document.name.replace(/\s+/g, '_')}_${document.id}.pdf`;
+        
+        // Ajout du lien à la page et simulation du clic
+        document.body.appendChild(link);
+        link.click();
+        
+        // Nettoyage après le téléchargement
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+        
+        toast.success("Document téléchargé", {
+          description: `Le document ${document.name} a été téléchargé.`
+        });
+      } catch (error) {
+        console.error("Erreur lors du téléchargement:", error);
+        toast.error("Erreur de téléchargement", {
+          description: "Une erreur est survenue lors du téléchargement du document."
+        });
+      }
     }
+  };
+  
+  // Fonction pour générer le contenu du document
+  const generateDocumentContent = (doc: VehicleDocument): string => {
+    const vehicleName = vehicles.find(v => v.id === doc.vehicleId)?.name || "Véhicule inconnu";
+    
+    const header = `Document: ${doc.name}\n`;
+    const vehicle = `Véhicule: ${vehicleName}\n`;
+    const type = `Type: ${typeLabels[doc.type]}\n`;
+    const date = `Date: ${doc.date}\n`;
+    const expiry = `Date d'expiration: ${doc.expiryDate}\n`;
+    const status = `Statut: ${statusLabels[doc.status]}\n`;
+    
+    return header + vehicle + type + date + expiry + status + 
+      "\nCe document est généré automatiquement à des fins de démonstration.";
   };
   
   const handleView = (documentId: string) => {
