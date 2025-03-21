@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/table';
 import { Eye, Download, FileText } from 'lucide-react';
 import { format } from 'date-fns';
-import { Document, DocumentTableProps } from './types';
+import { HRDocument, DocumentTableProps } from './types';
 import { getDocumentTypeName, getStatusBadge } from './utils';
 
 const DocumentTable: React.FC<DocumentTableProps> = ({ 

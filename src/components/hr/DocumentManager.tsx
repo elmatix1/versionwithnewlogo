@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,13 +12,13 @@ import {
 } from '@/components/ui/select';
 import { Search, Upload, Filter } from 'lucide-react';
 import { toast } from 'sonner';
-import { Document } from './documents/types';
+import { HRDocument } from './documents/types';
 import DocumentTable from './documents/DocumentTable';
 import DocumentViewer from './documents/DocumentViewer';
 import UploadDialog from './documents/UploadDialog';
 
 const DocumentManager: React.FC = () => {
-  const [documents, setDocuments] = useState<Document[]>([
+  const [documents, setDocuments] = useState<HRDocument[]>([
     {
       id: 'doc-001',
       name: 'Permis de conduire',
@@ -77,7 +78,7 @@ const DocumentManager: React.FC = () => {
   const [expiryDate, setExpiryDate] = useState('');
 
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<HRDocument | null>(null);
 
   const filteredDocuments = documents.filter(doc => {
     if (selectedTab !== 'all' && doc.status !== selectedTab) {
@@ -109,7 +110,7 @@ const DocumentManager: React.FC = () => {
       return;
     }
 
-    const newDocument: Document = {
+    const newDocument: HRDocument = {
       id: `doc-${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`,
       name: documentName,
       type: documentType,
@@ -129,12 +130,12 @@ const DocumentManager: React.FC = () => {
     setExpiryDate('');
   };
 
-  const handleViewDocument = (document: Document) => {
+  const handleViewDocument = (document: HRDocument) => {
     setSelectedDocument(document);
     setViewDialogOpen(true);
   };
 
-  const handleDownloadDocument = (document: Document) => {
+  const handleDownloadDocument = (document: HRDocument) => {
     try {
       const content = generateDocumentContent(document);
       
@@ -142,14 +143,15 @@ const DocumentManager: React.FC = () => {
       
       const url = URL.createObjectURL(blob);
       
-      const link = document.createElement('a');
+      // Use the global document object from the browser, not our HRDocument type
+      const link = window.document.createElement('a');
       link.href = url;
       link.download = `${document.name.replace(/\s+/g, '_')}_${document.id}.pdf`;
       
-      document.body.appendChild(link);
+      window.document.body.appendChild(link);
       link.click();
       
-      document.body.removeChild(link);
+      window.document.body.removeChild(link);
       setTimeout(() => URL.revokeObjectURL(url), 100);
       
       toast.success(`Téléchargement du document: ${document.name}`, {
@@ -163,7 +165,7 @@ const DocumentManager: React.FC = () => {
     }
   };
 
-  const generateDocumentContent = (doc: Document): string => {
+  const generateDocumentContent = (doc: HRDocument): string => {
     const header = `Document: ${doc.name}\n`;
     const type = `Type: ${doc.type}\n`;
     const employee = `Employé: ${doc.employee}\n`;

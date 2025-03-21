@@ -141,17 +141,17 @@ const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicles }) => {
         // Création d'une URL pour le Blob
         const url = URL.createObjectURL(blob);
         
-        // Création d'un élément a (lien) pour déclencher le téléchargement
-        const link = document.createElement('a');
+        // Use the global document object from the browser, not our VehicleDocument type
+        const link = window.document.createElement('a');
         link.href = url;
         link.download = `${document.name.replace(/\s+/g, '_')}_${document.id}.pdf`;
         
         // Ajout du lien à la page et simulation du clic
-        document.body.appendChild(link);
+        window.document.body.appendChild(link);
         link.click();
         
         // Nettoyage après le téléchargement
-        document.body.removeChild(link);
+        window.document.body.removeChild(link);
         setTimeout(() => URL.revokeObjectURL(url), 100);
         
         toast.success("Document téléchargé", {

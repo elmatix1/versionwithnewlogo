@@ -1,5 +1,5 @@
 
-export interface Document {
+export interface HRDocument {
   id: string;
   name: string;
   type: 'permis' | 'carte-pro' | 'medical' | 'formation' | 'contrat';
@@ -10,7 +10,7 @@ export interface Document {
 }
 
 export interface DocumentTableProps {
-  documents: Document[];
-  onViewDocument: (document: Document) => void;
-  onDownloadDocument: (document: Document) => void;
+  documents: HRDocument[];
+  onViewDocument: (document: HRDocument) => void;
+  onDownloadDocument: (document: HRDocument) => void;
 }
