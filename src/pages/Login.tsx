@@ -1,6 +1,4 @@
-
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,13 +20,8 @@ const formSchema = z.object({
 type LoginFormValues = z.infer<typeof formSchema>;
 
 const Login: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
-
-  // Déterminer l'URL de redirection après connexion
-  const from = location.state?.from?.pathname || '/';
 
   // Initialisation du formulaire avec React Hook Form
   const form = useForm<LoginFormValues>({
@@ -44,12 +37,8 @@ const Login: React.FC = () => {
     setIsLoading(true);
     
     try {
-      const success = await login(data.username, data.password);
-      
-      if (success) {
-        // Rediriger vers la page d'origine ou le tableau de bord
-        navigate(from, { replace: true });
-      }
+      await login(data.username, data.password);
+      // La redirection est maintenant gérée dans la fonction login
     } catch (error) {
       console.error("Erreur de connexion:", error);
     } finally {

@@ -1,6 +1,6 @@
 
 import { useEffect, useState, createContext, useContext, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from "sonner";
 import { saveToLocalStorage, loadFromLocalStorage } from '@/utils/localStorage';
 
@@ -225,6 +225,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       
       setIsLoading(false);
+      
+      // Toujours rediriger vers le tableau de bord après une connexion réussie
+      navigate('/dashboard', { replace: true });
       return true;
     } else {
       toast.error("Échec de la connexion", {
