@@ -6,6 +6,8 @@ export interface Todo {
   id: string;
   task: string;
   completed: boolean;
+  createdAt?: string;
+  completedAt?: string;
 }
 
 const STORAGE_KEY = 'todos';
@@ -23,16 +25,26 @@ export function useTodos() {
     const newTodo: Todo = {
       id: Date.now().toString(),
       task,
-      completed: false
+      completed: false,
+      createdAt: new Date().toISOString()
     };
     setTodos(prev => [...prev, newTodo]);
+    return newTodo;
   };
 
   const toggleTodo = (id: string) => {
     setTodos(prev => 
-      prev.map(todo => 
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
-      )
+      prev.map(todo => {
+        if (todo.id === id) {
+          const completed = !todo.completed;
+          return { 
+            ...todo, 
+            completed,
+            completedAt: completed ? new Date().toISOString() : undefined
+          };
+        }
+        return todo;
+      })
     );
   };
 
