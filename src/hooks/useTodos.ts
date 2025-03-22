@@ -10,7 +10,7 @@ export interface Todo {
   completedAt?: string;
 }
 
-const STORAGE_KEY = 'todos';
+const STORAGE_KEY = 'tms-todos';
 
 export function useTodos() {
   const [todos, setTodos] = useState<Todo[]>(() => 

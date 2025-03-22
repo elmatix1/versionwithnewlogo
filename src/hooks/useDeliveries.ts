@@ -33,6 +33,7 @@ export function useDeliveries() {
       ...deliveryData
     };
     setDeliveries(prev => [...prev, newDelivery]);
+    return newDelivery;
   };
 
   const updateDelivery = (id: string, updates: Partial<Delivery>) => {

@@ -33,6 +33,7 @@ export function useVehicles() {
       ...vehicleData
     };
     setVehicles(prev => [...prev, newVehicle]);
+    return newVehicle;
   };
 
   const updateVehicle = (id: string, updates: Partial<Vehicle>) => {

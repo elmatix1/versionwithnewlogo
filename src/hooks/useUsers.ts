@@ -31,6 +31,7 @@ export function useUsers() {
       ...userData
     };
     setUsers(prev => [...prev, newUser]);
+    return newUser;
   };
 
   const updateUser = (id: string, updates: Partial<User>) => {

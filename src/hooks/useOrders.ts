@@ -34,6 +34,7 @@ export function useOrders() {
       ...orderData
     };
     setOrders(prev => [...prev, newOrder]);
+    return newOrder;
   };
 
   const updateOrder = (id: string, updates: Partial<Order>) => {

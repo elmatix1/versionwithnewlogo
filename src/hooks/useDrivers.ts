@@ -33,6 +33,7 @@ export function useDrivers() {
       ...driverData
     };
     setDrivers(prev => [...prev, newDriver]);
+    return newDriver;
   };
 
   const updateDriver = (id: string, updates: Partial<Driver>) => {
