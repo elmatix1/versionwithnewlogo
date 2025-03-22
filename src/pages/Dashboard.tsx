@@ -1,14 +1,32 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import StatCard from '@/components/dashboard/StatCard';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import MapOverview from '@/components/dashboard/MapOverview';
 import OrdersChart from '@/components/dashboard/OrdersChart';
 import UpcomingDeliveries from '@/components/dashboard/UpcomingDeliveries';
 import DriverAvailability from '@/components/dashboard/DriverAvailability';
-import { Truck, FileText, Users, TrendingUp } from 'lucide-react';
+import { Truck, FileText, Users, TrendingUp, CheckCircle, Circle, Plus, Trash } from 'lucide-react';
+import { useTodos } from '@/hooks/useTodos';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const Dashboard: React.FC = () => {
+  // Hook pour les tâches
+  const { todos, addTodo, toggleTodo, deleteTodo } = useTodos();
+  const [newTask, setNewTask] = useState('');
+
+  // Fonction pour ajouter une nouvelle tâche
+  const handleAddTodo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newTask.trim()) {
+      addTodo(newTask.trim());
+      setNewTask('');
+    }
+  };
+
   // Mock data
   const stats = [
     { 
@@ -164,11 +182,69 @@ const Dashboard: React.FC = () => {
         <ActivityFeed activities={activities} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
         <MapOverview vehicles={vehicles} className="lg:col-span-1" />
         <UpcomingDeliveries deliveries={deliveries} className="lg:col-span-1" />
         <DriverAvailability drivers={drivers} className="lg:col-span-1" />
       </div>
+
+      {/* Section des tâches */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="flex justify-between items-center">
+            <span>Tâches à faire</span>
+            <span className="text-sm font-normal text-muted-foreground">
+              {todos.filter(t => t.completed).length}/{todos.length} terminées
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleAddTodo} className="flex gap-2 mb-4">
+            <Input
+              placeholder="Ajouter une nouvelle tâche..."
+              value={newTask}
+              onChange={(e) => setNewTask(e.target.value)}
+              className="flex-1"
+            />
+            <Button type="submit" size="sm">
+              <Plus className="h-4 w-4 mr-1" />
+              Ajouter
+            </Button>
+          </form>
+
+          <div className="space-y-2">
+            {todos.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">Aucune tâche pour le moment</p>
+            ) : (
+              todos.map((todo) => (
+                <div key={todo.id} className="flex items-center justify-between p-2 rounded hover:bg-muted/50">
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
+                      checked={todo.completed} 
+                      onCheckedChange={() => toggleTodo(todo.id)}
+                      id={`task-${todo.id}`}
+                    />
+                    <label 
+                      htmlFor={`task-${todo.id}`}
+                      className={`${todo.completed ? 'line-through text-muted-foreground' : ''}`}
+                    >
+                      {todo.task}
+                    </label>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => deleteTodo(todo.id)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Trash className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
