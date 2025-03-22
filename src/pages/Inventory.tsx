@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -10,7 +10,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
@@ -21,6 +20,14 @@ import {
   TableRow
 } from '@/components/ui/table';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Search,
   Package,
   AlertTriangle,
@@ -29,8 +36,14 @@ import {
   TrendingUp,
   BarChart,
   FileText,
-  ShoppingBag
+  ShoppingBag,
+  MoreHorizontal,
+  CalendarIcon
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { NewItemDialog } from '@/components/inventory/NewItemDialog';
+import { ConsumptionChart } from '@/components/inventory/ConsumptionChart';
+import { NewOrderDialog } from '@/components/inventory/NewOrderDialog';
 
 interface InventoryItem {
   id: string;
@@ -41,54 +54,6 @@ interface InventoryItem {
   lastRestock: string;
   location: string;
 }
-
-const inventoryItems: InventoryItem[] = [
-  {
-    id: "INV-1001",
-    name: "Huile moteur 5W30",
-    category: "Lubrifiant",
-    quantity: 45,
-    status: "in-stock",
-    lastRestock: "12/07/2023",
-    location: "Étagère A3"
-  },
-  {
-    id: "INV-1002",
-    name: "Filtre à air",
-    category: "Filtres",
-    quantity: 22,
-    status: "in-stock",
-    lastRestock: "05/08/2023",
-    location: "Étagère B2"
-  },
-  {
-    id: "INV-1003",
-    name: "Plaquettes de frein",
-    category: "Freinage",
-    quantity: 8,
-    status: "low-stock",
-    lastRestock: "01/09/2023",
-    location: "Étagère C1"
-  },
-  {
-    id: "INV-1004",
-    name: "Liquide de refroidissement",
-    category: "Liquides",
-    quantity: 0,
-    status: "out-of-stock",
-    lastRestock: "22/06/2023",
-    location: "Étagère A4"
-  },
-  {
-    id: "INV-1005",
-    name: "Balais d'essuie-glace",
-    category: "Accessoires",
-    quantity: 15,
-    status: "in-stock",
-    lastRestock: "17/08/2023",
-    location: "Étagère D2"
-  }
-];
 
 const statusConfig = {
   'in-stock': { 
@@ -106,14 +71,114 @@ const statusConfig = {
 };
 
 const Inventory: React.FC = () => {
-  const [searchTerm, setSearchTerm] = React.useState("");
+  // État initial de l'inventaire
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([
+    {
+      id: "INV-1001",
+      name: "Huile moteur 5W30",
+      category: "Lubrifiant",
+      quantity: 45,
+      status: "in-stock",
+      lastRestock: "12/07/2023",
+      location: "Étagère A3"
+    },
+    {
+      id: "INV-1002",
+      name: "Filtre à air",
+      category: "Filtres",
+      quantity: 22,
+      status: "in-stock",
+      lastRestock: "05/08/2023",
+      location: "Étagère B2"
+    },
+    {
+      id: "INV-1003",
+      name: "Plaquettes de frein",
+      category: "Freinage",
+      quantity: 8,
+      status: "low-stock",
+      lastRestock: "01/09/2023",
+      location: "Étagère C1"
+    },
+    {
+      id: "INV-1004",
+      name: "Liquide de refroidissement",
+      category: "Liquides",
+      quantity: 0,
+      status: "out-of-stock",
+      lastRestock: "22/06/2023",
+      location: "Étagère A4"
+    },
+    {
+      id: "INV-1005",
+      name: "Balais d'essuie-glace",
+      category: "Accessoires",
+      quantity: 15,
+      status: "in-stock",
+      lastRestock: "17/08/2023",
+      location: "Étagère D2"
+    }
+  ]);
   
-  // Filtrer les articles en fonction du terme de recherche
-  const filteredItems = inventoryItems.filter(item => 
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
+  const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
+  const [isChartDialogOpen, setIsChartDialogOpen] = useState(false);
+  const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false);
+  
+  // Compter les articles par statut
+  const statusCounts = useMemo(() => {
+    return inventoryItems.reduce((acc, item) => {
+      acc[item.status] = (acc[item.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [inventoryItems]);
+  
+  // Filtrer les articles en fonction du terme de recherche et du statut sélectionné
+  const filteredItems = useMemo(() => {
+    let filtered = inventoryItems.filter(item => 
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.id.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    if (activeTab !== "all") {
+      filtered = filtered.filter(item => item.status === activeTab);
+    }
+    
+    return filtered;
+  }, [inventoryItems, searchTerm, activeTab]);
+
+  // Ajouter un nouvel article à l'inventaire
+  const handleAddItem = (item: any) => {
+    const newItem: InventoryItem = {
+      id: item.id,
+      name: item.name,
+      category: item.category,
+      quantity: item.quantity,
+      status: item.status,
+      lastRestock: item.lastRestock.toLocaleDateString("fr-FR"),
+      location: item.location
+    };
+    
+    setInventoryItems(prev => [...prev, newItem]);
+  };
+
+  // Supprimer un article de l'inventaire
+  const handleDeleteItem = (id: string) => {
+    setInventoryItems(prev => prev.filter(item => item.id !== id));
+    toast.success("Article supprimé avec succès");
+  };
+
+  // Modifier le statut d'un article
+  const handleUpdateStatus = (id: string, newStatus: 'in-stock' | 'low-stock' | 'out-of-stock') => {
+    setInventoryItems(prev => 
+      prev.map(item => 
+        item.id === id ? { ...item, status: newStatus } : item
+      )
+    );
+    toast.success("Statut mis à jour avec succès");
+  };
 
   return (
     <div>
@@ -128,7 +193,7 @@ const Inventory: React.FC = () => {
             <div className="flex justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Articles en stock</p>
-                <p className="text-2xl font-bold">356</p>
+                <p className="text-2xl font-bold">{statusCounts['in-stock'] || 0}</p>
                 <p className="text-xs text-green-500 flex items-center">
                   <TrendingUp className="h-3 w-3 mr-1" /> +15 cette semaine
                 </p>
@@ -144,7 +209,7 @@ const Inventory: React.FC = () => {
             <div className="flex justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Stock bas</p>
-                <p className="text-2xl font-bold">24</p>
+                <p className="text-2xl font-bold">{statusCounts['low-stock'] || 0}</p>
                 <p className="text-xs text-amber-500 flex items-center">
                   <AlertTriangle className="h-3 w-3 mr-1" /> Nécessite attention
                 </p>
@@ -160,7 +225,7 @@ const Inventory: React.FC = () => {
             <div className="flex justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Rupture de stock</p>
-                <p className="text-2xl font-bold">8</p>
+                <p className="text-2xl font-bold">{statusCounts['out-of-stock'] || 0}</p>
                 <p className="text-xs text-red-500 flex items-center">
                   <AlertTriangle className="h-3 w-3 mr-1" /> Commander rapidement
                 </p>
@@ -180,7 +245,10 @@ const Inventory: React.FC = () => {
               <CardTitle>Inventaire des pièces</CardTitle>
               <CardDescription>Gestion des stocks et approvisionnement</CardDescription>
             </div>
-            <Button className="flex items-center gap-2">
+            <Button 
+              className="flex items-center gap-2"
+              onClick={() => setIsNewItemDialogOpen(true)}
+            >
               <Plus size={16} />
               <span>Nouvel article</span>
             </Button>
@@ -203,7 +271,7 @@ const Inventory: React.FC = () => {
             </Button>
           </div>
 
-          <Tabs defaultValue="all">
+          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-4">
               <TabsTrigger value="all">Tous</TabsTrigger>
               <TabsTrigger value="in-stock">En stock</TabsTrigger>
@@ -211,7 +279,7 @@ const Inventory: React.FC = () => {
               <TabsTrigger value="out-of-stock">Rupture</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="all" className="m-0">
+            <TabsContent value={activeTab} className="m-0">
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
@@ -223,6 +291,7 @@ const Inventory: React.FC = () => {
                       <TableHead>Statut</TableHead>
                       <TableHead>Dernier réappro</TableHead>
                       <TableHead>Emplacement</TableHead>
+                      <TableHead className="w-[80px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -239,41 +308,47 @@ const Inventory: React.FC = () => {
                         </TableCell>
                         <TableCell>{item.lastRestock}</TableCell>
                         <TableCell>{item.location}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Ouvrir menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleUpdateStatus(item.id, 'in-stock')}>
+                                Marquer comme En stock
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleUpdateStatus(item.id, 'low-stock')}>
+                                Marquer comme Stock bas
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleUpdateStatus(item.id, 'out-of-stock')}>
+                                Marquer comme Rupture
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteItem(item.id)}
+                                className="text-red-600"
+                              >
+                                Supprimer
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
                       </TableRow>
                     ))}
                     {filteredItems.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                           Aucun article trouvé
                         </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="in-stock" className="m-0">
-              <div className="text-center p-6">
-                <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Articles en stock</h3>
-                <p className="text-muted-foreground">Liste des articles disponibles en quantité suffisante.</p>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="low-stock" className="m-0">
-              <div className="text-center p-6">
-                <AlertTriangle className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Stock bas</h3>
-                <p className="text-muted-foreground">Articles nécessitant un réapprovisionnement rapidement.</p>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="out-of-stock" className="m-0">
-              <div className="text-center p-6">
-                <AlertTriangle className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Rupture de stock</h3>
-                <p className="text-muted-foreground">Articles épuisés nécessitant une commande immédiate.</p>
               </div>
             </TabsContent>
           </Tabs>
@@ -292,7 +367,7 @@ const Inventory: React.FC = () => {
               <p className="text-muted-foreground max-w-md mx-auto mb-6">
                 Analysez les tendances de consommation pour anticiper vos besoins en approvisionnement.
               </p>
-              <Button>Voir les statistiques</Button>
+              <Button onClick={() => setIsChartDialogOpen(true)}>Voir les statistiques</Button>
             </div>
           </CardContent>
         </Card>
@@ -308,11 +383,28 @@ const Inventory: React.FC = () => {
               <p className="text-muted-foreground max-w-md mx-auto mb-6">
                 Créez et suivez vos commandes d'approvisionnement auprès des fournisseurs.
               </p>
-              <Button>Nouvelle commande</Button>
+              <Button onClick={() => setIsOrderDialogOpen(true)}>Nouvelle commande</Button>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Dialogs */}
+      <NewItemDialog 
+        open={isNewItemDialogOpen} 
+        onOpenChange={setIsNewItemDialogOpen}
+        onAddItem={handleAddItem}
+      />
+      
+      <ConsumptionChart
+        open={isChartDialogOpen}
+        onOpenChange={setIsChartDialogOpen}
+      />
+      
+      <NewOrderDialog
+        open={isOrderDialogOpen}
+        onOpenChange={setIsOrderDialogOpen}
+      />
     </div>
   );
 };
