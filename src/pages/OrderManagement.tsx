@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -36,10 +36,12 @@ import {
   Truck,
   CheckCircle,
   Clock,
-  XCircle,
-  ArrowUpRight
+  ArrowUpRight,
+  CheckSquare
 } from 'lucide-react';
 import AddOrderForm from '@/components/orders/AddOrderForm';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 interface Order {
   id: string;
@@ -91,64 +93,81 @@ const OrderManagement: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([
     {
       id: "CMD-1038",
-      customer: "Société Dupont",
-      origin: "Lyon, Dépôt Central",
-      destination: "Paris, 15ème",
+      customer: "Société El Amrani",
+      origin: "Casablanca, Dépôt Central",
+      destination: "Rabat, Quartier Agdal",
       status: "en-cours",
       date: "Aujourd'hui, 14:30",
       createdAt: "Hier, 10:15",
       priority: "urgent",
-      amount: "1 250,00 €"
+      amount: "12 500 MAD"
     },
     {
       id: "CMD-1037",
-      customer: "Entreprise Martin",
-      origin: "Marseille, Port",
-      destination: "Lyon, Centre",
+      customer: "Entreprise Benjelloun",
+      origin: "Marrakech, Zone Industrielle",
+      destination: "Agadir, Port",
       status: "en-attente",
       date: "Aujourd'hui, 16:45",
       createdAt: "Hier, 09:30",
       priority: "normal",
-      amount: "980,00 €"
+      amount: "9 800 MAD"
     },
     {
       id: "CMD-1036",
-      customer: "Distribution Rapide",
-      origin: "Lille, Entrepôt Nord",
-      destination: "Marseille, Port",
+      customer: "Distribution Tazi",
+      origin: "Tanger, Entrepôt Nord",
+      destination: "Fès, Médina",
       status: "livree",
       date: "Hier, 15:30",
       createdAt: "22/07/2023",
       priority: "normal",
-      amount: "2 340,00 €"
+      amount: "23 400 MAD"
     },
     {
       id: "CMD-1035",
-      customer: "Transports Bernard",
-      origin: "Paris, Entrepôt Sud",
-      destination: "Bordeaux, Zone Industrielle",
+      customer: "Transports Alaoui",
+      origin: "Casablanca, Port",
+      destination: "Meknès, Zone Industrielle",
       status: "annulee",
       date: "Annulée",
       createdAt: "22/07/2023",
       priority: "basse",
-      amount: "1 780,00 €"
+      amount: "17 800 MAD"
     },
     {
       id: "CMD-1034",
-      customer: "Logistique Express",
-      origin: "Nantes, Dépôt Central",
-      destination: "Strasbourg, Zone Est",
+      customer: "Logistique Express Benkirane",
+      origin: "Oujda, Dépôt Central",
+      destination: "Tétouan, Zone Est",
       status: "livree",
       date: "21/07/2023",
       createdAt: "20/07/2023",
       priority: "urgent",
-      amount: "1 560,00 €"
+      amount: "15 600 MAD"
     }
   ]);
   
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState("all");
   const [isAddOrderOpen, setIsAddOrderOpen] = useState(false);
+  const [orderCounts, setOrderCounts] = useState({
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    delivered: 0
+  });
+  
+  // Calculer les compteurs de commandes
+  useEffect(() => {
+    const counts = {
+      total: orders.length,
+      pending: orders.filter(order => order.status === 'en-attente').length,
+      inProgress: orders.filter(order => order.status === 'en-cours').length,
+      delivered: orders.filter(order => order.status === 'livree').length
+    };
+    setOrderCounts(counts);
+  }, [orders]);
   
   // Filtrer les commandes en fonction de l'onglet et de la recherche
   const filteredOrders = orders.filter(order => {
@@ -180,10 +199,37 @@ const OrderManagement: React.FC = () => {
       date: orderData.deliveryDate.toLocaleDateString('fr-FR'),
       createdAt: new Date().toLocaleDateString('fr-FR'),
       priority: orderData.priority,
-      amount: `${orderData.amount} €`
+      amount: `${orderData.amount} MAD`
     };
     
     setOrders(prev => [newOrder, ...prev]);
+    toast.success('Commande ajoutée avec succès');
+  };
+  
+  const handleStatusChange = (orderId: string, newStatus: 'en-attente' | 'en-cours' | 'livree' | 'annulee') => {
+    setOrders(prev => 
+      prev.map(order => 
+        order.id === orderId 
+          ? { 
+              ...order, 
+              status: newStatus,
+              date: newStatus === 'annulee' ? 'Annulée' : order.date
+            } 
+          : order
+      )
+    );
+    toast.success(`Statut mis à jour: ${statusConfig[newStatus].label}`);
+  };
+  
+  const handlePriorityChange = (orderId: string, newPriority: 'normal' | 'urgent' | 'basse') => {
+    setOrders(prev => 
+      prev.map(order => 
+        order.id === orderId 
+          ? { ...order, priority: newPriority } 
+          : order
+      )
+    );
+    toast.success(`Priorité mise à jour: ${priorityConfig[newPriority].label}`);
   };
 
   return (
@@ -199,7 +245,7 @@ const OrderManagement: React.FC = () => {
             <div className="flex justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total commandes</p>
-                <p className="text-2xl font-bold">152</p>
+                <p className="text-2xl font-bold">{orderCounts.total}</p>
               </div>
               <div className="rounded-full bg-primary/10 p-3 text-primary">
                 <FileText className="h-5 w-5" />
@@ -212,7 +258,7 @@ const OrderManagement: React.FC = () => {
             <div className="flex justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">En attente</p>
-                <p className="text-2xl font-bold">28</p>
+                <p className="text-2xl font-bold">{orderCounts.pending}</p>
               </div>
               <div className="rounded-full bg-amber-100 p-3 text-amber-600">
                 <Clock className="h-5 w-5" />
@@ -225,7 +271,7 @@ const OrderManagement: React.FC = () => {
             <div className="flex justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">En cours</p>
-                <p className="text-2xl font-bold">45</p>
+                <p className="text-2xl font-bold">{orderCounts.inProgress}</p>
               </div>
               <div className="rounded-full bg-blue-100 p-3 text-blue-600">
                 <Truck className="h-5 w-5" />
@@ -237,8 +283,8 @@ const OrderManagement: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Livrées (ce mois)</p>
-                <p className="text-2xl font-bold">79</p>
+                <p className="text-sm text-muted-foreground">Livrées</p>
+                <p className="text-2xl font-bold">{orderCounts.delivered}</p>
               </div>
               <div className="rounded-full bg-green-100 p-3 text-green-600">
                 <CheckCircle className="h-5 w-5" />
@@ -311,15 +357,72 @@ const OrderManagement: React.FC = () => {
                         <TableCell className="max-w-[150px] truncate">{order.origin}</TableCell>
                         <TableCell className="max-w-[150px] truncate">{order.destination}</TableCell>
                         <TableCell>
-                          <Badge className={statusConfig[order.status].className}>
-                            {statusConfig[order.status].label}
-                          </Badge>
+                          <Select 
+                            defaultValue={order.status} 
+                            onValueChange={(value) => handleStatusChange(order.id, value as any)}
+                          >
+                            <SelectTrigger className="w-32 h-8">
+                              <SelectValue>
+                                <Badge className={statusConfig[order.status].className}>
+                                  {statusConfig[order.status].label}
+                                </Badge>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="en-attente">
+                                <Badge className={statusConfig['en-attente'].className}>
+                                  {statusConfig['en-attente'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="en-cours">
+                                <Badge className={statusConfig['en-cours'].className}>
+                                  {statusConfig['en-cours'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="livree">
+                                <Badge className={statusConfig['livree'].className}>
+                                  {statusConfig['livree'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="annulee">
+                                <Badge className={statusConfig['annulee'].className}>
+                                  {statusConfig['annulee'].label}
+                                </Badge>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>{order.date}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={priorityConfig[order.priority]?.className || ''}>
-                            {priorityConfig[order.priority]?.label || order.priority}
-                          </Badge>
+                          <Select 
+                            defaultValue={order.priority} 
+                            onValueChange={(value) => handlePriorityChange(order.id, value as any)}
+                          >
+                            <SelectTrigger className="w-32 h-8">
+                              <SelectValue>
+                                <Badge variant="outline" className={priorityConfig[order.priority].className}>
+                                  {priorityConfig[order.priority].label}
+                                </Badge>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="urgent">
+                                <Badge variant="outline" className={priorityConfig['urgent'].className}>
+                                  {priorityConfig['urgent'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="normal">
+                                <Badge variant="outline" className={priorityConfig['normal'].className}>
+                                  {priorityConfig['normal'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="basse">
+                                <Badge variant="outline" className={priorityConfig['basse'].className}>
+                                  {priorityConfig['basse'].label}
+                                </Badge>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>{order.amount}</TableCell>
                         <TableCell>
@@ -377,15 +480,72 @@ const OrderManagement: React.FC = () => {
                         <TableCell className="max-w-[150px] truncate">{order.origin}</TableCell>
                         <TableCell className="max-w-[150px] truncate">{order.destination}</TableCell>
                         <TableCell>
-                          <Badge className={statusConfig[order.status].className}>
-                            {statusConfig[order.status].label}
-                          </Badge>
+                          <Select 
+                            defaultValue={order.status} 
+                            onValueChange={(value) => handleStatusChange(order.id, value as any)}
+                          >
+                            <SelectTrigger className="w-32 h-8">
+                              <SelectValue>
+                                <Badge className={statusConfig[order.status].className}>
+                                  {statusConfig[order.status].label}
+                                </Badge>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="en-attente">
+                                <Badge className={statusConfig['en-attente'].className}>
+                                  {statusConfig['en-attente'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="en-cours">
+                                <Badge className={statusConfig['en-cours'].className}>
+                                  {statusConfig['en-cours'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="livree">
+                                <Badge className={statusConfig['livree'].className}>
+                                  {statusConfig['livree'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="annulee">
+                                <Badge className={statusConfig['annulee'].className}>
+                                  {statusConfig['annulee'].label}
+                                </Badge>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>{order.date}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={priorityConfig[order.priority]?.className || ''}>
-                            {priorityConfig[order.priority]?.label || order.priority}
-                          </Badge>
+                          <Select 
+                            defaultValue={order.priority} 
+                            onValueChange={(value) => handlePriorityChange(order.id, value as any)}
+                          >
+                            <SelectTrigger className="w-32 h-8">
+                              <SelectValue>
+                                <Badge variant="outline" className={priorityConfig[order.priority].className}>
+                                  {priorityConfig[order.priority].label}
+                                </Badge>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="urgent">
+                                <Badge variant="outline" className={priorityConfig['urgent'].className}>
+                                  {priorityConfig['urgent'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="normal">
+                                <Badge variant="outline" className={priorityConfig['normal'].className}>
+                                  {priorityConfig['normal'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="basse">
+                                <Badge variant="outline" className={priorityConfig['basse'].className}>
+                                  {priorityConfig['basse'].label}
+                                </Badge>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>{order.amount}</TableCell>
                         <TableCell>
@@ -443,15 +603,72 @@ const OrderManagement: React.FC = () => {
                         <TableCell className="max-w-[150px] truncate">{order.origin}</TableCell>
                         <TableCell className="max-w-[150px] truncate">{order.destination}</TableCell>
                         <TableCell>
-                          <Badge className={statusConfig[order.status].className}>
-                            {statusConfig[order.status].label}
-                          </Badge>
+                          <Select 
+                            defaultValue={order.status} 
+                            onValueChange={(value) => handleStatusChange(order.id, value as any)}
+                          >
+                            <SelectTrigger className="w-32 h-8">
+                              <SelectValue>
+                                <Badge className={statusConfig[order.status].className}>
+                                  {statusConfig[order.status].label}
+                                </Badge>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="en-attente">
+                                <Badge className={statusConfig['en-attente'].className}>
+                                  {statusConfig['en-attente'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="en-cours">
+                                <Badge className={statusConfig['en-cours'].className}>
+                                  {statusConfig['en-cours'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="livree">
+                                <Badge className={statusConfig['livree'].className}>
+                                  {statusConfig['livree'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="annulee">
+                                <Badge className={statusConfig['annulee'].className}>
+                                  {statusConfig['annulee'].label}
+                                </Badge>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>{order.date}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={priorityConfig[order.priority]?.className || ''}>
-                            {priorityConfig[order.priority]?.label || order.priority}
-                          </Badge>
+                          <Select 
+                            defaultValue={order.priority} 
+                            onValueChange={(value) => handlePriorityChange(order.id, value as any)}
+                          >
+                            <SelectTrigger className="w-32 h-8">
+                              <SelectValue>
+                                <Badge variant="outline" className={priorityConfig[order.priority].className}>
+                                  {priorityConfig[order.priority].label}
+                                </Badge>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="urgent">
+                                <Badge variant="outline" className={priorityConfig['urgent'].className}>
+                                  {priorityConfig['urgent'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="normal">
+                                <Badge variant="outline" className={priorityConfig['normal'].className}>
+                                  {priorityConfig['normal'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="basse">
+                                <Badge variant="outline" className={priorityConfig['basse'].className}>
+                                  {priorityConfig['basse'].label}
+                                </Badge>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>{order.amount}</TableCell>
                         <TableCell>
@@ -509,15 +726,72 @@ const OrderManagement: React.FC = () => {
                         <TableCell className="max-w-[150px] truncate">{order.origin}</TableCell>
                         <TableCell className="max-w-[150px] truncate">{order.destination}</TableCell>
                         <TableCell>
-                          <Badge className={statusConfig[order.status].className}>
-                            {statusConfig[order.status].label}
-                          </Badge>
+                          <Select 
+                            defaultValue={order.status} 
+                            onValueChange={(value) => handleStatusChange(order.id, value as any)}
+                          >
+                            <SelectTrigger className="w-32 h-8">
+                              <SelectValue>
+                                <Badge className={statusConfig[order.status].className}>
+                                  {statusConfig[order.status].label}
+                                </Badge>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="en-attente">
+                                <Badge className={statusConfig['en-attente'].className}>
+                                  {statusConfig['en-attente'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="en-cours">
+                                <Badge className={statusConfig['en-cours'].className}>
+                                  {statusConfig['en-cours'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="livree">
+                                <Badge className={statusConfig['livree'].className}>
+                                  {statusConfig['livree'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="annulee">
+                                <Badge className={statusConfig['annulee'].className}>
+                                  {statusConfig['annulee'].label}
+                                </Badge>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>{order.date}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={priorityConfig[order.priority]?.className || ''}>
-                            {priorityConfig[order.priority]?.label || order.priority}
-                          </Badge>
+                          <Select 
+                            defaultValue={order.priority} 
+                            onValueChange={(value) => handlePriorityChange(order.id, value as any)}
+                          >
+                            <SelectTrigger className="w-32 h-8">
+                              <SelectValue>
+                                <Badge variant="outline" className={priorityConfig[order.priority].className}>
+                                  {priorityConfig[order.priority].label}
+                                </Badge>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="urgent">
+                                <Badge variant="outline" className={priorityConfig['urgent'].className}>
+                                  {priorityConfig['urgent'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="normal">
+                                <Badge variant="outline" className={priorityConfig['normal'].className}>
+                                  {priorityConfig['normal'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="basse">
+                                <Badge variant="outline" className={priorityConfig['basse'].className}>
+                                  {priorityConfig['basse'].label}
+                                </Badge>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>{order.amount}</TableCell>
                         <TableCell>
@@ -575,15 +849,72 @@ const OrderManagement: React.FC = () => {
                         <TableCell className="max-w-[150px] truncate">{order.origin}</TableCell>
                         <TableCell className="max-w-[150px] truncate">{order.destination}</TableCell>
                         <TableCell>
-                          <Badge className={statusConfig[order.status].className}>
-                            {statusConfig[order.status].label}
-                          </Badge>
+                          <Select 
+                            defaultValue={order.status} 
+                            onValueChange={(value) => handleStatusChange(order.id, value as any)}
+                          >
+                            <SelectTrigger className="w-32 h-8">
+                              <SelectValue>
+                                <Badge className={statusConfig[order.status].className}>
+                                  {statusConfig[order.status].label}
+                                </Badge>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="en-attente">
+                                <Badge className={statusConfig['en-attente'].className}>
+                                  {statusConfig['en-attente'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="en-cours">
+                                <Badge className={statusConfig['en-cours'].className}>
+                                  {statusConfig['en-cours'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="livree">
+                                <Badge className={statusConfig['livree'].className}>
+                                  {statusConfig['livree'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="annulee">
+                                <Badge className={statusConfig['annulee'].className}>
+                                  {statusConfig['annulee'].label}
+                                </Badge>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>{order.date}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={priorityConfig[order.priority]?.className || ''}>
-                            {priorityConfig[order.priority]?.label || order.priority}
-                          </Badge>
+                          <Select 
+                            defaultValue={order.priority} 
+                            onValueChange={(value) => handlePriorityChange(order.id, value as any)}
+                          >
+                            <SelectTrigger className="w-32 h-8">
+                              <SelectValue>
+                                <Badge variant="outline" className={priorityConfig[order.priority].className}>
+                                  {priorityConfig[order.priority].label}
+                                </Badge>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="urgent">
+                                <Badge variant="outline" className={priorityConfig['urgent'].className}>
+                                  {priorityConfig['urgent'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="normal">
+                                <Badge variant="outline" className={priorityConfig['normal'].className}>
+                                  {priorityConfig['normal'].label}
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="basse">
+                                <Badge variant="outline" className={priorityConfig['basse'].className}>
+                                  {priorityConfig['basse'].label}
+                                </Badge>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>{order.amount}</TableCell>
                         <TableCell>
