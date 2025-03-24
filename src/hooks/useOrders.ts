@@ -51,6 +51,7 @@ export function useOrders() {
         }));
         
         setOrders(formattedOrders);
+        console.log('Commandes récupérées:', formattedOrders);
       } catch (err: any) {
         console.error('Erreur lors de la récupération des commandes:', err);
         setError(err.message);
@@ -85,6 +86,8 @@ export function useOrders() {
   // Ajouter une commande
   const addOrder = async (orderData: Omit<Order, 'id'>) => {
     try {
+      console.log('Tentative d\'ajout de commande:', orderData);
+      
       // Préparer les données pour l'insertion
       const { data, error } = await supabase
         .from('orders')
@@ -101,7 +104,12 @@ export function useOrders() {
         .select();
       
       if (error) {
+        console.error('Erreur Supabase lors de l\'ajout d\'une commande:', error);
         throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        throw new Error('Aucune donnée retournée après l\'insertion');
       }
       
       // Convertir la nouvelle commande au format Order
@@ -116,6 +124,11 @@ export function useOrders() {
         amount: data[0].amount,
         notes: data[0].notes
       };
+      
+      console.log('Commande ajoutée avec succès:', newOrder);
+      
+      // Mettre à jour l'état local avec la nouvelle commande
+      setOrders(prev => [...prev, newOrder]);
       
       toast.success("Commande ajoutée avec succès", {
         description: `La commande pour ${newOrder.client} a été créée.`
@@ -134,6 +147,8 @@ export function useOrders() {
   // Mettre à jour une commande
   const updateOrder = async (id: string, updates: Partial<Order>) => {
     try {
+      console.log('Tentative de mise à jour de la commande:', id, updates);
+      
       // Préparer les données pour la mise à jour
       const updateData: any = {};
       
@@ -152,8 +167,20 @@ export function useOrders() {
         .eq('id', parseInt(id));
       
       if (error) {
+        console.error('Erreur Supabase lors de la mise à jour d\'une commande:', error);
         throw error;
       }
+      
+      // Mettre à jour l'état local avec les modifications
+      setOrders(prev => 
+        prev.map(order => 
+          order.id === id 
+            ? { ...order, ...updates } 
+            : order
+        )
+      );
+      
+      console.log('Commande mise à jour avec succès');
       
       toast.success("Commande mise à jour", {
         description: "Les informations de la commande ont été mises à jour."
@@ -170,14 +197,22 @@ export function useOrders() {
   // Supprimer une commande
   const deleteOrder = async (id: string) => {
     try {
+      console.log('Tentative de suppression de la commande:', id);
+      
       const { error } = await supabase
         .from('orders')
         .delete()
         .eq('id', parseInt(id));
       
       if (error) {
+        console.error('Erreur Supabase lors de la suppression d\'une commande:', error);
         throw error;
       }
+      
+      // Mettre à jour l'état local en supprimant la commande
+      setOrders(prev => prev.filter(order => order.id !== id));
+      
+      console.log('Commande supprimée avec succès');
       
       toast.success("Commande supprimée", {
         description: "La commande a été supprimée avec succès."

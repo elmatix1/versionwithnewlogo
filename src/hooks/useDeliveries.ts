@@ -50,6 +50,7 @@ export function useDeliveries() {
         }));
         
         setDeliveries(formattedDeliveries);
+        console.log('Livraisons récupérées:', formattedDeliveries);
       } catch (err: any) {
         console.error('Erreur lors de la récupération des livraisons:', err);
         setError(err.message);
@@ -84,6 +85,8 @@ export function useDeliveries() {
   // Ajouter une livraison
   const addDelivery = async (deliveryData: Omit<Delivery, 'id'>) => {
     try {
+      console.log('Tentative d\'ajout de livraison:', deliveryData);
+      
       // Préparer les données pour l'insertion
       const { data, error } = await supabase
         .from('deliveries')
@@ -100,7 +103,12 @@ export function useDeliveries() {
         .select();
       
       if (error) {
+        console.error('Erreur Supabase lors de l\'ajout d\'une livraison:', error);
         throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        throw new Error('Aucune donnée retournée après l\'insertion');
       }
       
       // Convertir la nouvelle livraison au format Delivery
@@ -115,6 +123,11 @@ export function useDeliveries() {
         status: data[0].status as DeliveryStatus,
         notes: data[0].notes
       };
+      
+      console.log('Livraison ajoutée avec succès:', newDelivery);
+      
+      // Mettre à jour l'état local avec la nouvelle livraison
+      setDeliveries(prev => [...prev, newDelivery]);
       
       toast.success("Livraison ajoutée avec succès", {
         description: `La livraison vers ${newDelivery.destination} a été programmée.`
@@ -133,6 +146,8 @@ export function useDeliveries() {
   // Mettre à jour une livraison
   const updateDelivery = async (id: string, updates: Partial<Delivery>) => {
     try {
+      console.log('Tentative de mise à jour de la livraison:', id, updates);
+      
       // Préparer les données pour la mise à jour
       const updateData: any = {};
       
@@ -151,8 +166,20 @@ export function useDeliveries() {
         .eq('id', parseInt(id));
       
       if (error) {
+        console.error('Erreur Supabase lors de la mise à jour d\'une livraison:', error);
         throw error;
       }
+      
+      // Mettre à jour l'état local avec les modifications
+      setDeliveries(prev => 
+        prev.map(delivery => 
+          delivery.id === id 
+            ? { ...delivery, ...updates } 
+            : delivery
+        )
+      );
+      
+      console.log('Livraison mise à jour avec succès');
       
       toast.success("Livraison mise à jour", {
         description: "Les informations de la livraison ont été mises à jour."
@@ -169,14 +196,22 @@ export function useDeliveries() {
   // Supprimer une livraison
   const deleteDelivery = async (id: string) => {
     try {
+      console.log('Tentative de suppression de la livraison:', id);
+      
       const { error } = await supabase
         .from('deliveries')
         .delete()
         .eq('id', parseInt(id));
       
       if (error) {
+        console.error('Erreur Supabase lors de la suppression d\'une livraison:', error);
         throw error;
       }
+      
+      // Mettre à jour l'état local en supprimant la livraison
+      setDeliveries(prev => prev.filter(delivery => delivery.id !== id));
+      
+      console.log('Livraison supprimée avec succès');
       
       toast.success("Livraison supprimée", {
         description: "La livraison a été supprimée avec succès."

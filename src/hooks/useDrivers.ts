@@ -50,6 +50,7 @@ export function useDrivers() {
         }));
         
         setDrivers(formattedDrivers);
+        console.log('Chauffeurs récupérés:', formattedDrivers);
       } catch (err: any) {
         console.error('Erreur lors de la récupération des chauffeurs:', err);
         setError(err.message);
@@ -84,6 +85,8 @@ export function useDrivers() {
   // Ajouter un chauffeur
   const addDriver = async (driverData: Omit<Driver, 'id'>) => {
     try {
+      console.log('Tentative d\'ajout de chauffeur:', driverData);
+      
       // Préparer les données pour l'insertion
       const { data, error } = await supabase
         .from('drivers')
@@ -100,7 +103,12 @@ export function useDrivers() {
         .select();
       
       if (error) {
+        console.error('Erreur Supabase lors de l\'ajout d\'un chauffeur:', error);
         throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        throw new Error('Aucune donnée retournée après l\'insertion');
       }
       
       // Convertir le nouveau chauffeur au format Driver
@@ -115,6 +123,11 @@ export function useDrivers() {
         address: data[0].address,
         licenseType: data[0].license_type
       };
+      
+      console.log('Chauffeur ajouté avec succès:', newDriver);
+      
+      // Mettre à jour l'état local avec le nouveau chauffeur
+      setDrivers(prev => [...prev, newDriver]);
       
       toast.success("Chauffeur ajouté avec succès", {
         description: `${newDriver.name} a été ajouté à la liste des chauffeurs.`
@@ -133,6 +146,8 @@ export function useDrivers() {
   // Mettre à jour un chauffeur
   const updateDriver = async (id: string, updates: Partial<Driver>) => {
     try {
+      console.log('Tentative de mise à jour du chauffeur:', id, updates);
+      
       // Préparer les données pour la mise à jour
       const updateData: any = {};
       
@@ -151,8 +166,20 @@ export function useDrivers() {
         .eq('id', parseInt(id));
       
       if (error) {
+        console.error('Erreur Supabase lors de la mise à jour d\'un chauffeur:', error);
         throw error;
       }
+      
+      // Mettre à jour l'état local avec les modifications
+      setDrivers(prev => 
+        prev.map(driver => 
+          driver.id === id 
+            ? { ...driver, ...updates } 
+            : driver
+        )
+      );
+      
+      console.log('Chauffeur mis à jour avec succès');
       
       toast.success("Chauffeur mis à jour", {
         description: "Les informations du chauffeur ont été mises à jour."
@@ -169,14 +196,22 @@ export function useDrivers() {
   // Supprimer un chauffeur
   const deleteDriver = async (id: string) => {
     try {
+      console.log('Tentative de suppression du chauffeur:', id);
+      
       const { error } = await supabase
         .from('drivers')
         .delete()
         .eq('id', parseInt(id));
       
       if (error) {
+        console.error('Erreur Supabase lors de la suppression d\'un chauffeur:', error);
         throw error;
       }
+      
+      // Mettre à jour l'état local en supprimant le chauffeur
+      setDrivers(prev => prev.filter(driver => driver.id !== id));
+      
+      console.log('Chauffeur supprimé avec succès');
       
       toast.success("Chauffeur supprimé", {
         description: "Le chauffeur a été supprimé avec succès."

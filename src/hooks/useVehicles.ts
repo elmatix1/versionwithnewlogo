@@ -50,6 +50,7 @@ export function useVehicles() {
         }));
         
         setVehicles(formattedVehicles);
+        console.log('Véhicules récupérés:', formattedVehicles);
       } catch (err: any) {
         console.error('Erreur lors de la récupération des véhicules:', err);
         setError(err.message);
@@ -84,6 +85,8 @@ export function useVehicles() {
   // Ajouter un véhicule
   const addVehicle = async (vehicleData: Omit<Vehicle, 'id'>) => {
     try {
+      console.log('Tentative d\'ajout de véhicule:', vehicleData);
+      
       // Préparer les données pour l'insertion
       const { data, error } = await supabase
         .from('vehicles')
@@ -100,7 +103,12 @@ export function useVehicles() {
         .select();
       
       if (error) {
+        console.error('Erreur Supabase lors de l\'ajout d\'un véhicule:', error);
         throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        throw new Error('Aucune donnée retournée après l\'insertion');
       }
       
       // Convertir le nouveau véhicule au format Vehicle
@@ -115,6 +123,11 @@ export function useVehicles() {
         driver: data[0].driver,
         location: data[0].position
       };
+      
+      console.log('Véhicule ajouté avec succès:', newVehicle);
+      
+      // Mettre à jour l'état local avec le nouveau véhicule
+      setVehicles(prev => [...prev, newVehicle]);
       
       toast.success("Véhicule ajouté avec succès", {
         description: `${newVehicle.name} a été ajouté à la flotte.`
@@ -133,6 +146,8 @@ export function useVehicles() {
   // Mettre à jour un véhicule
   const updateVehicle = async (id: string, updates: Partial<Vehicle>) => {
     try {
+      console.log('Tentative de mise à jour du véhicule:', id, updates);
+      
       // Préparer les données pour la mise à jour
       const updateData: any = {};
       
@@ -151,8 +166,20 @@ export function useVehicles() {
         .eq('id', parseInt(id));
       
       if (error) {
+        console.error('Erreur Supabase lors de la mise à jour d\'un véhicule:', error);
         throw error;
       }
+      
+      // Mettre à jour l'état local avec les modifications
+      setVehicles(prev => 
+        prev.map(vehicle => 
+          vehicle.id === id 
+            ? { ...vehicle, ...updates } 
+            : vehicle
+        )
+      );
+      
+      console.log('Véhicule mis à jour avec succès');
       
       toast.success("Véhicule mis à jour", {
         description: "Les informations du véhicule ont été mises à jour."
@@ -169,14 +196,22 @@ export function useVehicles() {
   // Supprimer un véhicule
   const deleteVehicle = async (id: string) => {
     try {
+      console.log('Tentative de suppression du véhicule:', id);
+      
       const { error } = await supabase
         .from('vehicles')
         .delete()
         .eq('id', parseInt(id));
       
       if (error) {
+        console.error('Erreur Supabase lors de la suppression d\'un véhicule:', error);
         throw error;
       }
+      
+      // Mettre à jour l'état local en supprimant le véhicule
+      setVehicles(prev => prev.filter(vehicle => vehicle.id !== id));
+      
+      console.log('Véhicule supprimé avec succès');
       
       toast.success("Véhicule supprimé", {
         description: "Le véhicule a été supprimé avec succès."

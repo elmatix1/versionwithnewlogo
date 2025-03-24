@@ -56,6 +56,7 @@ export function useMaintenanceTasks() {
         }));
         
         setTasks(formattedTasks);
+        console.log('Tâches de maintenance récupérées:', formattedTasks);
       } catch (err: any) {
         console.error('Erreur lors de la récupération des tâches de maintenance:', err);
         setError(err.message);
@@ -90,6 +91,8 @@ export function useMaintenanceTasks() {
   // Ajouter une tâche de maintenance
   const addTask = async (taskData: Omit<MaintenanceTask, 'id' | 'createdAt'>) => {
     try {
+      console.log('Tentative d\'ajout de tâche de maintenance:', taskData);
+      
       const now = new Date().toISOString();
       
       // Préparer les données pour l'insertion
@@ -110,7 +113,12 @@ export function useMaintenanceTasks() {
         .select();
       
       if (error) {
+        console.error('Erreur Supabase lors de l\'ajout d\'une tâche de maintenance:', error);
         throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        throw new Error('Aucune donnée retournée après l\'insertion');
       }
       
       // Convertir la nouvelle tâche au format MaintenanceTask
@@ -127,6 +135,11 @@ export function useMaintenanceTasks() {
         completedAt: data[0].completed_at,
         notes: data[0].notes
       };
+      
+      console.log('Tâche ajoutée avec succès:', newTask);
+      
+      // Mettre à jour l'état local avec la nouvelle tâche
+      setTasks(prev => [...prev, newTask]);
       
       toast.success("Tâche ajoutée avec succès", {
         description: `La tâche de maintenance pour ${newTask.vehicle} a été créée.`
@@ -145,6 +158,8 @@ export function useMaintenanceTasks() {
   // Mettre à jour une tâche de maintenance
   const updateTask = async (id: string, updates: Partial<MaintenanceTask>) => {
     try {
+      console.log('Tentative de mise à jour de la tâche de maintenance:', id, updates);
+      
       // Préparer les données pour la mise à jour
       const updateData: any = {};
       
@@ -169,8 +184,24 @@ export function useMaintenanceTasks() {
         .eq('id', parseInt(id));
       
       if (error) {
+        console.error('Erreur Supabase lors de la mise à jour d\'une tâche de maintenance:', error);
         throw error;
       }
+      
+      // Mettre à jour l'état local avec les modifications
+      setTasks(prev => 
+        prev.map(task => 
+          task.id === id 
+            ? { 
+                ...task, 
+                ...updates,
+                completedAt: updates.status === 'completed' ? new Date().toISOString() : task.completedAt 
+              } 
+            : task
+        )
+      );
+      
+      console.log('Tâche mise à jour avec succès');
       
       toast.success("Tâche mise à jour", {
         description: "Les informations de la tâche ont été mises à jour."
@@ -187,14 +218,22 @@ export function useMaintenanceTasks() {
   // Supprimer une tâche de maintenance
   const deleteTask = async (id: string) => {
     try {
+      console.log('Tentative de suppression de la tâche de maintenance:', id);
+      
       const { error } = await supabase
         .from('maintenance_tasks')
         .delete()
         .eq('id', parseInt(id));
       
       if (error) {
+        console.error('Erreur Supabase lors de la suppression d\'une tâche de maintenance:', error);
         throw error;
       }
+      
+      // Mettre à jour l'état local en supprimant la tâche
+      setTasks(prev => prev.filter(task => task.id !== id));
+      
+      console.log('Tâche supprimée avec succès');
       
       toast.success("Tâche supprimée", {
         description: "La tâche a été supprimée avec succès."

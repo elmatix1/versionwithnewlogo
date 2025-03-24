@@ -48,6 +48,7 @@ export function useInventory() {
         }));
         
         setInventoryItems(formattedItems);
+        console.log('Articles d\'inventaire récupérés:', formattedItems);
       } catch (err: any) {
         console.error('Erreur lors de la récupération des articles d\'inventaire:', err);
         setError(err.message);
@@ -82,6 +83,8 @@ export function useInventory() {
   // Ajouter un article d'inventaire
   const addItem = async (itemData: Omit<InventoryItem, 'id'>) => {
     try {
+      console.log('Tentative d\'ajout d\'article d\'inventaire:', itemData);
+      
       // Préparer les données pour l'insertion
       const { data, error } = await supabase
         .from('inventory')
@@ -97,7 +100,12 @@ export function useInventory() {
         .select();
       
       if (error) {
+        console.error('Erreur Supabase lors de l\'ajout d\'un article d\'inventaire:', error);
         throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        throw new Error('Aucune donnée retournée après l\'insertion');
       }
       
       // Convertir le nouvel article au format InventoryItem
@@ -111,6 +119,11 @@ export function useInventory() {
         lastRestock: data[0].last_restock,
         location: data[0].location
       };
+      
+      console.log('Article ajouté avec succès:', newItem);
+      
+      // Mettre à jour l'état local avec le nouvel article
+      setInventoryItems(prev => [...prev, newItem]);
       
       toast.success("Article ajouté avec succès", {
         description: `${newItem.name} a été ajouté à l'inventaire.`
@@ -129,6 +142,8 @@ export function useInventory() {
   // Mettre à jour un article d'inventaire
   const updateItem = async (id: string, updates: Partial<InventoryItem>) => {
     try {
+      console.log('Tentative de mise à jour de l\'article d\'inventaire:', id, updates);
+      
       // Préparer les données pour la mise à jour
       const updateData: any = {};
       
@@ -146,8 +161,20 @@ export function useInventory() {
         .eq('id', parseInt(id));
       
       if (error) {
+        console.error('Erreur Supabase lors de la mise à jour d\'un article d\'inventaire:', error);
         throw error;
       }
+      
+      // Mettre à jour l'état local avec les modifications
+      setInventoryItems(prev => 
+        prev.map(item => 
+          item.id === id 
+            ? { ...item, ...updates } 
+            : item
+        )
+      );
+      
+      console.log('Article mis à jour avec succès');
       
       toast.success("Article mis à jour", {
         description: "Les informations de l'article ont été mises à jour."
@@ -164,14 +191,22 @@ export function useInventory() {
   // Supprimer un article d'inventaire
   const deleteItem = async (id: string) => {
     try {
+      console.log('Tentative de suppression de l\'article d\'inventaire:', id);
+      
       const { error } = await supabase
         .from('inventory')
         .delete()
         .eq('id', parseInt(id));
       
       if (error) {
+        console.error('Erreur Supabase lors de la suppression d\'un article d\'inventaire:', error);
         throw error;
       }
+      
+      // Mettre à jour l'état local en supprimant l'article
+      setInventoryItems(prev => prev.filter(item => item.id !== id));
+      
+      console.log('Article supprimé avec succès');
       
       toast.success("Article supprimé", {
         description: "L'article a été supprimé avec succès."
