@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Driver } from './useDrivers';
+import { Driver, DriverStatus } from './useDrivers';
 
 export function useDriversOperations() {
   const addDriver = async (driverData: Omit<Driver, 'id'>) => {
@@ -34,7 +34,7 @@ export function useDriversOperations() {
       const newDriver: Driver = {
         id: data[0].id.toString(),
         name: data[0].name,
-        status: data[0].status,
+        status: data[0].status as DriverStatus,
         experience: data[0].experience,
         vehicles: Array.isArray(data[0].vehicles) ? data[0].vehicles : [],
         documentValidity: data[0].document_validity,

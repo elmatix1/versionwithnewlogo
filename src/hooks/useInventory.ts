@@ -43,7 +43,7 @@ export function useInventory() {
           category: item.category,
           quantity: typeof item.quantity === 'number' ? item.quantity : 0,
           status: item.status as InventoryStatus,
-          lastRestock: item.last_restock,
+          lastRestock: item.lastRestock,
           location: item.location
         }));
         
@@ -94,7 +94,7 @@ export function useInventory() {
           category: itemData.category,
           quantity: itemData.quantity,
           status: itemData.status,
-          last_restock: itemData.lastRestock,
+          lastRestock: itemData.lastRestock,
           location: itemData.location
         }])
         .select();
@@ -116,7 +116,7 @@ export function useInventory() {
         category: data[0].category,
         quantity: typeof data[0].quantity === 'number' ? data[0].quantity : 0,
         status: data[0].status as InventoryStatus,
-        lastRestock: data[0].last_restock,
+        lastRestock: data[0].lastRestock,
         location: data[0].location
       };
       
@@ -152,7 +152,7 @@ export function useInventory() {
       if (updates.category) updateData.category = updates.category;
       if (updates.quantity !== undefined) updateData.quantity = updates.quantity;
       if (updates.status) updateData.status = updates.status;
-      if (updates.lastRestock) updateData.last_restock = updates.lastRestock;
+      if (updates.lastRestock) updateData.lastRestock = updates.lastRestock;
       if (updates.location) updateData.location = updates.location;
       
       const { error } = await supabase

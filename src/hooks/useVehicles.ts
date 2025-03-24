@@ -42,11 +42,11 @@ export function useVehicles() {
           name: vehicle.registration, // Supportons les deux formats
           type: vehicle.type,
           status: vehicle.status as VehicleStatus,
-          fuelLevel: typeof vehicle.fuel_level === 'number' ? vehicle.fuel_level : 0,
-          lastMaintenance: vehicle.last_maintenance,
+          fuelLevel: typeof vehicle.fuelLevel === 'number' ? vehicle.fuelLevel : 0,
+          lastMaintenance: vehicle.lastMaintenance,
           nextService: vehicle.nextMaintenance || '',
           driver: vehicle.driver,
-          location: vehicle.position
+          location: vehicle.location
         }));
         
         setVehicles(formattedVehicles);
@@ -94,11 +94,11 @@ export function useVehicles() {
           registration: vehicleData.name,
           type: vehicleData.type,
           status: vehicleData.status,
-          fuel_level: vehicleData.fuelLevel,
-          last_maintenance: vehicleData.lastMaintenance,
+          fuelLevel: vehicleData.fuelLevel,
+          lastMaintenance: vehicleData.lastMaintenance,
           nextMaintenance: vehicleData.nextService,
           driver: vehicleData.driver,
-          position: vehicleData.location
+          location: vehicleData.location
         }])
         .select();
       
@@ -117,11 +117,11 @@ export function useVehicles() {
         name: data[0].registration,
         type: data[0].type,
         status: data[0].status as VehicleStatus,
-        fuelLevel: typeof data[0].fuel_level === 'number' ? data[0].fuel_level : 0,
-        lastMaintenance: data[0].last_maintenance,
+        fuelLevel: typeof data[0].fuelLevel === 'number' ? data[0].fuelLevel : 0,
+        lastMaintenance: data[0].lastMaintenance,
         nextService: data[0].nextMaintenance || '',
         driver: data[0].driver,
-        location: data[0].position
+        location: data[0].location
       };
       
       console.log('Véhicule ajouté avec succès:', newVehicle);
@@ -154,11 +154,11 @@ export function useVehicles() {
       if (updates.name) updateData.registration = updates.name;
       if (updates.type) updateData.type = updates.type;
       if (updates.status) updateData.status = updates.status;
-      if (updates.fuelLevel !== undefined) updateData.fuel_level = updates.fuelLevel;
-      if (updates.lastMaintenance) updateData.last_maintenance = updates.lastMaintenance;
+      if (updates.fuelLevel !== undefined) updateData.fuelLevel = updates.fuelLevel;
+      if (updates.lastMaintenance) updateData.lastMaintenance = updates.lastMaintenance;
       if (updates.nextService) updateData.nextMaintenance = updates.nextService;
       if (updates.driver !== undefined) updateData.driver = updates.driver;
-      if (updates.location !== undefined) updateData.position = updates.location;
+      if (updates.location !== undefined) updateData.location = updates.location;
       
       const { error } = await supabase
         .from('vehicles')

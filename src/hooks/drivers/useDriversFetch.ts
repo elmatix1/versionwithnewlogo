@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Driver } from './useDrivers';
+import { Driver, DriverStatus } from './useDrivers';
 
 export function useDriversFetch() {
   const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -25,7 +25,7 @@ export function useDriversFetch() {
         const formattedDrivers = data.map(driver => ({
           id: driver.id.toString(),
           name: driver.name,
-          status: driver.status,
+          status: driver.status as DriverStatus,
           experience: driver.experience,
           vehicles: Array.isArray(driver.vehicles) ? driver.vehicles : [],
           documentValidity: driver.document_validity,
