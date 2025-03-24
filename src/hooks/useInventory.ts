@@ -143,7 +143,7 @@ export function useInventory() {
       const { error } = await supabase
         .from('inventory')
         .update(updateData)
-        .eq('id', id);
+        .eq('id', parseInt(id));
       
       if (error) {
         throw error;
@@ -167,7 +167,7 @@ export function useInventory() {
       const { error } = await supabase
         .from('inventory')
         .delete()
-        .eq('id', id);
+        .eq('id', parseInt(id));
       
       if (error) {
         throw error;

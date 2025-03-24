@@ -43,10 +43,10 @@ export function useDrivers() {
           status: driver.status as DriverStatus,
           experience: driver.experience,
           vehicles: Array.isArray(driver.vehicles) ? driver.vehicles : [],
-          documentValidity: driver.document_validity || driver.documentValidity || '',
+          documentValidity: driver.document_validity,
           phone: driver.phone,
           address: driver.address,
-          licenseType: driver.license_type || driver.licenseType
+          licenseType: driver.license_type
         }));
         
         setDrivers(formattedDrivers);
@@ -110,10 +110,10 @@ export function useDrivers() {
         status: data[0].status as DriverStatus,
         experience: data[0].experience,
         vehicles: Array.isArray(data[0].vehicles) ? data[0].vehicles : [],
-        documentValidity: data[0].document_validity || data[0].documentValidity || '',
+        documentValidity: data[0].document_validity,
         phone: data[0].phone,
         address: data[0].address,
-        licenseType: data[0].license_type || data[0].licenseType
+        licenseType: data[0].license_type
       };
       
       toast.success("Chauffeur ajouté avec succès", {
@@ -148,7 +148,7 @@ export function useDrivers() {
       const { error } = await supabase
         .from('drivers')
         .update(updateData)
-        .eq('id', id);
+        .eq('id', parseInt(id));
       
       if (error) {
         throw error;
@@ -172,7 +172,7 @@ export function useDrivers() {
       const { error } = await supabase
         .from('drivers')
         .delete()
-        .eq('id', id);
+        .eq('id', parseInt(id));
       
       if (error) {
         throw error;

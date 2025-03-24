@@ -39,14 +39,14 @@ export function useVehicles() {
         // Convertir les données pour correspondre à l'interface Vehicle
         const formattedVehicles = data.map(vehicle => ({
           id: vehicle.id.toString(),
-          name: vehicle.registration || vehicle.name, // Supportons les deux formats
+          name: vehicle.registration, // Supportons les deux formats
           type: vehicle.type,
           status: vehicle.status as VehicleStatus,
           fuelLevel: typeof vehicle.fuel_level === 'number' ? vehicle.fuel_level : 0,
           lastMaintenance: vehicle.last_maintenance,
-          nextService: vehicle.nextMaintenance || vehicle.next_service || '',
+          nextService: vehicle.nextMaintenance || '',
           driver: vehicle.driver,
-          location: vehicle.position || vehicle.location
+          location: vehicle.position
         }));
         
         setVehicles(formattedVehicles);
@@ -106,14 +106,14 @@ export function useVehicles() {
       // Convertir le nouveau véhicule au format Vehicle
       const newVehicle: Vehicle = {
         id: data[0].id.toString(),
-        name: data[0].registration || data[0].name,
+        name: data[0].registration,
         type: data[0].type,
         status: data[0].status as VehicleStatus,
         fuelLevel: typeof data[0].fuel_level === 'number' ? data[0].fuel_level : 0,
         lastMaintenance: data[0].last_maintenance,
-        nextService: data[0].nextMaintenance || data[0].next_service || '',
+        nextService: data[0].nextMaintenance || '',
         driver: data[0].driver,
-        location: data[0].position || data[0].location
+        location: data[0].position
       };
       
       toast.success("Véhicule ajouté avec succès", {
@@ -148,7 +148,7 @@ export function useVehicles() {
       const { error } = await supabase
         .from('vehicles')
         .update(updateData)
-        .eq('id', id);
+        .eq('id', parseInt(id));
       
       if (error) {
         throw error;
@@ -172,7 +172,7 @@ export function useVehicles() {
       const { error } = await supabase
         .from('vehicles')
         .delete()
-        .eq('id', id);
+        .eq('id', parseInt(id));
       
       if (error) {
         throw error;

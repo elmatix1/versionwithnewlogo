@@ -166,7 +166,7 @@ export function useMaintenanceTasks() {
       const { error } = await supabase
         .from('maintenance_tasks')
         .update(updateData)
-        .eq('id', id);
+        .eq('id', parseInt(id));
       
       if (error) {
         throw error;
@@ -190,7 +190,7 @@ export function useMaintenanceTasks() {
       const { error } = await supabase
         .from('maintenance_tasks')
         .delete()
-        .eq('id', id);
+        .eq('id', parseInt(id));
       
       if (error) {
         throw error;

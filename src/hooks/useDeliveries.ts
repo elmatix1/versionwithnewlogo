@@ -148,7 +148,7 @@ export function useDeliveries() {
       const { error } = await supabase
         .from('deliveries')
         .update(updateData)
-        .eq('id', id);
+        .eq('id', parseInt(id));
       
       if (error) {
         throw error;
@@ -172,7 +172,7 @@ export function useDeliveries() {
       const { error } = await supabase
         .from('deliveries')
         .delete()
-        .eq('id', id);
+        .eq('id', parseInt(id));
       
       if (error) {
         throw error;

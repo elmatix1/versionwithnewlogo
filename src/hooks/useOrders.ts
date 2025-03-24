@@ -149,7 +149,7 @@ export function useOrders() {
       const { error } = await supabase
         .from('orders')
         .update(updateData)
-        .eq('id', id);
+        .eq('id', parseInt(id));
       
       if (error) {
         throw error;
@@ -173,7 +173,7 @@ export function useOrders() {
       const { error } = await supabase
         .from('orders')
         .delete()
-        .eq('id', id);
+        .eq('id', parseInt(id));
       
       if (error) {
         throw error;
