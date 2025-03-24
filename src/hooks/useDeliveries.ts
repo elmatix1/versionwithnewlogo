@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { saveToLocalStorage, loadFromLocalStorage } from '@/utils/localStorage';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export type DeliveryStatus = 'pending' | 'in-progress' | 'completed' | 'cancelled';
 
@@ -16,40 +17,183 @@ export interface Delivery {
   notes?: string;
 }
 
-const STORAGE_KEY = 'tms-deliveries';
-
 export function useDeliveries() {
-  const [deliveries, setDeliveries] = useState<Delivery[]>(() => 
-    loadFromLocalStorage<Delivery[]>(STORAGE_KEY, [])
-  );
+  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // Récupérer les livraisons depuis Supabase
   useEffect(() => {
-    saveToLocalStorage(STORAGE_KEY, deliveries);
-  }, [deliveries]);
-
-  const addDelivery = (deliveryData: Omit<Delivery, 'id'>) => {
-    const newDelivery: Delivery = {
-      id: Date.now().toString(),
-      ...deliveryData
+    const fetchDeliveries = async () => {
+      try {
+        setLoading(true);
+        
+        const { data, error } = await supabase
+          .from('deliveries')
+          .select('*');
+        
+        if (error) {
+          throw error;
+        }
+        
+        // Convertir les données pour correspondre à l'interface Delivery
+        const formattedDeliveries = data.map(delivery => ({
+          id: delivery.id.toString(),
+          date: delivery.date,
+          time: delivery.time,
+          driver: delivery.driver,
+          vehicle: delivery.vehicle,
+          origin: delivery.origin,
+          destination: delivery.destination,
+          status: delivery.status as DeliveryStatus,
+          notes: delivery.notes
+        }));
+        
+        setDeliveries(formattedDeliveries);
+      } catch (err: any) {
+        console.error('Erreur lors de la récupération des livraisons:', err);
+        setError(err.message);
+        toast.error("Erreur lors du chargement des livraisons", {
+          description: err.message
+        });
+      } finally {
+        setLoading(false);
+      }
     };
-    setDeliveries(prev => [...prev, newDelivery]);
-    return newDelivery;
-  };
-
-  const updateDelivery = (id: string, updates: Partial<Delivery>) => {
-    setDeliveries(prev => 
-      prev.map(delivery => 
-        delivery.id === id ? { ...delivery, ...updates } : delivery
+    
+    fetchDeliveries();
+    
+    // Configurer le canal en temps réel
+    const channel = supabase
+      .channel('public:deliveries')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'deliveries' }, 
+        (payload) => {
+          console.log('Changement détecté dans les livraisons:', payload);
+          fetchDeliveries();
+        }
       )
-    );
+      .subscribe();
+    
+    // Nettoyer l'abonnement
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+  
+  // Ajouter une livraison
+  const addDelivery = async (deliveryData: Omit<Delivery, 'id'>) => {
+    try {
+      // Préparer les données pour l'insertion
+      const { data, error } = await supabase
+        .from('deliveries')
+        .insert([{
+          date: deliveryData.date,
+          time: deliveryData.time,
+          driver: deliveryData.driver,
+          vehicle: deliveryData.vehicle,
+          origin: deliveryData.origin,
+          destination: deliveryData.destination,
+          status: deliveryData.status,
+          notes: deliveryData.notes
+        }])
+        .select();
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Convertir la nouvelle livraison au format Delivery
+      const newDelivery: Delivery = {
+        id: data[0].id.toString(),
+        date: data[0].date,
+        time: data[0].time,
+        driver: data[0].driver,
+        vehicle: data[0].vehicle,
+        origin: data[0].origin,
+        destination: data[0].destination,
+        status: data[0].status as DeliveryStatus,
+        notes: data[0].notes
+      };
+      
+      toast.success("Livraison ajoutée avec succès", {
+        description: `La livraison vers ${newDelivery.destination} a été programmée.`
+      });
+      
+      return newDelivery;
+    } catch (err: any) {
+      console.error('Erreur lors de l\'ajout d\'une livraison:', err);
+      toast.error("Erreur lors de l'ajout de la livraison", {
+        description: err.message
+      });
+      throw err;
+    }
   };
-
-  const deleteDelivery = (id: string) => {
-    setDeliveries(prev => prev.filter(delivery => delivery.id !== id));
+  
+  // Mettre à jour une livraison
+  const updateDelivery = async (id: string, updates: Partial<Delivery>) => {
+    try {
+      // Préparer les données pour la mise à jour
+      const updateData: any = {};
+      
+      if (updates.date) updateData.date = updates.date;
+      if (updates.time) updateData.time = updates.time;
+      if (updates.driver) updateData.driver = updates.driver;
+      if (updates.vehicle) updateData.vehicle = updates.vehicle;
+      if (updates.origin) updateData.origin = updates.origin;
+      if (updates.destination) updateData.destination = updates.destination;
+      if (updates.status) updateData.status = updates.status;
+      if (updates.notes !== undefined) updateData.notes = updates.notes;
+      
+      const { error } = await supabase
+        .from('deliveries')
+        .update(updateData)
+        .eq('id', id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success("Livraison mise à jour", {
+        description: "Les informations de la livraison ont été mises à jour."
+      });
+    } catch (err: any) {
+      console.error('Erreur lors de la mise à jour d\'une livraison:', err);
+      toast.error("Erreur lors de la mise à jour de la livraison", {
+        description: err.message
+      });
+      throw err;
+    }
+  };
+  
+  // Supprimer une livraison
+  const deleteDelivery = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('deliveries')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success("Livraison supprimée", {
+        description: "La livraison a été supprimée avec succès."
+      });
+    } catch (err: any) {
+      console.error('Erreur lors de la suppression d\'une livraison:', err);
+      toast.error("Erreur lors de la suppression de la livraison", {
+        description: err.message
+      });
+      throw err;
+    }
   };
 
   return {
     deliveries,
+    loading,
+    error,
     addDelivery,
     updateDelivery,
     deleteDelivery

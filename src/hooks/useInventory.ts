@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { saveToLocalStorage, loadFromLocalStorage } from '@/utils/localStorage';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export type InventoryStatus = 'in-stock' | 'low-stock' | 'out-of-stock';
 
@@ -15,39 +16,176 @@ export interface InventoryItem {
   location: string;
 }
 
-const STORAGE_KEY = 'tms-inventory';
-
 export function useInventory() {
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>(() => 
-    loadFromLocalStorage<InventoryItem[]>(STORAGE_KEY, [])
-  );
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // Récupérer les articles d'inventaire depuis Supabase
   useEffect(() => {
-    saveToLocalStorage(STORAGE_KEY, inventoryItems);
-  }, [inventoryItems]);
-
-  const addItem = (itemData: Omit<InventoryItem, 'id'>) => {
-    const newItem: InventoryItem = {
-      id: Date.now().toString(),
-      ...itemData
+    const fetchInventoryItems = async () => {
+      try {
+        setLoading(true);
+        
+        const { data, error } = await supabase
+          .from('inventory')
+          .select('*');
+        
+        if (error) {
+          throw error;
+        }
+        
+        // Convertir les données pour correspondre à l'interface InventoryItem
+        const formattedItems = data.map(item => ({
+          id: item.id.toString(),
+          reference: item.reference,
+          name: item.name,
+          category: item.category,
+          quantity: typeof item.quantity === 'number' ? item.quantity : 0,
+          status: item.status as InventoryStatus,
+          lastRestock: item.last_restock,
+          location: item.location
+        }));
+        
+        setInventoryItems(formattedItems);
+      } catch (err: any) {
+        console.error('Erreur lors de la récupération des articles d\'inventaire:', err);
+        setError(err.message);
+        toast.error("Erreur lors du chargement de l'inventaire", {
+          description: err.message
+        });
+      } finally {
+        setLoading(false);
+      }
     };
-    setInventoryItems(prev => [...prev, newItem]);
-    return newItem;
-  };
-
-  const updateItem = (id: string, updates: Partial<InventoryItem>) => {
-    setInventoryItems(prev => 
-      prev.map(item => 
-        item.id === id ? { ...item, ...updates } : item
+    
+    fetchInventoryItems();
+    
+    // Configurer le canal en temps réel
+    const channel = supabase
+      .channel('public:inventory')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'inventory' }, 
+        (payload) => {
+          console.log('Changement détecté dans l\'inventaire:', payload);
+          fetchInventoryItems();
+        }
       )
-    );
+      .subscribe();
+    
+    // Nettoyer l'abonnement
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+  
+  // Ajouter un article d'inventaire
+  const addItem = async (itemData: Omit<InventoryItem, 'id'>) => {
+    try {
+      // Préparer les données pour l'insertion
+      const { data, error } = await supabase
+        .from('inventory')
+        .insert([{
+          reference: itemData.reference,
+          name: itemData.name,
+          category: itemData.category,
+          quantity: itemData.quantity,
+          status: itemData.status,
+          last_restock: itemData.lastRestock,
+          location: itemData.location
+        }])
+        .select();
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Convertir le nouvel article au format InventoryItem
+      const newItem: InventoryItem = {
+        id: data[0].id.toString(),
+        reference: data[0].reference,
+        name: data[0].name,
+        category: data[0].category,
+        quantity: typeof data[0].quantity === 'number' ? data[0].quantity : 0,
+        status: data[0].status as InventoryStatus,
+        lastRestock: data[0].last_restock,
+        location: data[0].location
+      };
+      
+      toast.success("Article ajouté avec succès", {
+        description: `${newItem.name} a été ajouté à l'inventaire.`
+      });
+      
+      return newItem;
+    } catch (err: any) {
+      console.error('Erreur lors de l\'ajout d\'un article d\'inventaire:', err);
+      toast.error("Erreur lors de l'ajout de l'article", {
+        description: err.message
+      });
+      throw err;
+    }
+  };
+  
+  // Mettre à jour un article d'inventaire
+  const updateItem = async (id: string, updates: Partial<InventoryItem>) => {
+    try {
+      // Préparer les données pour la mise à jour
+      const updateData: any = {};
+      
+      if (updates.reference) updateData.reference = updates.reference;
+      if (updates.name) updateData.name = updates.name;
+      if (updates.category) updateData.category = updates.category;
+      if (updates.quantity !== undefined) updateData.quantity = updates.quantity;
+      if (updates.status) updateData.status = updates.status;
+      if (updates.lastRestock) updateData.last_restock = updates.lastRestock;
+      if (updates.location) updateData.location = updates.location;
+      
+      const { error } = await supabase
+        .from('inventory')
+        .update(updateData)
+        .eq('id', id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success("Article mis à jour", {
+        description: "Les informations de l'article ont été mises à jour."
+      });
+    } catch (err: any) {
+      console.error('Erreur lors de la mise à jour d\'un article d\'inventaire:', err);
+      toast.error("Erreur lors de la mise à jour de l'article", {
+        description: err.message
+      });
+      throw err;
+    }
+  };
+  
+  // Supprimer un article d'inventaire
+  const deleteItem = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('inventory')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success("Article supprimé", {
+        description: "L'article a été supprimé avec succès."
+      });
+    } catch (err: any) {
+      console.error('Erreur lors de la suppression d\'un article d\'inventaire:', err);
+      toast.error("Erreur lors de la suppression de l'article", {
+        description: err.message
+      });
+      throw err;
+    }
   };
 
-  const deleteItem = (id: string) => {
-    setInventoryItems(prev => prev.filter(item => item.id !== id));
-  };
-
-  // Get counts by status
+  // Obtenir les statistiques par statut
   const getStatusCounts = () => {
     return inventoryItems.reduce((acc, item) => {
       acc[item.status] = (acc[item.status] || 0) + 1;
@@ -57,6 +195,8 @@ export function useInventory() {
 
   return {
     inventoryItems,
+    loading,
+    error,
     addItem,
     updateItem,
     deleteItem,

@@ -228,9 +228,9 @@ export type Database = {
           fuel_level: number
           id: number
           last_maintenance: string
-          location: string | null
-          name: string
-          next_service: string
+          nextMaintenance: string
+          position: string | null
+          registration: string
           status: string
           type: string
         }
@@ -239,9 +239,9 @@ export type Database = {
           fuel_level: number
           id?: number
           last_maintenance: string
-          location?: string | null
-          name: string
-          next_service: string
+          nextMaintenance: string
+          position?: string | null
+          registration: string
           status: string
           type: string
         }
@@ -250,9 +250,9 @@ export type Database = {
           fuel_level?: number
           id?: number
           last_maintenance?: string
-          location?: string | null
-          name?: string
-          next_service?: string
+          nextMaintenance?: string
+          position?: string | null
+          registration?: string
           status?: string
           type?: string
         }
