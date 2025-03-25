@@ -8,7 +8,7 @@ const LandingPage = () => {
       {/* Hero Section - Ajusté pour éviter la coupure du texte */}
       <section className="relative py-20 md:py-28 flex items-center justify-center bg-gradient-to-b from-primary/10 to-background">
         <div className="container mx-auto px-4 text-center relative z-10">
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent py-[9px]">
+          <h1 className="text-3xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent py-[9px] md:text-5xl">
             Gestion de Transport Intelligente
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
