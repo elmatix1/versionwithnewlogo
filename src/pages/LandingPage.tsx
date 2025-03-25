@@ -1,17 +1,14 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Truck, Shield, Clock, BarChart, Map } from 'lucide-react';
-
 const LandingPage = () => {
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       {/* Hero Section - Ajusté pour éviter la coupure du texte */}
       <section className="relative py-20 md:py-28 flex items-center justify-center bg-gradient-to-b from-primary/10 to-background">
         <div className="container mx-auto px-4 text-center relative z-10">
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent py-[9px]">
             Gestion de Transport Intelligente
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
@@ -49,26 +46,10 @@ const LandingPage = () => {
       <section className="py-12 md:py-16 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-            <FeatureCard 
-              icon={<Truck className="h-8 w-8 text-primary" />} 
-              title="Gestion de Flotte" 
-              description="Suivez et optimisez votre flotte en temps réel" 
-            />
-            <FeatureCard 
-              icon={<Shield className="h-8 w-8 text-primary" />} 
-              title="Sécurité" 
-              description="Protection et surveillance avancées des véhicules" 
-            />
-            <FeatureCard 
-              icon={<Clock className="h-8 w-8 text-primary" />} 
-              title="Planification" 
-              description="Optimisez vos itinéraires et horaires" 
-            />
-            <FeatureCard 
-              icon={<BarChart className="h-8 w-8 text-primary" />} 
-              title="Analytics" 
-              description="Rapports détaillés et analyses performantes" 
-            />
+            <FeatureCard icon={<Truck className="h-8 w-8 text-primary" />} title="Gestion de Flotte" description="Suivez et optimisez votre flotte en temps réel" />
+            <FeatureCard icon={<Shield className="h-8 w-8 text-primary" />} title="Sécurité" description="Protection et surveillance avancées des véhicules" />
+            <FeatureCard icon={<Clock className="h-8 w-8 text-primary" />} title="Planification" description="Optimisez vos itinéraires et horaires" />
+            <FeatureCard icon={<BarChart className="h-8 w-8 text-primary" />} title="Analytics" description="Rapports détaillés et analyses performantes" />
           </div>
         </div>
       </section>
@@ -88,22 +69,18 @@ const LandingPage = () => {
           </Button>
         </div>
       </section>
-    </div>
-  );
+    </div>;
 };
-
 interface FeatureCardProps {
   icon: React.ReactNode;
   title: string;
   description: string;
 }
-
 const FeatureCard = ({
   icon,
   title,
   description
-}: FeatureCardProps) => (
-  <Card className="bg-card/50 backdrop-blur-sm border-primary/10 hover:shadow-md transition-all duration-300 hover:border-primary/30">
+}: FeatureCardProps) => <Card className="bg-card/50 backdrop-blur-sm border-primary/10 hover:shadow-md transition-all duration-300 hover:border-primary/30">
     <CardContent className="p-6 text-center">
       <div className="mb-4 flex justify-center">
         <div className="p-3 rounded-full bg-primary/10">{icon}</div>
@@ -111,7 +88,5 @@ const FeatureCard = ({
       <h3 className="text-xl font-semibold mb-2">{title}</h3>
       <p className="text-muted-foreground">{description}</p>
     </CardContent>
-  </Card>
-);
-
+  </Card>;
 export default LandingPage;
