@@ -13,13 +13,20 @@ export function useDriversFetch() {
     const fetchDrivers = async () => {
       try {
         setLoading(true);
+        setError(null);
         
         const { data, error } = await supabase
           .from('drivers')
-          .select('*');
+          .select('*')
+          .order('name');
         
         if (error) {
           throw error;
+        }
+
+        if (!data) {
+          setDrivers([]);
+          return;
         }
         
         const formattedDrivers = data.map(driver => ({
@@ -29,13 +36,13 @@ export function useDriversFetch() {
           experience: driver.experience,
           vehicles: Array.isArray(driver.vehicles) ? driver.vehicles : [],
           documentValidity: driver.document_validity,
-          phone: driver.phone,
-          address: driver.address,
-          licenseType: driver.license_type
+          phone: driver.phone || '',
+          address: driver.address || '',
+          licenseType: driver.license_type || ''
         }));
         
         setDrivers(formattedDrivers);
-        console.log('Drivers retrieved:', formattedDrivers);
+        console.log('Drivers fetched successfully:', formattedDrivers);
       } catch (err: any) {
         console.error('Error fetching drivers:', err);
         setError(err.message);
@@ -50,18 +57,22 @@ export function useDriversFetch() {
     // Initial fetch
     fetchDrivers();
     
-    // Enable realtime subscription
+    // Enable realtime subscription with better error handling
     const channel = supabase
-      .channel('public:drivers')
+      .channel('drivers-changes')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'drivers'
       }, (payload) => {
-        console.log('Change detected in drivers:', payload);
+        console.log('Realtime update received:', payload);
         fetchDrivers(); // Reload drivers when changes occur
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status !== 'SUBSCRIBED') {
+          console.error('Failed to subscribe to realtime updates:', status);
+        }
+      });
     
     // Cleanup subscription
     return () => {

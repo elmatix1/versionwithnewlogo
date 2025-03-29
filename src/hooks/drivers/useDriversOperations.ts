@@ -5,7 +5,10 @@ import { Driver, DriverStatus } from './useDrivers';
 export function useDriversOperations() {
   const addDriver = async (driverData: Omit<Driver, 'id'>) => {
     try {
-      console.log('Attempting to add driver:', driverData);
+      console.log('Adding new driver:', driverData);
+      
+      // Ensure vehicles is always an array
+      const vehicles = Array.isArray(driverData.vehicles) ? driverData.vehicles : [];
       
       const { data, error } = await supabase
         .from('drivers')
@@ -13,16 +16,16 @@ export function useDriversOperations() {
           name: driverData.name,
           status: driverData.status,
           experience: driverData.experience,
-          vehicles: driverData.vehicles || [],
+          vehicles: vehicles,
           document_validity: driverData.documentValidity,
-          phone: driverData.phone,
-          address: driverData.address,
-          license_type: driverData.licenseType
+          phone: driverData.phone || null,
+          address: driverData.address || null,
+          license_type: driverData.licenseType || null
         }])
         .select();
       
       if (error) {
-        console.error('Supabase error adding driver:', error);
+        console.error('Error in Supabase insert:', error);
         throw error;
       }
       
@@ -37,13 +40,12 @@ export function useDriversOperations() {
         experience: data[0].experience,
         vehicles: Array.isArray(data[0].vehicles) ? data[0].vehicles : [],
         documentValidity: data[0].document_validity,
-        phone: data[0].phone,
-        address: data[0].address,
-        licenseType: data[0].license_type
+        phone: data[0].phone || '',
+        address: data[0].address || '',
+        licenseType: data[0].license_type || ''
       };
       
       console.log('Driver added successfully:', newDriver);
-      
       toast.success("Driver added successfully", {
         description: `${newDriver.name} has been added to the drivers list.`
       });
