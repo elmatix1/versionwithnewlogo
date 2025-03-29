@@ -14,7 +14,6 @@ import {
   BarChart4,
   Settings
 } from 'lucide-react';
-import CompanyLogo from './CompanyLogo';
 
 interface NavItemProps {
   to: string;
@@ -52,8 +51,8 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, requiredRoles = [] }
 const Sidebar: React.FC = () => {
   return (
     <div className="w-64 h-full bg-sidebar border-r border-border flex flex-col">
-      <div className="p-4 border-b border-border flex justify-center">
-        <CompanyLogo className="mx-auto" />
+      <div className="p-4 border-b border-border">
+        <h1 className="text-2xl font-bold text-translogica-600">TransLogica</h1>
       </div>
       
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-hide">
