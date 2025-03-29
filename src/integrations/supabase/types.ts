@@ -85,7 +85,7 @@ export type Database = {
         Row: {
           category: string
           id: number
-          lastRestock: string
+          last_restock: string
           location: string
           name: string
           quantity: number
@@ -95,7 +95,7 @@ export type Database = {
         Insert: {
           category: string
           id?: number
-          lastRestock: string
+          last_restock: string
           location: string
           name: string
           quantity: number
@@ -105,7 +105,7 @@ export type Database = {
         Update: {
           category?: string
           id?: number
-          lastRestock?: string
+          last_restock?: string
           location?: string
           name?: string
           quantity?: number
@@ -116,11 +116,11 @@ export type Database = {
       }
       maintenance_tasks: {
         Row: {
-          assignedTo: string
-          completedAt: string | null
-          createdAt: string | null
+          assigned_to: string
+          completed_at: string | null
+          created_at: string | null
           description: string
-          dueDate: string
+          due_date: string
           id: number
           notes: string | null
           priority: string
@@ -129,11 +129,11 @@ export type Database = {
           vehicle: string
         }
         Insert: {
-          assignedTo: string
-          completedAt?: string | null
-          createdAt?: string | null
+          assigned_to: string
+          completed_at?: string | null
+          created_at?: string | null
           description: string
-          dueDate: string
+          due_date: string
           id?: number
           notes?: string | null
           priority: string
@@ -142,11 +142,11 @@ export type Database = {
           vehicle: string
         }
         Update: {
-          assignedTo?: string
-          completedAt?: string | null
-          createdAt?: string | null
+          assigned_to?: string
+          completed_at?: string | null
+          created_at?: string | null
           description?: string
-          dueDate?: string
+          due_date?: string
           id?: number
           notes?: string | null
           priority?: string
@@ -160,7 +160,7 @@ export type Database = {
         Row: {
           amount: string
           client: string
-          deliveryDate: string
+          delivery_date: string
           destination: string
           id: number
           notes: string | null
@@ -171,7 +171,7 @@ export type Database = {
         Insert: {
           amount: string
           client: string
-          deliveryDate: string
+          delivery_date: string
           destination: string
           id?: number
           notes?: string | null
@@ -182,7 +182,7 @@ export type Database = {
         Update: {
           amount?: string
           client?: string
-          deliveryDate?: string
+          delivery_date?: string
           destination?: string
           id?: number
           notes?: string | null
@@ -225,33 +225,33 @@ export type Database = {
       vehicles: {
         Row: {
           driver: string | null
-          fuelLevel: number
+          fuel_level: number
           id: number
-          lastMaintenance: string
+          last_maintenance: string
           location: string | null
-          nextMaintenance: string
+          next_maintenance: string
           registration: string
           status: string
           type: string
         }
         Insert: {
           driver?: string | null
-          fuelLevel: number
+          fuel_level: number
           id?: number
-          lastMaintenance: string
+          last_maintenance: string
           location?: string | null
-          nextMaintenance: string
+          next_maintenance: string
           registration: string
           status: string
           type: string
         }
         Update: {
           driver?: string | null
-          fuelLevel?: number
+          fuel_level?: number
           id?: number
-          lastMaintenance?: string
+          last_maintenance?: string
           location?: string | null
-          nextMaintenance?: string
+          next_maintenance?: string
           registration?: string
           status?: string
           type?: string
