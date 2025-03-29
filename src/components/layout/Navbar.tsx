@@ -8,6 +8,7 @@ import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import UserMenu from './UserMenu';
 import NotificationMenu from './NotificationMenu';
+import CompanyLogo from './CompanyLogo';
 
 interface NavbarProps {
   setSidebarOpen: (value: boolean) => void;
@@ -50,7 +51,7 @@ const Navbar = ({ setSidebarOpen }: NavbarProps) => {
       "sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background px-4",
       "transition-all duration-300"
     )}>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
         {user && (
           <Button
             variant="ghost"
@@ -63,6 +64,11 @@ const Navbar = ({ setSidebarOpen }: NavbarProps) => {
           </Button>
         )}
         <h1 className="text-lg font-medium">{pageTitle}</h1>
+      </div>
+
+      {/* Logo centré */}
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <CompanyLogo />
       </div>
 
       {user && (

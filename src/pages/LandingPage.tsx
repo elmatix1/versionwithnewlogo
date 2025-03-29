@@ -3,11 +3,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Truck, Shield, Clock, BarChart, Map } from 'lucide-react';
+import CompanyLogo from '@/components/layout/CompanyLogo';
+
 const LandingPage = () => {
   return <div className="min-h-screen bg-background">
-      {/* Hero Section - Ajusté pour éviter la coupure du texte */}
+      {/* Hero Section */}
       <section className="relative py-20 md:py-28 flex items-center justify-center bg-gradient-to-b from-primary/10 to-background">
         <div className="container mx-auto px-4 text-center relative z-10">
+          <div className="flex justify-center mb-8">
+            <CompanyLogo className="w-64 h-auto" />
+          </div>
           <h1 className="text-3xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent py-[9px] md:text-5xl">
             Gestion de Transport Intelligente
           </h1>
@@ -71,11 +76,13 @@ const LandingPage = () => {
       </section>
     </div>;
 };
+
 interface FeatureCardProps {
   icon: React.ReactNode;
   title: string;
   description: string;
 }
+
 const FeatureCard = ({
   icon,
   title,
@@ -89,4 +96,5 @@ const FeatureCard = ({
       <p className="text-muted-foreground">{description}</p>
     </CardContent>
   </Card>;
+
 export default LandingPage;
