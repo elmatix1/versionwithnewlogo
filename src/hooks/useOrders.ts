@@ -44,7 +44,7 @@ export function useOrders() {
           origin: order.origin,
           destination: order.destination,
           status: order.status as OrderStatus,
-          deliveryDate: order.deliveryDate,
+          deliveryDate: order.delivery_date,
           priority: order.priority as OrderPriority,
           amount: order.amount,
           notes: order.notes
@@ -96,7 +96,7 @@ export function useOrders() {
           origin: orderData.origin,
           destination: orderData.destination,
           status: orderData.status,
-          deliveryDate: orderData.deliveryDate,
+          delivery_date: orderData.deliveryDate,
           priority: orderData.priority,
           amount: orderData.amount,
           notes: orderData.notes
@@ -119,7 +119,7 @@ export function useOrders() {
         origin: data[0].origin,
         destination: data[0].destination,
         status: data[0].status as OrderStatus,
-        deliveryDate: data[0].deliveryDate,
+        deliveryDate: data[0].delivery_date,
         priority: data[0].priority as OrderPriority,
         amount: data[0].amount,
         notes: data[0].notes
@@ -156,7 +156,7 @@ export function useOrders() {
       if (updates.origin) updateData.origin = updates.origin;
       if (updates.destination) updateData.destination = updates.destination;
       if (updates.status) updateData.status = updates.status;
-      if (updates.deliveryDate) updateData.deliveryDate = updates.deliveryDate;
+      if (updates.deliveryDate) updateData.delivery_date = updates.deliveryDate;
       if (updates.priority) updateData.priority = updates.priority;
       if (updates.amount) updateData.amount = updates.amount;
       if (updates.notes !== undefined) updateData.notes = updates.notes;

@@ -42,9 +42,9 @@ export function useVehicles() {
           name: vehicle.registration, // Supportons les deux formats
           type: vehicle.type,
           status: vehicle.status as VehicleStatus,
-          fuelLevel: typeof vehicle.fuelLevel === 'number' ? vehicle.fuelLevel : 0,
-          lastMaintenance: vehicle.lastMaintenance,
-          nextService: vehicle.nextMaintenance || '',
+          fuelLevel: typeof vehicle.fuel_level === 'number' ? vehicle.fuel_level : 0,
+          lastMaintenance: vehicle.last_maintenance,
+          nextService: vehicle.next_maintenance || '',
           driver: vehicle.driver,
           location: vehicle.location
         }));
@@ -94,9 +94,9 @@ export function useVehicles() {
           registration: vehicleData.name,
           type: vehicleData.type,
           status: vehicleData.status,
-          fuelLevel: vehicleData.fuelLevel,
-          lastMaintenance: vehicleData.lastMaintenance,
-          nextMaintenance: vehicleData.nextService,
+          fuel_level: vehicleData.fuelLevel,
+          last_maintenance: vehicleData.lastMaintenance,
+          next_maintenance: vehicleData.nextService,
           driver: vehicleData.driver,
           location: vehicleData.location
         }])
@@ -117,9 +117,9 @@ export function useVehicles() {
         name: data[0].registration,
         type: data[0].type,
         status: data[0].status as VehicleStatus,
-        fuelLevel: typeof data[0].fuelLevel === 'number' ? data[0].fuelLevel : 0,
-        lastMaintenance: data[0].lastMaintenance,
-        nextService: data[0].nextMaintenance || '',
+        fuelLevel: typeof data[0].fuel_level === 'number' ? data[0].fuel_level : 0,
+        lastMaintenance: data[0].last_maintenance,
+        nextService: data[0].next_maintenance || '',
         driver: data[0].driver,
         location: data[0].location
       };
@@ -154,9 +154,9 @@ export function useVehicles() {
       if (updates.name) updateData.registration = updates.name;
       if (updates.type) updateData.type = updates.type;
       if (updates.status) updateData.status = updates.status;
-      if (updates.fuelLevel !== undefined) updateData.fuelLevel = updates.fuelLevel;
-      if (updates.lastMaintenance) updateData.lastMaintenance = updates.lastMaintenance;
-      if (updates.nextService) updateData.nextMaintenance = updates.nextService;
+      if (updates.fuelLevel !== undefined) updateData.fuel_level = updates.fuelLevel;
+      if (updates.lastMaintenance) updateData.last_maintenance = updates.lastMaintenance;
+      if (updates.nextService) updateData.next_maintenance = updates.nextService;
       if (updates.driver !== undefined) updateData.driver = updates.driver;
       if (updates.location !== undefined) updateData.location = updates.location;
       

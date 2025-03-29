@@ -48,10 +48,10 @@ export function useMaintenanceTasks() {
           description: task.description,
           status: task.status as MaintenanceTaskStatus,
           priority: task.priority as MaintenanceTaskPriority,
-          assignedTo: task.assignedTo,
-          dueDate: task.dueDate,
-          createdAt: task.createdAt,
-          completedAt: task.completedAt,
+          assignedTo: task.assigned_to,
+          dueDate: task.due_date,
+          createdAt: task.created_at,
+          completedAt: task.completed_at,
           notes: task.notes
         }));
         
@@ -104,10 +104,10 @@ export function useMaintenanceTasks() {
           description: taskData.description,
           status: taskData.status,
           priority: taskData.priority,
-          assignedTo: taskData.assignedTo,
-          dueDate: taskData.dueDate,
-          createdAt: now,
-          completedAt: taskData.completedAt,
+          assigned_to: taskData.assignedTo,
+          due_date: taskData.dueDate,
+          created_at: now,
+          completed_at: taskData.completedAt,
           notes: taskData.notes
         }])
         .select();
@@ -129,10 +129,10 @@ export function useMaintenanceTasks() {
         description: data[0].description,
         status: data[0].status as MaintenanceTaskStatus,
         priority: data[0].priority as MaintenanceTaskPriority,
-        assignedTo: data[0].assignedTo,
-        dueDate: data[0].dueDate,
-        createdAt: data[0].createdAt,
-        completedAt: data[0].completedAt,
+        assignedTo: data[0].assigned_to,
+        dueDate: data[0].due_date,
+        createdAt: data[0].created_at,
+        completedAt: data[0].completed_at,
         notes: data[0].notes
       };
       
@@ -170,12 +170,12 @@ export function useMaintenanceTasks() {
         updateData.status = updates.status;
         // Si le statut passe à completed, ajouter l'horodatage
         if (updates.status === 'completed') {
-          updateData.completedAt = new Date().toISOString();
+          updateData.completed_at = new Date().toISOString();
         }
       }
       if (updates.priority) updateData.priority = updates.priority;
-      if (updates.assignedTo) updateData.assignedTo = updates.assignedTo;
-      if (updates.dueDate) updateData.dueDate = updates.dueDate;
+      if (updates.assignedTo) updateData.assigned_to = updates.assignedTo;
+      if (updates.dueDate) updateData.due_date = updates.dueDate;
       if (updates.notes !== undefined) updateData.notes = updates.notes;
       
       const { error } = await supabase
