@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Menu, BellIcon } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -8,6 +8,7 @@ import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import UserMenu from './UserMenu';
 import NotificationMenu from './NotificationMenu';
+import Logo from './Logo';
 
 interface NavbarProps {
   setSidebarOpen: (value: boolean) => void;
@@ -50,7 +51,7 @@ const Navbar = ({ setSidebarOpen }: NavbarProps) => {
       "sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background px-4",
       "transition-all duration-300"
     )}>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
         {user && (
           <Button
             variant="ghost"
@@ -62,7 +63,11 @@ const Navbar = ({ setSidebarOpen }: NavbarProps) => {
             <Menu className="h-5 w-5" />
           </Button>
         )}
-        <h1 className="text-lg font-medium">{pageTitle}</h1>
+        {isMobile ? (
+          <Logo size="sm" className="md:hidden" />
+        ) : (
+          <h1 className="text-lg font-medium hidden md:block">{pageTitle}</h1>
+        )}
       </div>
 
       {user && (

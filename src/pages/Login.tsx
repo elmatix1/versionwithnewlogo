@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,9 +7,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Truck, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import Logo from '@/components/layout/Logo';
 
 // Définition du schéma de validation
 const formSchema = z.object({
@@ -51,11 +53,8 @@ const Login: React.FC = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Truck className="h-6 w-6 text-primary" />
-            </div>
+            <Logo size="lg" />
           </div>
-          <CardTitle className="text-2xl font-bold">TransLogica</CardTitle>
           <CardDescription>
             Connectez-vous pour accéder à votre tableau de bord
           </CardDescription>
