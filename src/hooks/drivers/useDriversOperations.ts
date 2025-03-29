@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Driver, DriverStatus } from './useDrivers';
@@ -6,7 +5,7 @@ import { Driver, DriverStatus } from './useDrivers';
 export function useDriversOperations() {
   const addDriver = async (driverData: Omit<Driver, 'id'>) => {
     try {
-      console.log('Tentative d\'ajout de chauffeur:', driverData);
+      console.log('Attempting to add driver:', driverData);
       
       const { data, error } = await supabase
         .from('drivers')
@@ -14,7 +13,7 @@ export function useDriversOperations() {
           name: driverData.name,
           status: driverData.status,
           experience: driverData.experience,
-          vehicles: driverData.vehicles,
+          vehicles: driverData.vehicles || [],
           document_validity: driverData.documentValidity,
           phone: driverData.phone,
           address: driverData.address,
@@ -23,12 +22,12 @@ export function useDriversOperations() {
         .select();
       
       if (error) {
-        console.error('Erreur Supabase lors de l\'ajout d\'un chauffeur:', error);
+        console.error('Supabase error adding driver:', error);
         throw error;
       }
       
       if (!data || data.length === 0) {
-        throw new Error('Aucune donnée retournée après l\'insertion');
+        throw new Error('No data returned after insertion');
       }
       
       const newDriver: Driver = {
@@ -43,16 +42,16 @@ export function useDriversOperations() {
         licenseType: data[0].license_type
       };
       
-      console.log('Chauffeur ajouté avec succès:', newDriver);
+      console.log('Driver added successfully:', newDriver);
       
-      toast.success("Chauffeur ajouté avec succès", {
-        description: `${newDriver.name} a été ajouté à la liste des chauffeurs.`
+      toast.success("Driver added successfully", {
+        description: `${newDriver.name} has been added to the drivers list.`
       });
       
       return newDriver;
     } catch (err: any) {
-      console.error('Erreur lors de l\'ajout d\'un chauffeur:', err);
-      toast.error("Erreur lors de l'ajout du chauffeur", {
+      console.error('Error adding driver:', err);
+      toast.error("Error adding driver", {
         description: err.message
       });
       throw err;

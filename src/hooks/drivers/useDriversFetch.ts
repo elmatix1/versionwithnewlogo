@@ -35,11 +35,11 @@ export function useDriversFetch() {
         }));
         
         setDrivers(formattedDrivers);
-        console.log('Chauffeurs récupérés:', formattedDrivers);
+        console.log('Drivers retrieved:', formattedDrivers);
       } catch (err: any) {
-        console.error('Erreur lors de la récupération des chauffeurs:', err);
+        console.error('Error fetching drivers:', err);
         setError(err.message);
-        toast.error("Erreur lors du chargement des chauffeurs", {
+        toast.error("Error loading drivers", {
           description: err.message
         });
       } finally {
@@ -47,19 +47,23 @@ export function useDriversFetch() {
       }
     };
     
+    // Initial fetch
     fetchDrivers();
     
+    // Enable realtime subscription
     const channel = supabase
       .channel('public:drivers')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'drivers' }, 
-        (payload) => {
-          console.log('Changement détecté dans les chauffeurs:', payload);
-          fetchDrivers();
-        }
-      )
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'drivers'
+      }, (payload) => {
+        console.log('Change detected in drivers:', payload);
+        fetchDrivers(); // Reload drivers when changes occur
+      })
       .subscribe();
     
+    // Cleanup subscription
     return () => {
       supabase.removeChannel(channel);
     };
