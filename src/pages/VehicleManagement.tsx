@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
@@ -44,6 +43,7 @@ import VehicleMaintenanceCalendar from '@/components/vehicles/VehicleMaintenance
 import VehicleDocuments from '@/components/vehicles/VehicleDocuments';
 import VehicleStatusChangeDialog from '@/components/vehicles/VehicleStatusChangeDialog';
 import { saveToLocalStorage, loadFromLocalStorage } from '@/utils/localStorage';
+import { useVehicles } from '@/hooks/useVehicles';
 
 interface Vehicle {
   id: string;
@@ -72,64 +72,8 @@ const statusLabels = {
 const STORAGE_KEY = 'tms-vehicles';
 
 const VehicleManagement: React.FC = () => {
-  const defaultVehicles = [
-    {
-      id: "v1",
-      name: "TL-3045",
-      type: "Camion 19T",
-      status: "active" as const,
-      lastMaintenance: "12/06/2023",
-      fuelLevel: 85,
-      nextService: "22/09/2023",
-      driver: "Thomas Durand",
-      location: "Route A7"
-    },
-    {
-      id: "v2",
-      name: "TL-2189",
-      type: "Camion 12T",
-      status: "active" as const,
-      lastMaintenance: "05/05/2023",
-      fuelLevel: 62,
-      nextService: "05/08/2023",
-      driver: "Sophie Lefèvre",
-      location: "Dépôt Central"
-    },
-    {
-      id: "v3",
-      name: "TL-4023",
-      type: "Camion 24T",
-      status: "maintenance" as const,
-      lastMaintenance: "28/07/2023",
-      fuelLevel: 30,
-      nextService: "Maintenance en cours",
-      location: "Garage Nord"
-    },
-    {
-      id: "v4",
-      name: "TL-1087",
-      type: "Utilitaire 3.5T",
-      status: "inactive" as const,
-      lastMaintenance: "14/04/2023",
-      fuelLevel: 15,
-      nextService: "Indisponible",
-    },
-    {
-      id: "v5",
-      name: "TL-5632",
-      type: "Camion 19T",
-      status: "active" as const,
-      lastMaintenance: "22/06/2023",
-      fuelLevel: 92,
-      nextService: "22/09/2023",
-      driver: "Pierre Martin",
-      location: "Livraison Marseille"
-    }
-  ];
-
-  const [vehicles, setVehicles] = useState<Vehicle[]>(() => 
-    loadFromLocalStorage<Vehicle[]>(STORAGE_KEY, defaultVehicles)
-  );
+  // Utiliser le hook useVehicles pour gérer les véhicules
+  const { vehicles, loading, error, addVehicle, updateVehicle, deleteVehicle } = useVehicles();
   
   const [selectedTab, setSelectedTab] = useState("all");
   const [showMaintenanceCalendar, setShowMaintenanceCalendar] = useState(false);
@@ -137,42 +81,27 @@ const VehicleManagement: React.FC = () => {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [addVehicleDialogOpen, setAddVehicleDialogOpen] = useState(false);
   
-  // Persist vehicle data when it changes
-  useEffect(() => {
-    saveToLocalStorage(STORAGE_KEY, vehicles);
-  }, [vehicles]);
+  // Calculs dynamiques des statistiques de la flotte
+  const totalVehicles = vehicles.length;
+  const activeVehicles = vehicles.filter(v => v.status === 'active').length;
+  const maintenanceVehicles = vehicles.filter(v => v.status === 'maintenance').length;
+  const inactiveVehicles = vehicles.filter(v => v.status === 'inactive').length;
+  
+  // Calcul des pourcentages pour les barres de progression
+  const activePercent = totalVehicles > 0 ? (activeVehicles / totalVehicles) * 100 : 0;
+  const maintenancePercent = totalVehicles > 0 ? (maintenanceVehicles / totalVehicles) * 100 : 0;
+  const inactivePercent = totalVehicles > 0 ? (inactiveVehicles / totalVehicles) * 100 : 0;
   
   const filteredVehicles = selectedTab === "all" 
     ? vehicles 
     : vehicles.filter(vehicle => vehicle.status === selectedTab);
   
-  const handleAddVehicle = (newVehicle: Vehicle) => {
-    setVehicles(prev => [...prev, newVehicle]);
-    toast.success("Véhicule ajouté avec succès", {
-      description: `Le véhicule ${newVehicle.name} a été ajouté à la flotte.`
-    });
+  const handleAddVehicle = (newVehicle) => {
+    addVehicle(newVehicle);
   };
   
-  const handleStatusChange = (vehicleId: string, newStatus: 'active' | 'maintenance' | 'inactive') => {
-    setVehicles(prev => 
-      prev.map(vehicle => 
-        vehicle.id === vehicleId 
-          ? { ...vehicle, status: newStatus } 
-          : vehicle
-      )
-    );
-    
-    const statusMessage = {
-      active: "mis en service",
-      maintenance: "placé en maintenance",
-      inactive: "mis hors service"
-    };
-    
-    const vehicleName = vehicles.find(v => v.id === vehicleId)?.name || "";
-    
-    toast.success("Statut modifié", {
-      description: `Le véhicule ${vehicleName} a été ${statusMessage[newStatus]}.`
-    });
+  const handleStatusChange = (vehicleId, newStatus) => {
+    updateVehicle(vehicleId, { status: newStatus });
   };
   
   const handleViewCalendar = () => {
@@ -195,26 +124,26 @@ const VehicleManagement: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-medium">État de la flotte</h3>
-              <Badge className="bg-green-500">15 actifs</Badge>
+              <Badge className="bg-green-500">{activeVehicles} actifs</Badge>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span>En service</span>
-                <span>15/20</span>
+                <span>{activeVehicles}/{totalVehicles}</span>
               </div>
-              <Progress value={75} className="h-2" />
+              <Progress value={activePercent} className="h-2" />
               
               <div className="flex items-center justify-between text-sm">
                 <span>En maintenance</span>
-                <span>3/20</span>
+                <span>{maintenanceVehicles}/{totalVehicles}</span>
               </div>
-              <Progress value={15} className="h-2" />
+              <Progress value={maintenancePercent} className="h-2" />
               
               <div className="flex items-center justify-between text-sm">
                 <span>Hors service</span>
-                <span>2/20</span>
+                <span>{inactiveVehicles}/{totalVehicles}</span>
               </div>
-              <Progress value={10} className="h-2" />
+              <Progress value={inactivePercent} className="h-2" />
             </div>
           </CardContent>
         </Card>
@@ -305,226 +234,236 @@ const VehicleManagement: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="all" value={selectedTab} onValueChange={setSelectedTab}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="all">Tous</TabsTrigger>
-              <TabsTrigger value="active">En service</TabsTrigger>
-              <TabsTrigger value="maintenance">En maintenance</TabsTrigger>
-              <TabsTrigger value="inactive">Hors service</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="all" className="m-0">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Immatriculation</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead>Carburant</TableHead>
-                      <TableHead>Dernier entretien</TableHead>
-                      <TableHead>Prochain entretien</TableHead>
-                      <TableHead>Chauffeur assigné</TableHead>
-                      <TableHead>Position</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredVehicles.map((vehicle) => (
-                      <TableRow key={vehicle.id}>
-                        <TableCell className="font-medium">{vehicle.name}</TableCell>
-                        <TableCell>{vehicle.type}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className={`h-2 w-2 rounded-full ${statusColors[vehicle.status]}`}></div>
-                            <span>{statusLabels[vehicle.status]}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Progress 
-                              value={vehicle.fuelLevel} 
-                              className="h-2 w-16" 
-                            />
-                            <span className="text-sm">{vehicle.fuelLevel}%</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{vehicle.lastMaintenance}</TableCell>
-                        <TableCell>{vehicle.nextService}</TableCell>
-                        <TableCell>{vehicle.driver || "—"}</TableCell>
-                        <TableCell>{vehicle.location || "—"}</TableCell>
-                        <TableCell>
-                          <VehicleStatusChangeDialog
-                            vehicle={vehicle}
-                            onStatusChange={handleStatusChange}
-                          />
-                        </TableCell>
+          {loading ? (
+            <div className="flex justify-center items-center p-8">
+              <span>Chargement des véhicules...</span>
+            </div>
+          ) : error ? (
+            <div className="flex justify-center items-center p-8 text-destructive">
+              <span>Erreur lors du chargement des véhicules: {error}</span>
+            </div>
+          ) : (
+            <Tabs defaultValue="all" value={selectedTab} onValueChange={setSelectedTab}>
+              <TabsList className="mb-4">
+                <TabsTrigger value="all">Tous ({vehicles.length})</TabsTrigger>
+                <TabsTrigger value="active">En service ({activeVehicles})</TabsTrigger>
+                <TabsTrigger value="maintenance">En maintenance ({maintenanceVehicles})</TabsTrigger>
+                <TabsTrigger value="inactive">Hors service ({inactiveVehicles})</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="all" className="m-0">
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Immatriculation</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead>Carburant</TableHead>
+                        <TableHead>Dernier entretien</TableHead>
+                        <TableHead>Prochain entretien</TableHead>
+                        <TableHead>Chauffeur assigné</TableHead>
+                        <TableHead>Position</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="active" className="m-0">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Immatriculation</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead>Carburant</TableHead>
-                      <TableHead>Dernier entretien</TableHead>
-                      <TableHead>Prochain entretien</TableHead>
-                      <TableHead>Chauffeur assigné</TableHead>
-                      <TableHead>Position</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredVehicles.map((vehicle) => (
-                      <TableRow key={vehicle.id}>
-                        <TableCell className="font-medium">{vehicle.name}</TableCell>
-                        <TableCell>{vehicle.type}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className={`h-2 w-2 rounded-full ${statusColors[vehicle.status]}`}></div>
-                            <span>{statusLabels[vehicle.status]}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Progress 
-                              value={vehicle.fuelLevel} 
-                              className="h-2 w-16" 
+                    </TableHeader>
+                    <TableBody>
+                      {filteredVehicles.map((vehicle) => (
+                        <TableRow key={vehicle.id}>
+                          <TableCell className="font-medium">{vehicle.name}</TableCell>
+                          <TableCell>{vehicle.type}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className={`h-2 w-2 rounded-full ${statusColors[vehicle.status]}`}></div>
+                              <span>{statusLabels[vehicle.status]}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Progress 
+                                value={vehicle.fuelLevel} 
+                                className="h-2 w-16" 
+                              />
+                              <span className="text-sm">{vehicle.fuelLevel}%</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{vehicle.lastMaintenance}</TableCell>
+                          <TableCell>{vehicle.nextService}</TableCell>
+                          <TableCell>{vehicle.driver || "—"}</TableCell>
+                          <TableCell>{vehicle.location || "—"}</TableCell>
+                          <TableCell>
+                            <VehicleStatusChangeDialog
+                              vehicle={vehicle}
+                              onStatusChange={handleStatusChange}
                             />
-                            <span className="text-sm">{vehicle.fuelLevel}%</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{vehicle.lastMaintenance}</TableCell>
-                        <TableCell>{vehicle.nextService}</TableCell>
-                        <TableCell>{vehicle.driver || "—"}</TableCell>
-                        <TableCell>{vehicle.location || "—"}</TableCell>
-                        <TableCell>
-                          <VehicleStatusChangeDialog
-                            vehicle={vehicle}
-                            onStatusChange={handleStatusChange}
-                          />
-                        </TableCell>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="active" className="m-0">
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Immatriculation</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead>Carburant</TableHead>
+                        <TableHead>Dernier entretien</TableHead>
+                        <TableHead>Prochain entretien</TableHead>
+                        <TableHead>Chauffeur assigné</TableHead>
+                        <TableHead>Position</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="maintenance" className="m-0">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Immatriculation</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead>Carburant</TableHead>
-                      <TableHead>Dernier entretien</TableHead>
-                      <TableHead>Prochain entretien</TableHead>
-                      <TableHead>Chauffeur assigné</TableHead>
-                      <TableHead>Position</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredVehicles.map((vehicle) => (
-                      <TableRow key={vehicle.id}>
-                        <TableCell className="font-medium">{vehicle.name}</TableCell>
-                        <TableCell>{vehicle.type}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className={`h-2 w-2 rounded-full ${statusColors[vehicle.status]}`}></div>
-                            <span>{statusLabels[vehicle.status]}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Progress 
-                              value={vehicle.fuelLevel} 
-                              className="h-2 w-16" 
+                    </TableHeader>
+                    <TableBody>
+                      {filteredVehicles.map((vehicle) => (
+                        <TableRow key={vehicle.id}>
+                          <TableCell className="font-medium">{vehicle.name}</TableCell>
+                          <TableCell>{vehicle.type}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className={`h-2 w-2 rounded-full ${statusColors[vehicle.status]}`}></div>
+                              <span>{statusLabels[vehicle.status]}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Progress 
+                                value={vehicle.fuelLevel} 
+                                className="h-2 w-16" 
+                              />
+                              <span className="text-sm">{vehicle.fuelLevel}%</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{vehicle.lastMaintenance}</TableCell>
+                          <TableCell>{vehicle.nextService}</TableCell>
+                          <TableCell>{vehicle.driver || "—"}</TableCell>
+                          <TableCell>{vehicle.location || "—"}</TableCell>
+                          <TableCell>
+                            <VehicleStatusChangeDialog
+                              vehicle={vehicle}
+                              onStatusChange={handleStatusChange}
                             />
-                            <span className="text-sm">{vehicle.fuelLevel}%</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{vehicle.lastMaintenance}</TableCell>
-                        <TableCell>{vehicle.nextService}</TableCell>
-                        <TableCell>{vehicle.driver || "—"}</TableCell>
-                        <TableCell>{vehicle.location || "—"}</TableCell>
-                        <TableCell>
-                          <VehicleStatusChangeDialog
-                            vehicle={vehicle}
-                            onStatusChange={handleStatusChange}
-                          />
-                        </TableCell>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="maintenance" className="m-0">
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Immatriculation</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead>Carburant</TableHead>
+                        <TableHead>Dernier entretien</TableHead>
+                        <TableHead>Prochain entretien</TableHead>
+                        <TableHead>Chauffeur assigné</TableHead>
+                        <TableHead>Position</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="inactive" className="m-0">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Immatriculation</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead>Carburant</TableHead>
-                      <TableHead>Dernier entretien</TableHead>
-                      <TableHead>Prochain entretien</TableHead>
-                      <TableHead>Chauffeur assigné</TableHead>
-                      <TableHead>Position</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredVehicles.map((vehicle) => (
-                      <TableRow key={vehicle.id}>
-                        <TableCell className="font-medium">{vehicle.name}</TableCell>
-                        <TableCell>{vehicle.type}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className={`h-2 w-2 rounded-full ${statusColors[vehicle.status]}`}></div>
-                            <span>{statusLabels[vehicle.status]}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Progress 
-                              value={vehicle.fuelLevel} 
-                              className="h-2 w-16" 
+                    </TableHeader>
+                    <TableBody>
+                      {filteredVehicles.map((vehicle) => (
+                        <TableRow key={vehicle.id}>
+                          <TableCell className="font-medium">{vehicle.name}</TableCell>
+                          <TableCell>{vehicle.type}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className={`h-2 w-2 rounded-full ${statusColors[vehicle.status]}`}></div>
+                              <span>{statusLabels[vehicle.status]}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Progress 
+                                value={vehicle.fuelLevel} 
+                                className="h-2 w-16" 
+                              />
+                              <span className="text-sm">{vehicle.fuelLevel}%</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{vehicle.lastMaintenance}</TableCell>
+                          <TableCell>{vehicle.nextService}</TableCell>
+                          <TableCell>{vehicle.driver || "—"}</TableCell>
+                          <TableCell>{vehicle.location || "—"}</TableCell>
+                          <TableCell>
+                            <VehicleStatusChangeDialog
+                              vehicle={vehicle}
+                              onStatusChange={handleStatusChange}
                             />
-                            <span className="text-sm">{vehicle.fuelLevel}%</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{vehicle.lastMaintenance}</TableCell>
-                        <TableCell>{vehicle.nextService}</TableCell>
-                        <TableCell>{vehicle.driver || "—"}</TableCell>
-                        <TableCell>{vehicle.location || "—"}</TableCell>
-                        <TableCell>
-                          <VehicleStatusChangeDialog
-                            vehicle={vehicle}
-                            onStatusChange={handleStatusChange}
-                          />
-                        </TableCell>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="inactive" className="m-0">
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Immatriculation</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead>Carburant</TableHead>
+                        <TableHead>Dernier entretien</TableHead>
+                        <TableHead>Prochain entretien</TableHead>
+                        <TableHead>Chauffeur assigné</TableHead>
+                        <TableHead>Position</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </TabsContent>
-          </Tabs>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredVehicles.map((vehicle) => (
+                        <TableRow key={vehicle.id}>
+                          <TableCell className="font-medium">{vehicle.name}</TableCell>
+                          <TableCell>{vehicle.type}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className={`h-2 w-2 rounded-full ${statusColors[vehicle.status]}`}></div>
+                              <span>{statusLabels[vehicle.status]}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Progress 
+                                value={vehicle.fuelLevel} 
+                                className="h-2 w-16" 
+                              />
+                              <span className="text-sm">{vehicle.fuelLevel}%</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{vehicle.lastMaintenance}</TableCell>
+                          <TableCell>{vehicle.nextService}</TableCell>
+                          <TableCell>{vehicle.driver || "—"}</TableCell>
+                          <TableCell>{vehicle.location || "—"}</TableCell>
+                          <TableCell>
+                            <VehicleStatusChangeDialog
+                              vehicle={vehicle}
+                              onStatusChange={handleStatusChange}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
         </CardContent>
       </Card>
 
