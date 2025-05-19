@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 
 // Définition du schéma de validation
@@ -17,9 +18,11 @@ const vehicleFormSchema = z.object({
   type: z.string().min(2, { message: "Le type de véhicule est requis" }),
   status: z.enum(['active', 'maintenance', 'inactive']),
   fuelType: z.string(),
+  fuelLevel: z.number().min(0).max(100).default(100),
   capacity: z.string(),
   year: z.string().regex(/^\d{4}$/, { message: "L'année doit être au format YYYY" }),
   lastMaintenance: z.string(),
+  nextMaintenance: z.string().optional(),
   notes: z.string().optional()
 });
 
@@ -52,9 +55,11 @@ const AddVehicleForm: React.FC<AddVehicleFormProps> = ({ open, onOpenChange, onA
       type: "Camion 19T",
       status: "active",
       fuelType: "Diesel",
+      fuelLevel: 100,
       capacity: "",
       year: "2022",
       lastMaintenance: new Date().toISOString().split('T')[0],
+      nextMaintenance: new Date(new Date().setMonth(new Date().getMonth() + 3)).toISOString().split('T')[0],
       notes: ""
     },
   });
@@ -166,6 +171,26 @@ const AddVehicleForm: React.FC<AddVehicleFormProps> = ({ open, onOpenChange, onA
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="fuelLevel"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Niveau de carburant: {field.value}%</FormLabel>
+                  <FormControl>
+                    <Slider
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={[field.value]}
+                      onValueChange={(values) => field.onChange(values[0])}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <div className="grid grid-cols-3 gap-4">
               <FormField
@@ -210,6 +235,20 @@ const AddVehicleForm: React.FC<AddVehicleFormProps> = ({ open, onOpenChange, onA
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="nextMaintenance"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Prochain entretien</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <FormField
               control={form.control}

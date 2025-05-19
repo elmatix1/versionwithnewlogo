@@ -83,7 +83,7 @@ export function useVehicles() {
   }, []);
   
   // Ajouter un véhicule
-  const addVehicle = async (vehicleData: Omit<Vehicle, 'id'>) => {
+  const addVehicle = async (vehicleData: Omit<Vehicle, 'id'> & { fuelLevel?: number, nextMaintenance?: string }) => {
     try {
       console.log('Tentative d\'ajout de véhicule:', vehicleData);
       
@@ -94,9 +94,9 @@ export function useVehicles() {
           registration: vehicleData.name,
           type: vehicleData.type,
           status: vehicleData.status,
-          fuel_level: vehicleData.fuelLevel,
+          fuel_level: vehicleData.fuelLevel !== undefined ? vehicleData.fuelLevel : 100,
           last_maintenance: vehicleData.lastMaintenance,
-          next_maintenance: vehicleData.nextService,
+          next_maintenance: vehicleData.nextService || vehicleData.nextMaintenance || '',
           driver: vehicleData.driver,
           location: vehicleData.location
         }])
@@ -117,7 +117,7 @@ export function useVehicles() {
         name: data[0].registration,
         type: data[0].type,
         status: data[0].status as VehicleStatus,
-        fuelLevel: typeof data[0].fuel_level === 'number' ? data[0].fuel_level : 0,
+        fuelLevel: typeof data[0].fuel_level === 'number' ? data[0].fuel_level : 100,
         lastMaintenance: data[0].last_maintenance,
         nextService: data[0].next_maintenance || '',
         driver: data[0].driver,
