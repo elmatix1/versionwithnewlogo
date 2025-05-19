@@ -32,26 +32,14 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-
-// Type de tâche de maintenance
-export interface MaintenanceTask {
-  id: string;
-  vehicle: string;
-  type: 'preventive' | 'corrective' | 'inspection';
-  description: string;
-  status: 'planned' | 'in-progress' | 'completed' | 'delayed';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  assignedTo: string;
-  scheduledDate: string;
-  estimatedDuration: string;
-}
+import { MaintenanceTaskType, MaintenanceTaskStatus, MaintenanceTaskPriority } from '@/hooks/useMaintenanceTasks';
 
 // Schéma de validation pour le formulaire
 const formSchema = z.object({
   vehicle: z.string({
     required_error: "Veuillez sélectionner un véhicule",
   }),
-  type: z.enum(["preventive", "corrective", "inspection"], {
+  type: z.enum(["repair", "inspection", "service", "other"], {
     required_error: "Veuillez sélectionner un type",
   }),
   description: z.string({
@@ -59,24 +47,22 @@ const formSchema = z.object({
   }).min(5, {
     message: "La description doit contenir au moins 5 caractères",
   }),
-  status: z.enum(["planned", "in-progress", "completed", "delayed"], {
+  status: z.enum(["pending", "in-progress", "completed", "cancelled"], {
     required_error: "Veuillez sélectionner un statut",
   }),
-  priority: z.enum(["low", "medium", "high", "urgent"], {
+  priority: z.enum(["high", "normal", "low"], {
     required_error: "Veuillez sélectionner une priorité",
   }),
   assignedTo: z.string({
     required_error: "Veuillez sélectionner un technicien",
   }),
-  scheduledDate: z.date({
+  dueDate: z.date({
     required_error: "Veuillez sélectionner une date",
   }),
-  estimatedDuration: z.string({
-    required_error: "Veuillez entrer une durée estimée",
-  }).regex(/^\d+h$/, {
-    message: "Format invalide. Utilisez le format: 2h, 4h, etc.",
-  }),
+  notes: z.string().optional(),
 });
+
+export type MaintenanceFormValues = z.infer<typeof formSchema>;
 
 // Liste des véhicules disponibles
 const availableVehicles = [
@@ -99,22 +85,22 @@ const technicians = [
 ];
 
 interface TaskCreationFormProps {
-  onSubmit: (data: z.infer<typeof formSchema>) => void;
+  onSubmit: (data: MaintenanceFormValues) => void;
   onCancel: () => void;
 }
 
 const TaskCreationForm: React.FC<TaskCreationFormProps> = ({ onSubmit, onCancel }) => {
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<MaintenanceFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       vehicle: "",
-      type: "preventive",
+      type: "repair",
       description: "",
-      status: "planned",
-      priority: "medium",
+      status: "pending",
+      priority: "normal",
       assignedTo: "",
-      scheduledDate: new Date(),
-      estimatedDuration: "2h",
+      dueDate: new Date(),
+      notes: "",
     },
   });
 
@@ -162,9 +148,10 @@ const TaskCreationForm: React.FC<TaskCreationFormProps> = ({ onSubmit, onCancel 
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="preventive">Préventive</SelectItem>
-                    <SelectItem value="corrective">Corrective</SelectItem>
+                    <SelectItem value="repair">Réparation</SelectItem>
                     <SelectItem value="inspection">Inspection</SelectItem>
+                    <SelectItem value="service">Entretien</SelectItem>
+                    <SelectItem value="other">Autre</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -186,10 +173,10 @@ const TaskCreationForm: React.FC<TaskCreationFormProps> = ({ onSubmit, onCancel 
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="planned">Planifiée</SelectItem>
+                    <SelectItem value="pending">En attente</SelectItem>
                     <SelectItem value="in-progress">En cours</SelectItem>
                     <SelectItem value="completed">Terminée</SelectItem>
-                    <SelectItem value="delayed">Retardée</SelectItem>
+                    <SelectItem value="cancelled">Annulée</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -212,9 +199,8 @@ const TaskCreationForm: React.FC<TaskCreationFormProps> = ({ onSubmit, onCancel 
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="low">Basse</SelectItem>
-                    <SelectItem value="medium">Moyenne</SelectItem>
+                    <SelectItem value="normal">Moyenne</SelectItem>
                     <SelectItem value="high">Haute</SelectItem>
-                    <SelectItem value="urgent">Urgente</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -251,7 +237,7 @@ const TaskCreationForm: React.FC<TaskCreationFormProps> = ({ onSubmit, onCancel 
           {/* Date prévue */}
           <FormField
             control={form.control}
-            name="scheduledDate"
+            name="dueDate"
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Date prévue</FormLabel>
@@ -289,33 +275,18 @@ const TaskCreationForm: React.FC<TaskCreationFormProps> = ({ onSubmit, onCancel 
               </FormItem>
             )}
           />
-
-          {/* Durée estimée */}
-          <FormField
-            control={form.control}
-            name="estimatedDuration"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Durée estimée (heures)</FormLabel>
-                <FormControl>
-                  <Input placeholder="2h" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </div>
 
-        {/* Description */}
+        {/* Notes */}
         <FormField
           control={form.control}
-          name="description"
+          name="notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description</FormLabel>
+              <FormLabel>Notes (optionnel)</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Entrez une description détaillée de la tâche"
+                  placeholder="Entrez des notes supplémentaires si nécessaire"
                   className="resize-none"
                   {...field}
                 />
