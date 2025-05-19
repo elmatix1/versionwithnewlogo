@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -30,7 +31,8 @@ import {
   UserX,
   PlusCircle,
   CheckCircle,
-  XCircle
+  XCircle,
+  Loader2
 } from 'lucide-react';
 import AddDriverForm from '@/components/hr/AddDriverForm';
 import HRCalendar from '@/components/hr/HRCalendar';
@@ -54,43 +56,30 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useDrivers, Driver, DriverStatus } from '@/hooks/drivers/useDrivers';
 
-interface Driver {
-  id: number;
-  fullName: string;
-  status: "active" | "off-duty" | "sick-leave" | "vacation";
-  experience: string;
-  vehicles: string[];
-  documents: number;
-}
+const getStatusLabel = (status: DriverStatus) => {
+  switch (status) {
+    case 'available': return 'Actif';
+    case 'on-duty': return 'En service';
+    case 'off-duty': return 'Hors service';
+    case 'on-leave': return 'En congés';
+    default: return status;
+  }
+};
+
+const getVariantForStatus = (status: DriverStatus) => {
+  switch (status) {
+    case 'available': return 'default';
+    case 'on-duty': return 'default';
+    case 'off-duty': return 'secondary';
+    case 'on-leave': return 'outline';
+    default: return 'secondary';
+  }
+};
 
 const HRManagement: React.FC = () => {
-  const [drivers, setDrivers] = useState<Driver[]>([
-    { 
-      id: 1, 
-      fullName: "Thomas Durand", 
-      status: "active", 
-      experience: "5 ans", 
-      vehicles: ["TL-3045", "TL-1203"],
-      documents: 90
-    },
-    { 
-      id: 2, 
-      fullName: "Sophie Lefèvre", 
-      status: "active", 
-      experience: "3 ans", 
-      vehicles: ["TL-2189"],
-      documents: 100
-    },
-    { 
-      id: 3, 
-      fullName: "Pierre Martin", 
-      status: "off-duty", 
-      experience: "7 ans", 
-      vehicles: ["TL-1203", "TL-4023"],
-      documents: 75
-    }
-  ]);
+  const { drivers, loading, error, addDriver, updateDriver, deleteDriver } = useDrivers();
   
   const [openAddDriver, setOpenAddDriver] = useState(false);
   const [selectedTab, setSelectedTab] = useState("drivers");
@@ -100,19 +89,17 @@ const HRManagement: React.FC = () => {
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [editName, setEditName] = useState("");
   const [editExperience, setEditExperience] = useState("");
-  const [editStatus, setEditStatus] = useState<Driver['status']>("active");
-
+  const [editStatus, setEditStatus] = useState<DriverStatus>("available");
+  
+  useEffect(() => {
+    if (error) {
+      toast.error("Erreur lors du chargement des chauffeurs", {
+        description: error
+      });
+    }
+  }, [error]);
+  
   const handleAddDriver = (driverData: any) => {
-    const newDriver: Driver = {
-      id: drivers.length + 1,
-      fullName: driverData.fullName,
-      status: driverData.status,
-      experience: driverData.experience,
-      vehicles: [],
-      documents: 0
-    };
-    
-    setDrivers(prev => [...prev, newDriver]);
     toast.success(`${driverData.fullName} a été ajouté avec succès`);
   };
   
@@ -122,7 +109,7 @@ const HRManagement: React.FC = () => {
 
   const handleEditDriver = (driver: Driver) => {
     setSelectedDriver(driver);
-    setEditName(driver.fullName);
+    setEditName(driver.name);
     setEditExperience(driver.experience);
     setIsEditDriverOpen(true);
   };
@@ -138,36 +125,57 @@ const HRManagement: React.FC = () => {
     setIsDeleteDriverOpen(true);
   };
 
-  const saveEditedDriver = () => {
+  const saveEditedDriver = async () => {
     if (selectedDriver) {
-      setDrivers(drivers.map(driver => 
-        driver.id === selectedDriver.id 
-          ? { ...driver, fullName: editName, experience: editExperience }
-          : driver
-      ));
-      toast.success(`Informations de ${editName} mises à jour`);
-      setIsEditDriverOpen(false);
+      try {
+        await updateDriver(selectedDriver.id, { 
+          name: editName, 
+          experience: editExperience 
+        });
+        toast.success(`Informations de ${editName} mises à jour`);
+      } catch (err: any) {
+        toast.error("Erreur lors de la mise à jour", {
+          description: err.message
+        });
+      } finally {
+        setIsEditDriverOpen(false);
+      }
     }
   };
 
-  const saveStatusChange = () => {
+  const saveStatusChange = async () => {
     if (selectedDriver) {
-      setDrivers(drivers.map(driver => 
-        driver.id === selectedDriver.id 
-          ? { ...driver, status: editStatus }
-          : driver
-      ));
-      toast.success(`Statut de ${selectedDriver.fullName} modifié avec succès`);
-      setIsStatusChangeOpen(false);
+      try {
+        await updateDriver(selectedDriver.id, { status: editStatus });
+        toast.success(`Statut de ${selectedDriver.name} modifié avec succès`);
+      } catch (err: any) {
+        toast.error("Erreur lors de la modification du statut", {
+          description: err.message
+        });
+      } finally {
+        setIsStatusChangeOpen(false);
+      }
     }
   };
 
-  const confirmDeleteDriver = () => {
+  const confirmDeleteDriver = async () => {
     if (selectedDriver) {
-      setDrivers(drivers.filter(driver => driver.id !== selectedDriver.id));
-      toast.success(`${selectedDriver.fullName} a été supprimé`);
-      setIsDeleteDriverOpen(false);
+      try {
+        await deleteDriver(selectedDriver.id);
+        toast.success(`${selectedDriver.name} a été supprimé`);
+      } catch (err: any) {
+        toast.error("Erreur lors de la suppression", {
+          description: err.message
+        });
+      } finally {
+        setIsDeleteDriverOpen(false);
+      }
     }
+  };
+
+  const getDocumentProgress = (driver: Driver) => {
+    // Simulation de la progression des documents (à remplacer par une logique réelle)
+    return Math.floor(Math.random() * 100) + 1;
   };
 
   return (
@@ -209,78 +217,94 @@ const HRManagement: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nom</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead>Expérience</TableHead>
-                      <TableHead>Véhicules assignés</TableHead>
-                      <TableHead>Documents valides</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {drivers.map((driver) => (
-                      <TableRow key={driver.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar>
-                              <AvatarFallback>{driver.fullName.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="font-medium">{driver.fullName}</div>
-                              <div className="text-xs text-muted-foreground">{driver.experience} d'expérience</div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={driver.status === "active" ? "default" : "secondary"}>
-                            {driver.status === "active" ? "Actif" : "Hors service"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                            <span>{driver.experience}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {driver.vehicles.map((vehicle, idx) => (
-                              <Badge key={idx} variant="outline">{vehicle}</Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Progress value={driver.documents} className="h-2 w-20" />
-                            <span className="text-sm">{driver.documents}%</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditDriver(driver)}>
-                              <FileEdit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleChangeStatus(driver)}>
-                              {driver.status === "active" ? (
-                                <XCircle className="h-4 w-4 text-amber-500" />
-                              ) : (
-                                <CheckCircle className="h-4 w-4 text-green-500" />
-                              )}
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDeleteDriver(driver)}>
-                              <UserX className="h-4 w-4 text-red-500" />
-                            </Button>
-                          </div>
-                        </TableCell>
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nom</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead>Expérience</TableHead>
+                        <TableHead>Véhicules assignés</TableHead>
+                        <TableHead>Documents valides</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {drivers.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                            Aucun chauffeur enregistré. Ajoutez-en un pour commencer.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        drivers.map((driver) => (
+                          <TableRow key={driver.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <Avatar>
+                                  <AvatarFallback>{driver.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="font-medium">{driver.name}</div>
+                                  <div className="text-xs text-muted-foreground">{driver.experience} d'expérience</div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={getVariantForStatus(driver.status)}>
+                                {getStatusLabel(driver.status)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                                <span>{driver.experience}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-1">
+                                {driver.vehicles && driver.vehicles.length > 0 ? driver.vehicles.map((vehicle, idx) => (
+                                  <Badge key={idx} variant="outline">{vehicle}</Badge>
+                                )) : (
+                                  <span className="text-muted-foreground text-sm">Aucun</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Progress value={getDocumentProgress(driver)} className="h-2 w-20" />
+                                <span className="text-sm">{getDocumentProgress(driver)}%</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditDriver(driver)}>
+                                  <FileEdit className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleChangeStatus(driver)}>
+                                  {driver.status === "available" ? (
+                                    <XCircle className="h-4 w-4 text-amber-500" />
+                                  ) : (
+                                    <CheckCircle className="h-4 w-4 text-green-500" />
+                                  )}
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDeleteDriver(driver)}>
+                                  <UserX className="h-4 w-4 text-red-500" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -420,16 +444,16 @@ const HRManagement: React.FC = () => {
               </Label>
               <Select
                 value={editStatus}
-                onValueChange={(value: Driver['status']) => setEditStatus(value)}
+                onValueChange={(value: DriverStatus) => setEditStatus(value as DriverStatus)}
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Sélectionner un statut" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Actif</SelectItem>
+                  <SelectItem value="available">Actif</SelectItem>
+                  <SelectItem value="on-duty">En service</SelectItem>
                   <SelectItem value="off-duty">Hors service</SelectItem>
-                  <SelectItem value="sick-leave">Arrêt maladie</SelectItem>
-                  <SelectItem value="vacation">Congés</SelectItem>
+                  <SelectItem value="on-leave">En congés</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -449,7 +473,7 @@ const HRManagement: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <p>Êtes-vous sûr de vouloir supprimer {selectedDriver?.fullName}?</p>
+            <p>Êtes-vous sûr de vouloir supprimer {selectedDriver?.name}?</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDriverOpen(false)}>

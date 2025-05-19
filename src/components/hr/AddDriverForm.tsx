@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner";
 import MoroccanSuggestionInput from '@/components/shared/MoroccanSuggestionInput';
 import { saveToLocalStorage, loadFromLocalStorage } from '@/utils/localStorage';
+import { useDrivers, DriverStatus } from '@/hooks/drivers/useDrivers';
 
 // Définition du schéma de validation
 const driverFormSchema = z.object({
@@ -38,6 +39,16 @@ interface AddDriverFormProps {
   onAddDriver: (driver: DriverFormValues) => void;
 }
 
+const mapStatusToDriverStatus = (status: string): DriverStatus => {
+  switch(status) {
+    case 'active': return 'available';
+    case 'off-duty': return 'off-duty';
+    case 'sick-leave': return 'on-leave';
+    case 'vacation': return 'on-leave';
+    default: return 'available';
+  }
+};
+
 const statusOptions = {
   'active': 'Actif',
   'off-duty': 'Hors service',
@@ -54,6 +65,8 @@ const experienceOptions = [
 const DRIVERS_STORAGE_KEY = 'tms-drivers';
 
 const AddDriverForm: React.FC<AddDriverFormProps> = ({ open, onOpenChange, onAddDriver }) => {
+  const { addDriver } = useDrivers();
+
   const form = useForm<DriverFormValues>({
     resolver: zodResolver(driverFormSchema),
     defaultValues: {
@@ -69,18 +82,39 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ open, onOpenChange, onAdd
     },
   });
 
-  function onSubmit(values: DriverFormValues) {
-    // Save driver to localStorage
-    const drivers = loadFromLocalStorage<DriverFormValues[]>(DRIVERS_STORAGE_KEY, []);
-    const newDrivers = [...drivers, { ...values, id: Date.now().toString() }];
-    saveToLocalStorage(DRIVERS_STORAGE_KEY, newDrivers);
-    
-    onAddDriver(values);
-    form.reset();
-    onOpenChange(false);
-    toast.success("Chauffeur ajouté", {
-      description: `${values.fullName} a été ajouté avec succès`
-    });
+  async function onSubmit(values: DriverFormValues) {
+    try {
+      // Format les données pour Supabase
+      const driverData = {
+        name: values.fullName,
+        status: mapStatusToDriverStatus(values.status),
+        experience: values.experience,
+        vehicles: [], // Tableau vide par défaut
+        documentValidity: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Par défaut 1 an
+        phone: values.phone,
+        address: values.address,
+        licenseType: values.licenseNumber
+      };
+
+      // Envoyer à Supabase
+      await addDriver(driverData);
+      
+      // Sauvegarder localement aussi
+      const drivers = loadFromLocalStorage<DriverFormValues[]>(DRIVERS_STORAGE_KEY, []);
+      const newDrivers = [...drivers, { ...values, id: Date.now().toString() }];
+      saveToLocalStorage(DRIVERS_STORAGE_KEY, newDrivers);
+      
+      // Informer l'interface parent
+      onAddDriver(values);
+      form.reset();
+      onOpenChange(false);
+
+    } catch (error: any) {
+      console.error("Erreur lors de l'ajout du chauffeur:", error);
+      toast.error("Erreur lors de l'ajout du chauffeur", {
+        description: error.message || "Une erreur est survenue"
+      });
+    }
   }
 
   return (
