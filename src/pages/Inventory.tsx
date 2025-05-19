@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -38,22 +38,14 @@ import {
   FileText,
   ShoppingBag,
   MoreHorizontal,
-  CalendarIcon
+  CalendarIcon,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { NewItemDialog } from '@/components/inventory/NewItemDialog';
 import { ConsumptionChart } from '@/components/inventory/ConsumptionChart';
 import { NewOrderDialog } from '@/components/inventory/NewOrderDialog';
-
-interface InventoryItem {
-  id: string;
-  name: string;
-  category: string;
-  quantity: number;
-  status: 'in-stock' | 'low-stock' | 'out-of-stock';
-  lastRestock: string;
-  location: string;
-}
+import { useInventory, InventoryItem, InventoryStatus } from '@/hooks/useInventory';
 
 const statusConfig = {
   'in-stock': { 
@@ -71,54 +63,15 @@ const statusConfig = {
 };
 
 const Inventory: React.FC = () => {
-  // État initial de l'inventaire
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([
-    {
-      id: "INV-1001",
-      name: "Huile moteur 5W30",
-      category: "Lubrifiant",
-      quantity: 45,
-      status: "in-stock",
-      lastRestock: "12/07/2023",
-      location: "Étagère A3"
-    },
-    {
-      id: "INV-1002",
-      name: "Filtre à air",
-      category: "Filtres",
-      quantity: 22,
-      status: "in-stock",
-      lastRestock: "05/08/2023",
-      location: "Étagère B2"
-    },
-    {
-      id: "INV-1003",
-      name: "Plaquettes de frein",
-      category: "Freinage",
-      quantity: 8,
-      status: "low-stock",
-      lastRestock: "01/09/2023",
-      location: "Étagère C1"
-    },
-    {
-      id: "INV-1004",
-      name: "Liquide de refroidissement",
-      category: "Liquides",
-      quantity: 0,
-      status: "out-of-stock",
-      lastRestock: "22/06/2023",
-      location: "Étagère A4"
-    },
-    {
-      id: "INV-1005",
-      name: "Balais d'essuie-glace",
-      category: "Accessoires",
-      quantity: 15,
-      status: "in-stock",
-      lastRestock: "17/08/2023",
-      location: "Étagère D2"
-    }
-  ]);
+  const { 
+    inventoryItems, 
+    loading, 
+    error, 
+    addItem, 
+    updateItem,
+    deleteItem, 
+    getStatusCounts 
+  } = useInventory();
   
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
@@ -128,6 +81,10 @@ const Inventory: React.FC = () => {
   
   // Compter les articles par statut
   const statusCounts = useMemo(() => {
+    if (inventoryItems.length === 0) {
+      return {} as Record<string, number>;
+    }
+    
     return inventoryItems.reduce((acc, item) => {
       acc[item.status] = (acc[item.status] || 0) + 1;
       return acc;
@@ -136,10 +93,14 @@ const Inventory: React.FC = () => {
   
   // Filtrer les articles en fonction du terme de recherche et du statut sélectionné
   const filteredItems = useMemo(() => {
+    if (inventoryItems.length === 0) {
+      return [];
+    }
+    
     let filtered = inventoryItems.filter(item => 
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.id.toLowerCase().includes(searchTerm.toLowerCase())
+      item.reference.toLowerCase().includes(searchTerm.toLowerCase())
     );
     
     if (activeTab !== "all") {
@@ -150,35 +111,64 @@ const Inventory: React.FC = () => {
   }, [inventoryItems, searchTerm, activeTab]);
 
   // Ajouter un nouvel article à l'inventaire
-  const handleAddItem = (item: any) => {
-    const newItem: InventoryItem = {
-      id: item.id,
-      name: item.name,
-      category: item.category,
-      quantity: item.quantity,
-      status: item.status,
-      lastRestock: item.lastRestock.toLocaleDateString("fr-FR"),
-      location: item.location
-    };
-    
-    setInventoryItems(prev => [...prev, newItem]);
+  const handleAddItem = async (item: any) => {
+    try {
+      await addItem({
+        reference: item.reference,
+        name: item.name,
+        category: item.category,
+        quantity: item.quantity,
+        status: item.status,
+        lastRestock: item.lastRestock.toISOString().split('T')[0],
+        location: item.location
+      });
+      
+      toast.success("Article ajouté avec succès", {
+        description: `${item.name} a été ajouté à l'inventaire.`
+      });
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout d\'un article:', error);
+      toast.error("Erreur lors de l'ajout de l'article", {
+        description: error instanceof Error ? error.message : "Une erreur s'est produite"
+      });
+      throw error; // Propager l'erreur pour que NewItemDialog puisse la gérer
+    }
   };
 
   // Supprimer un article de l'inventaire
-  const handleDeleteItem = (id: string) => {
-    setInventoryItems(prev => prev.filter(item => item.id !== id));
-    toast.success("Article supprimé avec succès");
+  const handleDeleteItem = async (id: string) => {
+    try {
+      await deleteItem(id);
+      toast.success("Article supprimé avec succès");
+    } catch (error) {
+      console.error('Erreur lors de la suppression d\'un article:', error);
+      toast.error("Erreur lors de la suppression", {
+        description: error instanceof Error ? error.message : "Une erreur s'est produite"
+      });
+    }
   };
 
   // Modifier le statut d'un article
-  const handleUpdateStatus = (id: string, newStatus: 'in-stock' | 'low-stock' | 'out-of-stock') => {
-    setInventoryItems(prev => 
-      prev.map(item => 
-        item.id === id ? { ...item, status: newStatus } : item
-      )
-    );
-    toast.success("Statut mis à jour avec succès");
+  const handleUpdateStatus = async (id: string, newStatus: InventoryStatus) => {
+    try {
+      await updateItem(id, { status: newStatus });
+      toast.success("Statut mis à jour avec succès");
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du statut:', error);
+      toast.error("Erreur lors de la mise à jour", {
+        description: error instanceof Error ? error.message : "Une erreur s'est produite"
+      });
+    }
   };
+
+  // Afficher un message d'erreur si le chargement des données a échoué
+  useEffect(() => {
+    if (error) {
+      toast.error("Erreur de chargement", {
+        description: "Impossible de charger les données d'inventaire."
+      });
+    }
+  }, [error]);
 
   return (
     <div>
@@ -295,57 +285,73 @@ const Inventory: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredItems.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium">{item.id}</TableCell>
-                        <TableCell>{item.name}</TableCell>
-                        <TableCell>{item.category}</TableCell>
-                        <TableCell>{item.quantity}</TableCell>
-                        <TableCell>
-                          <Badge className={statusConfig[item.status].className}>
-                            {statusConfig[item.status].label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{item.lastRestock}</TableCell>
-                        <TableCell>{item.location}</TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Ouvrir menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleUpdateStatus(item.id, 'in-stock')}>
-                                Marquer comme En stock
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleUpdateStatus(item.id, 'low-stock')}>
-                                Marquer comme Stock bas
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleUpdateStatus(item.id, 'out-of-stock')}>
-                                Marquer comme Rupture
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteItem(item.id)}
-                                className="text-red-600"
-                              >
-                                Supprimer
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                    {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-8">
+                          <div className="flex justify-center items-center">
+                            <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                            <span>Chargement des données...</span>
+                          </div>
                         </TableCell>
                       </TableRow>
-                    ))}
-                    {filteredItems.length === 0 && (
+                    ) : error ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-8 text-red-500">
+                          Erreur lors du chargement des données
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredItems.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                           Aucun article trouvé
                         </TableCell>
                       </TableRow>
+                    ) : (
+                      filteredItems.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium">{item.reference}</TableCell>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell>{item.category}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>
+                            <Badge className={statusConfig[item.status].className}>
+                              {statusConfig[item.status].label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{item.lastRestock}</TableCell>
+                          <TableCell>{item.location}</TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <span className="sr-only">Ouvrir menu</span>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleUpdateStatus(item.id, 'in-stock')}>
+                                  Marquer comme En stock
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleUpdateStatus(item.id, 'low-stock')}>
+                                  Marquer comme Stock bas
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleUpdateStatus(item.id, 'out-of-stock')}>
+                                  Marquer comme Rupture
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteItem(item.id)}
+                                  className="text-red-600"
+                                >
+                                  Supprimer
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
                     )}
                   </TableBody>
                 </Table>

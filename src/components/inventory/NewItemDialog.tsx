@@ -38,9 +38,10 @@ import {
 } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { InventoryStatus } from '@/hooks/useInventory';
 
 const formSchema = z.object({
-  id: z.string().min(1, 'La référence est requise'),
+  reference: z.string().min(1, 'La référence est requise'),
   name: z.string().min(1, "Le nom de l'article est requis"),
   category: z.string().min(1, 'La catégorie est requise'),
   quantity: z.coerce.number().min(0, 'La quantité doit être positive'),
@@ -54,7 +55,7 @@ type InventoryItemFormValues = z.infer<typeof formSchema>;
 interface NewItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddItem: (item: InventoryItemFormValues) => void;
+  onAddItem: (item: InventoryItemFormValues) => Promise<void>;
 }
 
 export const NewItemDialog: React.FC<NewItemDialogProps> = ({
@@ -62,24 +63,35 @@ export const NewItemDialog: React.FC<NewItemDialogProps> = ({
   onOpenChange,
   onAddItem,
 }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm<InventoryItemFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      id: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
+      reference: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
       name: '',
       category: '',
       quantity: 0,
-      status: 'in-stock',
+      status: 'in-stock' as InventoryStatus,
       lastRestock: new Date(),
       location: '',
     },
   });
 
-  const handleSubmit = (values: InventoryItemFormValues) => {
-    onAddItem(values);
-    form.reset();
-    onOpenChange(false);
-    toast.success('Article ajouté avec succès');
+  const handleSubmit = async (values: InventoryItemFormValues) => {
+    try {
+      setIsSubmitting(true);
+      await onAddItem(values);
+      form.reset();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout d\'un article:', error);
+      toast.error("Erreur lors de l'ajout", {
+        description: error instanceof Error ? error.message : "Une erreur s'est produite"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -96,7 +108,7 @@ export const NewItemDialog: React.FC<NewItemDialogProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="id"
+                name="reference"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Référence</FormLabel>
@@ -239,7 +251,9 @@ export const NewItemDialog: React.FC<NewItemDialogProps> = ({
               )}
             />
             <DialogFooter>
-              <Button type="submit">Ajouter</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Ajout en cours..." : "Ajouter"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

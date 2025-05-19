@@ -22,44 +22,44 @@ export function useInventory() {
   const [error, setError] = useState<string | null>(null);
 
   // Récupérer les articles d'inventaire depuis Supabase
-  useEffect(() => {
-    const fetchInventoryItems = async () => {
-      try {
-        setLoading(true);
-        
-        const { data, error } = await supabase
-          .from('inventory')
-          .select('*');
-        
-        if (error) {
-          throw error;
-        }
-        
-        // Convertir les données pour correspondre à l'interface InventoryItem
-        const formattedItems = data.map(item => ({
-          id: item.id.toString(),
-          reference: item.reference,
-          name: item.name,
-          category: item.category,
-          quantity: typeof item.quantity === 'number' ? item.quantity : 0,
-          status: item.status as InventoryStatus,
-          lastRestock: item.last_restock,
-          location: item.location
-        }));
-        
-        setInventoryItems(formattedItems);
-        console.log('Articles d\'inventaire récupérés:', formattedItems);
-      } catch (err: any) {
-        console.error('Erreur lors de la récupération des articles d\'inventaire:', err);
-        setError(err.message);
-        toast.error("Erreur lors du chargement de l'inventaire", {
-          description: err.message
-        });
-      } finally {
-        setLoading(false);
+  const fetchInventoryItems = async () => {
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase
+        .from('inventory')
+        .select('*');
+      
+      if (error) {
+        throw error;
       }
-    };
-    
+      
+      // Convertir les données pour correspondre à l'interface InventoryItem
+      const formattedItems = data.map(item => ({
+        id: item.id.toString(),
+        reference: item.reference || '',
+        name: item.name || '',
+        category: item.category || '',
+        quantity: typeof item.quantity === 'number' ? item.quantity : 0,
+        status: item.status as InventoryStatus,
+        lastRestock: item.last_restock || '',
+        location: item.location || ''
+      }));
+      
+      setInventoryItems(formattedItems);
+      console.log('Articles d\'inventaire récupérés:', formattedItems);
+    } catch (err: any) {
+      console.error('Erreur lors de la récupération des articles d\'inventaire:', err);
+      setError(err.message);
+      toast.error("Erreur lors du chargement de l'inventaire", {
+        description: err.message
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchInventoryItems();
     
     // Configurer le canal en temps réel
@@ -111,13 +111,13 @@ export function useInventory() {
       // Convertir le nouvel article au format InventoryItem
       const newItem: InventoryItem = {
         id: data[0].id.toString(),
-        reference: data[0].reference,
-        name: data[0].name,
-        category: data[0].category,
+        reference: data[0].reference || '',
+        name: data[0].name || '',
+        category: data[0].category || '',
         quantity: typeof data[0].quantity === 'number' ? data[0].quantity : 0,
         status: data[0].status as InventoryStatus,
-        lastRestock: data[0].last_restock,
-        location: data[0].location
+        lastRestock: data[0].last_restock || '',
+        location: data[0].location || ''
       };
       
       console.log('Article ajouté avec succès:', newItem);
@@ -125,16 +125,9 @@ export function useInventory() {
       // Mettre à jour l'état local avec le nouvel article
       setInventoryItems(prev => [...prev, newItem]);
       
-      toast.success("Article ajouté avec succès", {
-        description: `${newItem.name} a été ajouté à l'inventaire.`
-      });
-      
       return newItem;
     } catch (err: any) {
       console.error('Erreur lors de l\'ajout d\'un article d\'inventaire:', err);
-      toast.error("Erreur lors de l'ajout de l'article", {
-        description: err.message
-      });
       throw err;
     }
   };
@@ -175,15 +168,8 @@ export function useInventory() {
       );
       
       console.log('Article mis à jour avec succès');
-      
-      toast.success("Article mis à jour", {
-        description: "Les informations de l'article ont été mises à jour."
-      });
     } catch (err: any) {
       console.error('Erreur lors de la mise à jour d\'un article d\'inventaire:', err);
-      toast.error("Erreur lors de la mise à jour de l'article", {
-        description: err.message
-      });
       throw err;
     }
   };
@@ -207,15 +193,8 @@ export function useInventory() {
       setInventoryItems(prev => prev.filter(item => item.id !== id));
       
       console.log('Article supprimé avec succès');
-      
-      toast.success("Article supprimé", {
-        description: "L'article a été supprimé avec succès."
-      });
     } catch (err: any) {
       console.error('Erreur lors de la suppression d\'un article d\'inventaire:', err);
-      toast.error("Erreur lors de la suppression de l'article", {
-        description: err.message
-      });
       throw err;
     }
   };
