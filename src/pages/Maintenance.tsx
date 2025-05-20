@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { toast } from "sonner";
 import { useMaintenanceTasks, MaintenanceTaskStatus, MaintenanceTaskType, MaintenanceTaskPriority } from '@/hooks/useMaintenanceTasks';
@@ -12,6 +13,8 @@ import FeatureCards from '@/components/maintenance/FeatureCards';
 import TaskDialog from '@/components/maintenance/TaskDialog';
 import Loading from '@/components/maintenance/Loading';
 import Error from '@/components/maintenance/Error';
+import MaintenanceStats from '@/components/maintenance/MaintenanceStats';
+import VehicleDocViewer from '@/components/maintenance/VehicleDocViewer';
 
 const Maintenance: React.FC = () => {
   const { 
@@ -25,6 +28,8 @@ const Maintenance: React.FC = () => {
   } = useMaintenanceTasks();
 
   const [newTaskDialogOpen, setNewTaskDialogOpen] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const [showDocs, setShowDocs] = useState(false);
   
   const handleUpdateTaskStatus = (taskId: string, newStatus: MaintenanceTaskStatus) => {
     updateTask(taskId, { status: newStatus })
@@ -88,16 +93,14 @@ const Maintenance: React.FC = () => {
       });
   };
 
-  const handleShowStatsMessage = () => {
-    toast.info("Fonctionnalité en développement", {
-      description: "Les statistiques détaillées seront disponibles prochainement"
-    });
+  const handleShowStats = () => {
+    setShowStats(true);
+    setShowDocs(false);
   };
 
-  const handleShowDocsMessage = () => {
-    toast.info("Fonctionnalité en développement", {
-      description: "La documentation technique sera disponible prochainement"
-    });
+  const handleShowDocs = () => {
+    setShowDocs(true);
+    setShowStats(false);
   };
 
   // Afficher un message de chargement
@@ -149,10 +152,46 @@ const Maintenance: React.FC = () => {
         </CardContent>
       </Card>
 
-      <FeatureCards 
-        onShowStats={handleShowStatsMessage}
-        onShowDocs={handleShowDocsMessage}
-      />
+      {!showStats && !showDocs && (
+        <FeatureCards 
+          onShowStats={handleShowStats}
+          onShowDocs={handleShowDocs}
+        />
+      )}
+
+      {showStats && (
+        <Card className="mb-8">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Statistiques de maintenance</CardTitle>
+                <CardDescription>Analyse des performances et coûts</CardDescription>
+              </div>
+              <Button onClick={() => setShowStats(false)} variant="outline">Retour</Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <MaintenanceStats />
+          </CardContent>
+        </Card>
+      )}
+
+      {showDocs && (
+        <Card className="mb-8">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Documentation technique</CardTitle>
+                <CardDescription>Manuels et fiches techniques des véhicules</CardDescription>
+              </div>
+              <Button onClick={() => setShowDocs(false)} variant="outline">Retour</Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <VehicleDocViewer />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
