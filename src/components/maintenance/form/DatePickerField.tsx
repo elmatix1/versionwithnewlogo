@@ -52,7 +52,7 @@ const DatePickerField: React.FC<DatePickerFieldProps> = ({
                   )}
                 >
                   {field.value ? (
-                    format(field.value, "dd/MM/yyyy", { locale: fr })
+                    format(field.value as Date, "dd/MM/yyyy", { locale: fr })
                   ) : (
                     <span>Sélectionner une date</span>
                   )}
@@ -63,7 +63,7 @@ const DatePickerField: React.FC<DatePickerFieldProps> = ({
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 mode="single"
-                selected={field.value}
+                selected={field.value as Date}
                 onSelect={field.onChange}
                 initialFocus
                 locale={fr}

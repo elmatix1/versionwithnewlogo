@@ -46,7 +46,10 @@ const SelectField: React.FC<SelectFieldProps> = ({
       render={({ field }) => (
         <FormItem className={className}>
           <FormLabel>{label}</FormLabel>
-          <Select onValueChange={field.onChange} defaultValue={field.value}>
+          <Select 
+            onValueChange={field.onChange} 
+            defaultValue={typeof field.value === 'string' ? field.value : ''}
+          >
             <FormControl>
               <SelectTrigger>
                 <SelectValue placeholder={placeholder} />
