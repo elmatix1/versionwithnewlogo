@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
@@ -119,6 +120,24 @@ const reversePriorityMapping: Record<OrderPriority, string> = {
   'low': 'basse'
 };
 
+// Fonction de sécurité pour s'assurer que la priorité est valide
+const getValidPriority = (priority: string): 'normal' | 'urgent' | 'basse' => {
+  if (priority === 'normal' || priority === 'urgent' || priority === 'basse') {
+    return priority as 'normal' | 'urgent' | 'basse';
+  }
+  console.warn(`Priorité non reconnue: ${priority}, utilisation de 'normal' par défaut`);
+  return 'normal';
+};
+
+// Fonction de sécurité pour s'assurer que le statut est valide
+const getValidStatus = (status: string): 'en-attente' | 'en-cours' | 'livree' | 'annulee' => {
+  if (status === 'en-attente' || status === 'en-cours' || status === 'livree' || status === 'annulee') {
+    return status as 'en-attente' | 'en-cours' | 'livree' | 'annulee';
+  }
+  console.warn(`Statut non reconnu: ${status}, utilisation de 'en-attente' par défaut`);
+  return 'en-attente';
+};
+
 const OrderManagement: React.FC = () => {
   // Utilisation du hook useOrders pour interagir avec Supabase
   const { orders: supabaseOrders, loading, error, addOrder, updateOrder, deleteOrder } = useOrders();
@@ -137,17 +156,23 @@ const OrderManagement: React.FC = () => {
   // Conversion des données de Supabase au format de l'interface
   useEffect(() => {
     if (supabaseOrders) {
-      const mappedOrders = supabaseOrders.map(order => ({
-        id: order.id,
-        customer: order.client,
-        origin: order.origin,
-        destination: order.destination,
-        status: reverseStatusMapping[order.status] as 'en-attente' | 'en-cours' | 'livree' | 'annulee',
-        date: order.deliveryDate,
-        createdAt: new Date().toLocaleDateString('fr-FR'), // Nous n'avons pas cette info dans l'API
-        priority: reversePriorityMapping[order.priority] as 'normal' | 'urgent' | 'basse',
-        amount: order.amount
-      }));
+      const mappedOrders = supabaseOrders.map(order => {
+        // Utiliser les fonctions de sécurité pour les valeurs de statut et priorité
+        const mappedStatus = reverseStatusMapping[order.status] || 'en-attente';
+        const mappedPriority = reversePriorityMapping[order.priority] || 'normal';
+        
+        return {
+          id: order.id,
+          customer: order.client,
+          origin: order.origin,
+          destination: order.destination,
+          status: getValidStatus(mappedStatus),
+          date: order.deliveryDate,
+          createdAt: new Date().toLocaleDateString('fr-FR'), // Nous n'avons pas cette info dans l'API
+          priority: getValidPriority(mappedPriority),
+          amount: order.amount
+        };
+      });
       setLocalOrders(mappedOrders);
     }
   }, [supabaseOrders]);
@@ -403,26 +428,13 @@ const OrderManagement: React.FC = () => {
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="en-attente">
-                                  <Badge className={statusConfig['en-attente'].className}>
-                                    {statusConfig['en-attente'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="en-cours">
-                                  <Badge className={statusConfig['en-cours'].className}>
-                                    {statusConfig['en-cours'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="livree">
-                                  <Badge className={statusConfig['livree'].className}>
-                                    {statusConfig['livree'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="annulee">
-                                  <Badge className={statusConfig['annulee'].className}>
-                                    {statusConfig['annulee'].label}
-                                  </Badge>
-                                </SelectItem>
+                                {Object.entries(statusConfig).map(([value, { label, className }]) => (
+                                  <SelectItem key={value} value={value}>
+                                    <Badge className={className}>
+                                      {label}
+                                    </Badge>
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </TableCell>
@@ -440,21 +452,13 @@ const OrderManagement: React.FC = () => {
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="urgent">
-                                  <Badge variant="outline" className={priorityConfig['urgent'].className}>
-                                    {priorityConfig['urgent'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="normal">
-                                  <Badge variant="outline" className={priorityConfig['normal'].className}>
-                                    {priorityConfig['normal'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="basse">
-                                  <Badge variant="outline" className={priorityConfig['basse'].className}>
-                                    {priorityConfig['basse'].label}
-                                  </Badge>
-                                </SelectItem>
+                                {Object.entries(priorityConfig).map(([value, { label, className }]) => (
+                                  <SelectItem key={value} value={value}>
+                                    <Badge variant="outline" className={className}>
+                                      {label}
+                                    </Badge>
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </TableCell>
@@ -536,27 +540,13 @@ const OrderManagement: React.FC = () => {
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
-                                {/* Options de statut identiques à l'onglet "Toutes" */}
-                                <SelectItem value="en-attente">
-                                  <Badge className={statusConfig['en-attente'].className}>
-                                    {statusConfig['en-attente'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="en-cours">
-                                  <Badge className={statusConfig['en-cours'].className}>
-                                    {statusConfig['en-cours'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="livree">
-                                  <Badge className={statusConfig['livree'].className}>
-                                    {statusConfig['livree'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="annulee">
-                                  <Badge className={statusConfig['annulee'].className}>
-                                    {statusConfig['annulee'].label}
-                                  </Badge>
-                                </SelectItem>
+                                {Object.entries(statusConfig).map(([value, { label, className }]) => (
+                                  <SelectItem key={value} value={value}>
+                                    <Badge className={className}>
+                                      {label}
+                                    </Badge>
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </TableCell>
@@ -574,22 +564,13 @@ const OrderManagement: React.FC = () => {
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
-                                {/* Options de priorité identiques à l'onglet "Toutes" */}
-                                <SelectItem value="urgent">
-                                  <Badge variant="outline" className={priorityConfig['urgent'].className}>
-                                    {priorityConfig['urgent'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="normal">
-                                  <Badge variant="outline" className={priorityConfig['normal'].className}>
-                                    {priorityConfig['normal'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="basse">
-                                  <Badge variant="outline" className={priorityConfig['basse'].className}>
-                                    {priorityConfig['basse'].label}
-                                  </Badge>
-                                </SelectItem>
+                                {Object.entries(priorityConfig).map(([value, { label, className }]) => (
+                                  <SelectItem key={value} value={value}>
+                                    <Badge variant="outline" className={className}>
+                                      {label}
+                                    </Badge>
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </TableCell>
@@ -670,26 +651,13 @@ const OrderManagement: React.FC = () => {
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="en-attente">
-                                  <Badge className={statusConfig['en-attente'].className}>
-                                    {statusConfig['en-attente'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="en-cours">
-                                  <Badge className={statusConfig['en-cours'].className}>
-                                    {statusConfig['en-cours'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="livree">
-                                  <Badge className={statusConfig['livree'].className}>
-                                    {statusConfig['livree'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="annulee">
-                                  <Badge className={statusConfig['annulee'].className}>
-                                    {statusConfig['annulee'].label}
-                                  </Badge>
-                                </SelectItem>
+                                {Object.entries(statusConfig).map(([value, { label, className }]) => (
+                                  <SelectItem key={value} value={value}>
+                                    <Badge className={className}>
+                                      {label}
+                                    </Badge>
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </TableCell>
@@ -707,21 +675,13 @@ const OrderManagement: React.FC = () => {
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="urgent">
-                                  <Badge variant="outline" className={priorityConfig['urgent'].className}>
-                                    {priorityConfig['urgent'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="normal">
-                                  <Badge variant="outline" className={priorityConfig['normal'].className}>
-                                    {priorityConfig['normal'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="basse">
-                                  <Badge variant="outline" className={priorityConfig['basse'].className}>
-                                    {priorityConfig['basse'].label}
-                                  </Badge>
-                                </SelectItem>
+                                {Object.entries(priorityConfig).map(([value, { label, className }]) => (
+                                  <SelectItem key={value} value={value}>
+                                    <Badge variant="outline" className={className}>
+                                      {label}
+                                    </Badge>
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </TableCell>
@@ -801,26 +761,13 @@ const OrderManagement: React.FC = () => {
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="en-attente">
-                                  <Badge className={statusConfig['en-attente'].className}>
-                                    {statusConfig['en-attente'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="en-cours">
-                                  <Badge className={statusConfig['en-cours'].className}>
-                                    {statusConfig['en-cours'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="livree">
-                                  <Badge className={statusConfig['livree'].className}>
-                                    {statusConfig['livree'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="annulee">
-                                  <Badge className={statusConfig['annulee'].className}>
-                                    {statusConfig['annulee'].label}
-                                  </Badge>
-                                </SelectItem>
+                                {Object.entries(statusConfig).map(([value, { label, className }]) => (
+                                  <SelectItem key={value} value={value}>
+                                    <Badge className={className}>
+                                      {label}
+                                    </Badge>
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </TableCell>
@@ -838,21 +785,13 @@ const OrderManagement: React.FC = () => {
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="urgent">
-                                  <Badge variant="outline" className={priorityConfig['urgent'].className}>
-                                    {priorityConfig['urgent'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="normal">
-                                  <Badge variant="outline" className={priorityConfig['normal'].className}>
-                                    {priorityConfig['normal'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="basse">
-                                  <Badge variant="outline" className={priorityConfig['basse'].className}>
-                                    {priorityConfig['basse'].label}
-                                  </Badge>
-                                </SelectItem>
+                                {Object.entries(priorityConfig).map(([value, { label, className }]) => (
+                                  <SelectItem key={value} value={value}>
+                                    <Badge variant="outline" className={className}>
+                                      {label}
+                                    </Badge>
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </TableCell>
@@ -932,26 +871,13 @@ const OrderManagement: React.FC = () => {
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="en-attente">
-                                  <Badge className={statusConfig['en-attente'].className}>
-                                    {statusConfig['en-attente'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="en-cours">
-                                  <Badge className={statusConfig['en-cours'].className}>
-                                    {statusConfig['en-cours'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="livree">
-                                  <Badge className={statusConfig['livree'].className}>
-                                    {statusConfig['livree'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="annulee">
-                                  <Badge className={statusConfig['annulee'].className}>
-                                    {statusConfig['annulee'].label}
-                                  </Badge>
-                                </SelectItem>
+                                {Object.entries(statusConfig).map(([value, { label, className }]) => (
+                                  <SelectItem key={value} value={value}>
+                                    <Badge className={className}>
+                                      {label}
+                                    </Badge>
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </TableCell>
@@ -969,21 +895,13 @@ const OrderManagement: React.FC = () => {
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="urgent">
-                                  <Badge variant="outline" className={priorityConfig['urgent'].className}>
-                                    {priorityConfig['urgent'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="normal">
-                                  <Badge variant="outline" className={priorityConfig['normal'].className}>
-                                    {priorityConfig['normal'].label}
-                                  </Badge>
-                                </SelectItem>
-                                <SelectItem value="basse">
-                                  <Badge variant="outline" className={priorityConfig['basse'].className}>
-                                    {priorityConfig['basse'].label}
-                                  </Badge>
-                                </SelectItem>
+                                {Object.entries(priorityConfig).map(([value, { label, className }]) => (
+                                  <SelectItem key={value} value={value}>
+                                    <Badge variant="outline" className={className}>
+                                      {label}
+                                    </Badge>
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </TableCell>

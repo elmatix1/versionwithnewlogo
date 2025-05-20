@@ -38,17 +38,35 @@ export function useOrders() {
         }
         
         // Convertir les données pour correspondre à l'interface Order
-        const formattedOrders = data.map(order => ({
-          id: order.id.toString(),
-          client: order.client,
-          origin: order.origin,
-          destination: order.destination,
-          status: order.status as OrderStatus,
-          deliveryDate: order.delivery_date,
-          priority: order.priority as OrderPriority,
-          amount: order.amount,
-          notes: order.notes
-        }));
+        const formattedOrders = data.map(order => {
+          // S'assurer que la priorité est toujours une valeur valide
+          let priority: OrderPriority = 'normal';
+          if (order.priority && ['high', 'normal', 'low'].includes(order.priority)) {
+            priority = order.priority as OrderPriority;
+          } else {
+            console.warn(`Priorité non reconnue: ${order.priority}, utilisation de 'normal' par défaut`);
+          }
+          
+          // S'assurer que le statut est toujours une valeur valide
+          let status: OrderStatus = 'pending';
+          if (order.status && ['pending', 'in-progress', 'completed', 'cancelled'].includes(order.status)) {
+            status = order.status as OrderStatus;
+          } else {
+            console.warn(`Statut non reconnu: ${order.status}, utilisation de 'pending' par défaut`);
+          }
+          
+          return {
+            id: order.id.toString(),
+            client: order.client,
+            origin: order.origin,
+            destination: order.destination,
+            status,
+            deliveryDate: order.delivery_date,
+            priority,
+            amount: order.amount,
+            notes: order.notes
+          };
+        });
         
         setOrders(formattedOrders);
         console.log('Commandes récupérées:', formattedOrders);
