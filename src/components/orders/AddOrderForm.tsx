@@ -31,12 +31,12 @@ const orderFormSchema = z.object({
   contactPhone: z.string().min(10, { message: "Un numéro de téléphone valide est requis" })
 });
 
-type OrderFormValues = z.infer<typeof orderFormSchema>;
+export type OrderFormValues = z.infer<typeof orderFormSchema>;
 
 interface AddOrderFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddOrder: (order: OrderFormValues) => void;
+  onAddOrder: (order: OrderFormValues) => Promise<void>;
 }
 
 const statusConfig = {
@@ -69,13 +69,14 @@ const AddOrderForm: React.FC<AddOrderFormProps> = ({ open, onOpenChange, onAddOr
     },
   });
 
-  function onSubmit(values: OrderFormValues) {
-    onAddOrder(values);
-    form.reset();
-    onOpenChange(false);
-    toast.success("Commande ajoutée", {
-      description: `La commande pour ${values.customer} a été ajoutée avec succès`
-    });
+  async function onSubmit(values: OrderFormValues) {
+    try {
+      await onAddOrder(values);
+      form.reset();
+    } catch (error) {
+      console.error("Erreur lors de la soumission du formulaire:", error);
+      // La gestion des erreurs est maintenant faite dans la fonction onAddOrder
+    }
   }
 
   return (
