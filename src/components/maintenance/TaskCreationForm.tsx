@@ -159,6 +159,21 @@ const TaskCreationForm: React.FC<TaskCreationFormProps> = ({ onSubmit, onCancel 
             )}
           />
 
+          {/* Description - Ajout du champ obligatoire manquant */}
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem className="col-span-2">
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Input placeholder="Décrivez la tâche de maintenance" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           {/* Statut */}
           <FormField
             control={form.control}
