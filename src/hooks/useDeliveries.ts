@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export type DeliveryStatus = 'pending' | 'in-progress' | 'completed' | 'cancelled';
+export type DeliveryStatus = 'planned' | 'in-progress' | 'completed' | 'delayed';
 
 export interface Delivery {
   id: string;
@@ -37,17 +37,27 @@ export function useDeliveries() {
         }
         
         // Convertir les données pour correspondre à l'interface Delivery
-        const formattedDeliveries = data.map(delivery => ({
-          id: delivery.id.toString(),
-          date: delivery.date,
-          time: delivery.time,
-          driver: delivery.driver,
-          vehicle: delivery.vehicle,
-          origin: delivery.origin,
-          destination: delivery.destination,
-          status: delivery.status as DeliveryStatus,
-          notes: delivery.notes
-        }));
+        const formattedDeliveries = data.map(delivery => {
+          // S'assurer que le statut est toujours une valeur valide
+          let status: DeliveryStatus = 'planned';
+          if (delivery.status && ['planned', 'in-progress', 'completed', 'delayed'].includes(delivery.status)) {
+            status = delivery.status as DeliveryStatus;
+          } else {
+            console.warn(`Statut non reconnu: ${delivery.status}, utilisation de 'planned' par défaut`);
+          }
+          
+          return {
+            id: delivery.id.toString(),
+            date: delivery.date,
+            time: delivery.time,
+            driver: delivery.driver,
+            vehicle: delivery.vehicle,
+            origin: delivery.origin,
+            destination: delivery.destination,
+            status,
+            notes: delivery.notes
+          };
+        });
         
         setDeliveries(formattedDeliveries);
         console.log('Livraisons récupérées:', formattedDeliveries);
@@ -97,7 +107,7 @@ export function useDeliveries() {
           vehicle: deliveryData.vehicle,
           origin: deliveryData.origin,
           destination: deliveryData.destination,
-          status: deliveryData.status,
+          status: deliveryData.status || 'planned',
           notes: deliveryData.notes
         }])
         .select();
@@ -129,14 +139,14 @@ export function useDeliveries() {
       // Mettre à jour l'état local avec la nouvelle livraison
       setDeliveries(prev => [...prev, newDelivery]);
       
-      toast.success("Livraison ajoutée avec succès", {
-        description: `La livraison vers ${newDelivery.destination} a été programmée.`
+      toast.success("Mission ajoutée avec succès", {
+        description: `La mission pour ${newDelivery.destination} a été créée.`
       });
       
       return newDelivery;
     } catch (err: any) {
       console.error('Erreur lors de l\'ajout d\'une livraison:', err);
-      toast.error("Erreur lors de l'ajout de la livraison", {
+      toast.error("Erreur lors de l'ajout de la mission", {
         description: err.message
       });
       throw err;
@@ -181,12 +191,12 @@ export function useDeliveries() {
       
       console.log('Livraison mise à jour avec succès');
       
-      toast.success("Livraison mise à jour", {
-        description: "Les informations de la livraison ont été mises à jour."
+      toast.success("Mission mise à jour", {
+        description: "Les informations de la mission ont été mises à jour."
       });
     } catch (err: any) {
       console.error('Erreur lors de la mise à jour d\'une livraison:', err);
-      toast.error("Erreur lors de la mise à jour de la livraison", {
+      toast.error("Erreur lors de la mise à jour de la mission", {
         description: err.message
       });
       throw err;
@@ -213,12 +223,12 @@ export function useDeliveries() {
       
       console.log('Livraison supprimée avec succès');
       
-      toast.success("Livraison supprimée", {
-        description: "La livraison a été supprimée avec succès."
+      toast.success("Mission supprimée", {
+        description: "La mission a été supprimée avec succès."
       });
     } catch (err: any) {
       console.error('Erreur lors de la suppression d\'une livraison:', err);
-      toast.error("Erreur lors de la suppression de la livraison", {
+      toast.error("Erreur lors de la suppression de la mission", {
         description: err.message
       });
       throw err;

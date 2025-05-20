@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -46,74 +45,8 @@ import {
   CalendarDays
 } from 'lucide-react';
 import { toast } from "sonner";
-import { saveToLocalStorage, loadFromLocalStorage } from '@/utils/localStorage';
 import MoroccanSuggestionInput from '@/components/shared/MoroccanSuggestionInput';
-
-interface ScheduledDelivery {
-  id: string;
-  date: string;
-  time: string;
-  driver: string;
-  vehicle: string;
-  origin: string;
-  destination: string;
-  status: 'planned' | 'in-progress' | 'completed' | 'delayed';
-}
-
-const STORAGE_KEY = 'tms-scheduled-deliveries';
-
-const defaultDeliveries: ScheduledDelivery[] = [
-  {
-    id: "PLN-1025",
-    date: "14/08/2023",
-    time: "08:00",
-    driver: "Thomas Durand",
-    vehicle: "TL-3045",
-    origin: "Lyon, Dépôt Central",
-    destination: "Paris, 15ème",
-    status: "planned"
-  },
-  {
-    id: "PLN-1026",
-    date: "14/08/2023",
-    time: "09:30",
-    driver: "Sophie Lefèvre",
-    vehicle: "TL-2189",
-    origin: "Marseille, Port",
-    destination: "Lyon, Zone Industrielle",
-    status: "in-progress"
-  },
-  {
-    id: "PLN-1027",
-    date: "15/08/2023",
-    time: "07:15",
-    driver: "Pierre Martin",
-    vehicle: "TL-5632",
-    origin: "Paris, Entrepôt Est",
-    destination: "Lille, Centre de distribution",
-    status: "planned"
-  },
-  {
-    id: "PLN-1028",
-    date: "15/08/2023",
-    time: "10:45",
-    driver: "Thomas Durand",
-    vehicle: "TL-3045",
-    origin: "Paris, 15ème",
-    destination: "Lyon, Dépôt Central",
-    status: "planned"
-  },
-  {
-    id: "PLN-1029",
-    date: "13/08/2023",
-    time: "14:30",
-    driver: "Marie Lambert",
-    vehicle: "TL-1764",
-    origin: "Bordeaux, Entrepôt Sud",
-    destination: "Toulouse, Centre Logistique",
-    status: "completed"
-  }
-];
+import { useDeliveries, DeliveryStatus } from '@/hooks/useDeliveries';
 
 const statusConfig = {
   'planned': { 
@@ -135,9 +68,7 @@ const statusConfig = {
 };
 
 const Planning: React.FC = () => {
-  const [scheduledDeliveries, setScheduledDeliveries] = useState<ScheduledDelivery[]>(() => 
-    loadFromLocalStorage<ScheduledDelivery[]>(STORAGE_KEY, defaultDeliveries)
-  );
+  const { deliveries, loading, addDelivery } = useDeliveries();
 
   const [showAddMissionDialog, setShowAddMissionDialog] = useState(false);
   const [showMapView, setShowMapView] = useState(false);
@@ -152,15 +83,12 @@ const Planning: React.FC = () => {
     driver: '',
     vehicle: '',
     origin: '',
-    destination: ''
+    destination: '',
+    status: 'planned' as DeliveryStatus,
+    notes: ''
   });
 
-  // Persistance des données
-  useEffect(() => {
-    saveToLocalStorage(STORAGE_KEY, scheduledDeliveries);
-  }, [scheduledDeliveries]);
-
-  const handleAddMission = () => {
+  const handleAddMission = async () => {
     // Check form validity
     if (!newMission.date || !newMission.time || !newMission.driver || 
         !newMission.vehicle || !newMission.origin || !newMission.destination) {
@@ -170,35 +98,37 @@ const Planning: React.FC = () => {
       return;
     }
 
-    // Create new mission
-    const mission: ScheduledDelivery = {
-      id: `PLN-${new Date().getTime().toString().slice(-4)}`,
-      date: newMission.date,
-      time: newMission.time,
-      driver: newMission.driver,
-      vehicle: newMission.vehicle,
-      origin: newMission.origin,
-      destination: newMission.destination,
-      status: 'planned'
-    };
-
-    setScheduledDeliveries(prev => [...prev, mission]);
-    
-    // Reset form and close dialog
-    setNewMission({
-      date: '',
-      time: '',
-      driver: '',
-      vehicle: '',
-      origin: '',
-      destination: ''
-    });
-    
-    setShowAddMissionDialog(false);
-    
-    toast.success("Mission ajoutée", {
-      description: `La mission ${mission.id} a été ajoutée avec succès.`
-    });
+    try {
+      // Add delivery to Supabase using our hook
+      await addDelivery({
+        date: newMission.date,
+        time: newMission.time,
+        driver: newMission.driver,
+        vehicle: newMission.vehicle,
+        origin: newMission.origin,
+        destination: newMission.destination,
+        status: newMission.status,
+        notes: newMission.notes
+      });
+      
+      // Reset form and close dialog
+      setNewMission({
+        date: '',
+        time: '',
+        driver: '',
+        vehicle: '',
+        origin: '',
+        destination: '',
+        status: 'planned',
+        notes: ''
+      });
+      
+      setShowAddMissionDialog(false);
+      
+    } catch (error) {
+      console.error("Erreur lors de l'ajout de la mission:", error);
+      // Toast notification already handled in useDeliveries hook
+    }
   };
 
   const handleShowMap = () => {
@@ -245,7 +175,11 @@ const Planning: React.FC = () => {
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-sm text-muted-foreground">Aujourd'hui</p>
-                <p className="text-2xl font-bold">8 livraisons</p>
+                <p className="text-2xl font-bold">
+                  {loading ? "..." : deliveries.filter(d => 
+                    d.date === new Date().toISOString().split('T')[0]
+                  ).length} livraisons
+                </p>
               </div>
               <div className="rounded-full bg-blue-100 p-3 text-blue-600">
                 <Calendar className="h-5 w-5" />
@@ -258,7 +192,9 @@ const Planning: React.FC = () => {
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-sm text-muted-foreground">Cette semaine</p>
-                <p className="text-2xl font-bold">42 livraisons</p>
+                <p className="text-2xl font-bold">
+                  {loading ? "..." : deliveries.length} livraisons
+                </p>
               </div>
               <div className="rounded-full bg-amber-100 p-3 text-amber-600">
                 <CalendarDays className="h-5 w-5" />
@@ -334,22 +270,40 @@ const Planning: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {scheduledDeliveries.map((delivery) => (
-                      <TableRow key={delivery.id}>
-                        <TableCell className="font-medium">{delivery.id}</TableCell>
-                        <TableCell>{delivery.date}</TableCell>
-                        <TableCell>{delivery.time}</TableCell>
-                        <TableCell>{delivery.driver}</TableCell>
-                        <TableCell>{delivery.vehicle}</TableCell>
-                        <TableCell>{delivery.origin}</TableCell>
-                        <TableCell>{delivery.destination}</TableCell>
-                        <TableCell>
-                          <Badge className={statusConfig[delivery.status].className}>
-                            {statusConfig[delivery.status].label}
-                          </Badge>
+                    {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-4">
+                          Chargement des missions...
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : deliveries.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-4">
+                          Aucune mission disponible
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      deliveries.map((delivery) => {
+                        const statusCfg = statusConfig[delivery.status] || statusConfig['planned'];
+                        
+                        return (
+                          <TableRow key={delivery.id}>
+                            <TableCell className="font-medium">{`PLN-${delivery.id}`}</TableCell>
+                            <TableCell>{delivery.date}</TableCell>
+                            <TableCell>{delivery.time}</TableCell>
+                            <TableCell>{delivery.driver}</TableCell>
+                            <TableCell>{delivery.vehicle}</TableCell>
+                            <TableCell>{delivery.origin}</TableCell>
+                            <TableCell>{delivery.destination}</TableCell>
+                            <TableCell>
+                              <Badge className={statusCfg.className}>
+                                {statusCfg.label}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -500,6 +454,16 @@ const Planning: React.FC = () => {
               placeholder="Ville de destination"
               required
             />
+            
+            <div>
+              <Label htmlFor="notes">Notes</Label>
+              <Input
+                id="notes"
+                value={newMission.notes}
+                onChange={(e) => setNewMission({...newMission, notes: e.target.value})}
+                placeholder="Notes supplémentaires (facultatif)"
+              />
+            </div>
           </div>
           
           <DialogFooter>
@@ -526,7 +490,7 @@ const Planning: React.FC = () => {
                 Visualisez les positions des véhicules et les itinéraires en temps réel.
               </p>
               <p className="text-xs text-muted-foreground">
-                Carte chargée avec succès - 5 véhicules en circulation
+                Carte chargée avec succès - {deliveries.filter(d => d.status === 'in-progress').length} véhicules en circulation
               </p>
             </div>
           </div>
@@ -551,7 +515,7 @@ const Planning: React.FC = () => {
                 Consultez et modifiez facilement votre planning de livraisons.
               </p>
               <p className="text-xs text-muted-foreground">
-                Semaine du 14 au 20 août chargée - 42 missions programmées
+                Missions programmées: {deliveries.length}
               </p>
             </div>
           </div>
@@ -602,36 +566,21 @@ const Planning: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow>
-                  <TableCell>TL-3045</TableCell>
-                  <TableCell>Karim Alaoui</TableCell>
-                  <TableCell>PLN-1025</TableCell>
-                  <TableCell>Rabat</TableCell>
-                  <TableCell>
-                    <Badge className="bg-amber-500">En cours</Badge>
-                  </TableCell>
-                  <TableCell>14:30</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>TL-2189</TableCell>
-                  <TableCell>Mohammed Idrissi</TableCell>
-                  <TableCell>PLN-1026</TableCell>
-                  <TableCell>Casablanca</TableCell>
-                  <TableCell>
-                    <Badge className="bg-amber-500">En cours</Badge>
-                  </TableCell>
-                  <TableCell>15:45</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>TL-5632</TableCell>
-                  <TableCell>Rachid Benani</TableCell>
-                  <TableCell>PLN-1027</TableCell>
-                  <TableCell>Agadir</TableCell>
-                  <TableCell>
-                    <Badge className="bg-green-500">À l'heure</Badge>
-                  </TableCell>
-                  <TableCell>16:15</TableCell>
-                </TableRow>
+                {deliveries
+                  .filter(delivery => delivery.status === 'in-progress')
+                  .slice(0, 3)
+                  .map((delivery) => (
+                    <TableRow key={delivery.id}>
+                      <TableCell>{delivery.vehicle}</TableCell>
+                      <TableCell>{delivery.driver}</TableCell>
+                      <TableCell>PLN-{delivery.id}</TableCell>
+                      <TableCell>{delivery.origin}</TableCell>
+                      <TableCell>
+                        <Badge className="bg-amber-500">En cours</Badge>
+                      </TableCell>
+                      <TableCell>14:30</TableCell>
+                    </TableRow>
+                  ))}
               </TableBody>
             </Table>
           </div>
