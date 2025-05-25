@@ -8,8 +8,8 @@ import { Truck, AlertCircle } from 'lucide-react';
 interface Vehicle {
   id: string;
   name: string;
-  status: 'delivering' | 'idle' | 'maintenance';
-  location: string;
+  status: 'delivering' | 'idle' | 'maintenance' | 'active' | 'inactive';
+  location?: string;
 }
 
 interface MapOverviewProps {
@@ -19,17 +19,43 @@ interface MapOverviewProps {
 
 const statusColors = {
   delivering: "bg-green-500",
+  active: "bg-green-500",
   idle: "bg-blue-500",
   maintenance: "bg-amber-500",
+  inactive: "bg-zinc-400",
 };
 
 const statusLabels = {
   delivering: "En livraison",
+  active: "En service",
   idle: "Disponible",
   maintenance: "En maintenance",
+  inactive: "Hors service",
 };
 
-const MapOverview: React.FC<MapOverviewProps> = ({ vehicles, className }) => {
+const MapOverview: React.FC<MapOverviewProps> = ({ vehicles = [], className }) => {
+  // Normaliser les statuts des véhicules pour correspondre aux couleurs disponibles
+  const normalizeStatus = (status: string) => {
+    switch (status) {
+      case 'active':
+      case 'delivering':
+        return 'active';
+      case 'maintenance':
+        return 'maintenance';
+      case 'inactive':
+      case 'idle':
+        return 'idle';
+      default:
+        return 'idle';
+    }
+  };
+
+  const normalizedVehicles = vehicles.map(vehicle => ({
+    ...vehicle,
+    status: normalizeStatus(vehicle.status) as keyof typeof statusColors,
+    location: vehicle.location || 'Position inconnue'
+  }));
+
   return (
     <Card className={cn("overflow-hidden", className)}>
       <CardHeader className="pb-2">
@@ -52,7 +78,7 @@ const MapOverview: React.FC<MapOverviewProps> = ({ vehicles, className }) => {
           </div>
           
           {/* Vehicle markers would be placed here in a real implementation */}
-          {vehicles.slice(0, 3).map((vehicle, index) => (
+          {normalizedVehicles.slice(0, 3).map((vehicle, index) => (
             <div 
               key={vehicle.id} 
               className="absolute p-1 rounded-full bg-white shadow-md"
@@ -72,7 +98,7 @@ const MapOverview: React.FC<MapOverviewProps> = ({ vehicles, className }) => {
         <div className="p-4 border-t">
           <h4 className="font-medium text-sm mb-2">Véhicules actifs</h4>
           <div className="space-y-2">
-            {vehicles.slice(0, 3).map((vehicle) => (
+            {normalizedVehicles.slice(0, 3).map((vehicle) => (
               <div key={vehicle.id} className="flex items-center justify-between text-sm">
                 <div className="flex items-center">
                   <div className={cn("h-2 w-2 rounded-full mr-2", statusColors[vehicle.status])}></div>
@@ -86,6 +112,11 @@ const MapOverview: React.FC<MapOverviewProps> = ({ vehicles, className }) => {
                 </div>
               </div>
             ))}
+            {normalizedVehicles.length === 0 && (
+              <div className="text-center text-muted-foreground py-4">
+                Aucun véhicule disponible
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

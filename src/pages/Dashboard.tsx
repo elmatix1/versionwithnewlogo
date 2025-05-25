@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import StatCard from '@/components/dashboard/StatCard';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
@@ -8,6 +7,7 @@ import UpcomingDeliveries from '@/components/dashboard/UpcomingDeliveries';
 import DriverAvailability from '@/components/dashboard/DriverAvailability';
 import { Truck, FileText, Users, TrendingUp, CheckCircle, Circle, Plus, Trash } from 'lucide-react';
 import { useTodos } from '@/hooks/useTodos';
+import { useVehicles } from '@/hooks/useVehicles';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,9 @@ const Dashboard: React.FC = () => {
   // Hook pour les tâches
   const { todos, addTodo, toggleTodo, deleteTodo } = useTodos();
   const [newTask, setNewTask] = useState('');
+
+  // Hook pour les véhicules
+  const { vehicles, loading: vehiclesLoading } = useVehicles();
 
   // Fonction pour ajouter une nouvelle tâche
   const handleAddTodo = (e: React.FormEvent) => {
@@ -37,7 +40,7 @@ const Dashboard: React.FC = () => {
     },
     { 
       title: "Véhicules actifs", 
-      value: "18", 
+      value: vehiclesLoading ? "..." : vehicles.filter(v => v.status === 'active').length.toString(), 
       icon: <Truck size={20} />, 
       change: { value: 5, isPositive: true } 
     },
@@ -79,27 +82,6 @@ const Dashboard: React.FC = () => {
       type: "order" as const, 
       message: "Nouvelle commande #1039 de Société Dupont", 
       time: "Il y a 3 heures" 
-    }
-  ];
-
-  const vehicles = [
-    { 
-      id: "v1", 
-      name: "TL-3045", 
-      status: "delivering" as const, 
-      location: "Route A7" 
-    },
-    { 
-      id: "v2", 
-      name: "TL-2189", 
-      status: "idle" as const, 
-      location: "Dépôt Central" 
-    },
-    { 
-      id: "v3", 
-      name: "TL-4023", 
-      status: "maintenance" as const, 
-      location: "Garage Nord" 
     }
   ];
 
