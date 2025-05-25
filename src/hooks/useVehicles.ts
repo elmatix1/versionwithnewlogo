@@ -36,17 +36,27 @@ export function useVehicles() {
           throw error;
         }
         
+        // Locations simulées pour les véhicules
+        const simulatedLocations = [
+          'Dépôt Central',
+          'Route A7', 
+          'Garage Nord',
+          'Zone Industrielle',
+          'Port',
+          'Position inconnue'
+        ];
+        
         // Convertir les données pour correspondre à l'interface Vehicle
-        const formattedVehicles = data.map(vehicle => ({
+        const formattedVehicles = data.map((vehicle, index) => ({
           id: vehicle.id.toString(),
-          name: vehicle.registration, // Supportons les deux formats
+          name: vehicle.registration,
           type: vehicle.type,
           status: vehicle.status as VehicleStatus,
           fuelLevel: typeof vehicle.fuel_level === 'number' ? vehicle.fuel_level : 0,
           lastMaintenance: vehicle.last_maintenance,
           nextService: vehicle.next_maintenance || '',
           driver: vehicle.driver,
-          location: vehicle.location
+          location: vehicle.location || simulatedLocations[index % simulatedLocations.length]
         }));
         
         setVehicles(formattedVehicles);

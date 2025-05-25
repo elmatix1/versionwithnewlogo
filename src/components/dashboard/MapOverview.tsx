@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Truck, AlertCircle } from 'lucide-react';
+import InteractiveMap from './InteractiveMap';
 
 interface Vehicle {
   id: string;
@@ -68,32 +68,7 @@ const MapOverview: React.FC<MapOverviewProps> = ({ vehicles = [], className }) =
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="relative bg-zinc-100 dark:bg-zinc-800 h-[240px]">
-          {/* This is a placeholder for an actual map component */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">Carte non disponible en mode démo</p>
-            </div>
-          </div>
-          
-          {/* Vehicle markers would be placed here in a real implementation */}
-          {normalizedVehicles.slice(0, 3).map((vehicle, index) => (
-            <div 
-              key={vehicle.id} 
-              className="absolute p-1 rounded-full bg-white shadow-md"
-              style={{ 
-                top: `${30 + index * 20}%`, 
-                left: `${20 + index * 25}%`, 
-                transform: 'translate(-50%, -50%)' 
-              }}
-            >
-              <div className={cn("p-1 rounded-full", statusColors[vehicle.status])}>
-                <Truck className="h-3 w-3 text-white" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <InteractiveMap vehicles={normalizedVehicles} />
         
         <div className="p-4 border-t">
           <h4 className="font-medium text-sm mb-2">Véhicules actifs</h4>
