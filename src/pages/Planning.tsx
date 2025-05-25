@@ -47,6 +47,8 @@ import {
 import { toast } from "sonner";
 import MoroccanSuggestionInput from '@/components/shared/MoroccanSuggestionInput';
 import { useDeliveries, DeliveryStatus } from '@/hooks/useDeliveries';
+import { useRouteOptimization } from '@/hooks/useRouteOptimization';
+import OptimizationResults from '@/components/planning/OptimizationResults';
 
 const statusConfig = {
   'planned': { 
@@ -69,6 +71,7 @@ const statusConfig = {
 
 const Planning: React.FC = () => {
   const { deliveries, loading, addDelivery } = useDeliveries();
+  const { isOptimizing, optimizationResult, optimizeRoutes, clearOptimization } = useRouteOptimization();
 
   const [showAddMissionDialog, setShowAddMissionDialog] = useState(false);
   const [showMapView, setShowMapView] = useState(false);
@@ -145,14 +148,18 @@ const Planning: React.FC = () => {
     });
   };
 
-  const handleLaunchOptimization = () => {
-    setShowOptimizationDialog(true);
-    setTimeout(() => {
-      toast.success("Optimisation terminée", {
-        description: "Les trajets ont été optimisés avec succès."
+  const handleLaunchOptimization = async () => {
+    if (deliveries.length === 0) {
+      toast.warning("Aucune livraison disponible", {
+        description: "Ajoutez des missions de livraison avant de lancer l'optimisation."
       });
+      return;
+    }
+
+    const result = await optimizeRoutes(deliveries);
+    if (result) {
       setShowOptimizationDialog(false);
-    }, 2000);
+    }
   };
 
   const handleTrackDeliveries = () => {
@@ -161,6 +168,23 @@ const Planning: React.FC = () => {
       description: "Visualisation des statuts de livraison en temps réel."
     });
   };
+
+  // Si on a des résultats d'optimisation, on les affiche
+  if (optimizationResult) {
+    return (
+      <div>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold mb-1">Planification - Résultats d'optimisation</h1>
+          <p className="text-muted-foreground">Trajets optimisés pour améliorer l'efficacité des livraisons</p>
+        </div>
+        
+        <OptimizationResults 
+          result={optimizationResult} 
+          onClose={clearOptimization}
+        />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -340,9 +364,27 @@ const Planning: React.FC = () => {
               <Truck className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">Assistant d'optimisation</h3>
               <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                Utilisez notre assistant pour optimiser vos trajets, réduire les coûts et respecter les délais.
+                Optimisez automatiquement vos trajets de livraison pour réduire les coûts, économiser du temps et améliorer l'efficacité.
               </p>
-              <Button onClick={handleLaunchOptimization}>Lancer l'assistant</Button>
+              <Button 
+                onClick={handleLaunchOptimization}
+                disabled={isOptimizing || deliveries.length === 0}
+                className="relative"
+              >
+                {isOptimizing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Optimisation en cours...
+                  </>
+                ) : (
+                  'Lancer l\'assistant'
+                )}
+              </Button>
+              {deliveries.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Ajoutez des missions pour activer l'optimisation
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
