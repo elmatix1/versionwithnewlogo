@@ -21,7 +21,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -46,9 +45,11 @@ import {
 } from 'lucide-react';
 import { toast } from "sonner";
 import MoroccanSuggestionInput from '@/components/shared/MoroccanSuggestionInput';
-import { useDeliveries, DeliveryStatus } from '@/hooks/useDeliveries';
+import { useDeliveries, DeliveryStatus, Delivery } from '@/hooks/useDeliveries';
 import { useRouteOptimization } from '@/hooks/useRouteOptimization';
 import OptimizationResults from '@/components/planning/OptimizationResults';
+import DeliveryCalendar from '@/components/planning/DeliveryCalendar';
+import DeliveryMap from '@/components/planning/DeliveryMap';
 
 const statusConfig = {
   'planned': { 
@@ -136,16 +137,10 @@ const Planning: React.FC = () => {
 
   const handleShowMap = () => {
     setShowMapView(true);
-    toast.info("Carte des livraisons", {
-      description: "Visualisation des trajets et positions en temps réel."
-    });
   };
 
   const handleShowCalendar = () => {
     setShowCalendarView(true);
-    toast.info("Calendrier des livraisons", {
-      description: "Vue calendaire des livraisons planifiées."
-    });
   };
 
   const handleLaunchOptimization = async () => {
@@ -514,52 +509,34 @@ const Planning: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog pour la vue carte */}
+      {/* Dialog pour la vue carte avec la vraie carte interactive */}
       <Dialog open={showMapView} onOpenChange={setShowMapView}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-6xl h-[80vh]">
           <DialogHeader>
-            <DialogTitle>Carte des livraisons</DialogTitle>
+            <DialogTitle>Carte interactive des livraisons</DialogTitle>
             <DialogDescription>
-              Positions et itinéraires en temps réel
+              Visualisez toutes vos livraisons sur la carte avec leurs trajets et statuts en temps réel
             </DialogDescription>
           </DialogHeader>
           
-          <div className="rounded-md border bg-muted/20 h-[500px] flex items-center justify-center">
-            <div className="text-center">
-              <MapPin className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Carte interactive</h3>
-              <p className="text-muted-foreground mb-2">
-                Visualisez les positions des véhicules et les itinéraires en temps réel.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Carte chargée avec succès - {deliveries.filter(d => d.status === 'in-progress').length} véhicules en circulation
-              </p>
-            </div>
+          <div className="flex-1 min-h-0">
+            <DeliveryMap deliveries={deliveries} className="h-full" />
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Dialog pour la vue calendrier */}
+      {/* Dialog pour la vue calendrier avec le vrai calendrier interactif */}
       <Dialog open={showCalendarView} onOpenChange={setShowCalendarView}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-6xl h-[80vh]">
           <DialogHeader>
-            <DialogTitle>Calendrier des livraisons</DialogTitle>
+            <DialogTitle>Calendrier interactif des livraisons</DialogTitle>
             <DialogDescription>
-              Planification hebdomadaire des missions
+              Consultez et gérez votre planning de livraisons de manière interactive
             </DialogDescription>
           </DialogHeader>
           
-          <div className="rounded-md border bg-muted/20 h-[500px] flex items-center justify-center">
-            <div className="text-center">
-              <CalendarDays className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Calendrier interactif</h3>
-              <p className="text-muted-foreground mb-2">
-                Consultez et modifiez facilement votre planning de livraisons.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Missions programmées: {deliveries.length}
-              </p>
-            </div>
+          <div className="flex-1 min-h-0">
+            <DeliveryCalendar deliveries={deliveries} />
           </div>
         </DialogContent>
       </Dialog>
