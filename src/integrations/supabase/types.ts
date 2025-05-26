@@ -192,6 +192,36 @@ export type Database = {
         }
         Relationships: []
       }
+      time_tracking: {
+        Row: {
+          clock_in_time: string | null
+          clock_out_time: string | null
+          created_at: string | null
+          date: string
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          clock_in_time?: string | null
+          clock_out_time?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          clock_in_time?: string | null
+          clock_out_time?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           address: string | null

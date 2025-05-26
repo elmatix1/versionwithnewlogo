@@ -5,6 +5,9 @@ import StatCards from './attendance/StatCards';
 import AttendanceCalendar from './attendance/AttendanceCalendar';
 import ReportCard from './attendance/ReportCard';
 import AttendanceTable from './attendance/AttendanceTable';
+import TimeClockSystem from './TimeClockSystem';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Clock, Calendar, BarChart3 } from 'lucide-react';
 
 const AttendanceSystem: React.FC = () => {
   const [date, setDate] = useState<Date>(new Date());
@@ -77,23 +80,51 @@ const AttendanceSystem: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <StatCards />
+      <Tabs defaultValue="clock" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="clock" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Pointage
+          </TabsTrigger>
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Vue d'ensemble
+          </TabsTrigger>
+          <TabsTrigger value="reports" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Rapports
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="flex flex-col md:flex-row gap-6">
-        <AttendanceCalendar 
-          date={date}
-          onSelectDate={(newDate) => newDate && setDate(newDate)}
-        />
-        <ReportCard />
-      </div>
+        <TabsContent value="clock" className="space-y-6">
+          <TimeClockSystem />
+        </TabsContent>
 
-      <AttendanceTable 
-        date={date}
-        selectedEmployee={selectedEmployee}
-        setSelectedEmployee={setSelectedEmployee}
-        records={filteredRecords}
-        employees={employees}
-      />
+        <TabsContent value="overview" className="space-y-6">
+          <StatCards />
+
+          <div className="flex flex-col md:flex-row gap-6">
+            <AttendanceCalendar 
+              date={date}
+              onSelectDate={(newDate) => newDate && setDate(newDate)}
+            />
+            <div className="flex-1">
+              <AttendanceTable 
+                date={date}
+                selectedEmployee={selectedEmployee}
+                setSelectedEmployee={setSelectedEmployee}
+                records={filteredRecords}
+                employees={employees}
+              />
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-6">
+          <StatCards />
+          <ReportCard />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
