@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/table';
 import { FileDown, FileText, BarChart, PieChart, Calendar, Eye } from 'lucide-react';
 import { saveToLocalStorage, loadFromLocalStorage } from '@/utils/localStorage';
+import { downloadReport } from '@/utils/reportGenerator';
 
 interface Report {
   id: string;
@@ -71,24 +72,10 @@ const Reports: React.FC = () => {
   
   const handleDownloadReport = (reportName: string) => {
     try {
-      const content = generateReportContent(reportName);
-      
-      const blob = new Blob([content], { type: 'application/pdf' });
-      
-      const url = URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${reportName.replace(/\s+/g, '_')}.pdf`;
-      
-      document.body.appendChild(link);
-      link.click();
-      
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 100);
+      downloadReport(reportName, 'custom');
       
       toast.success("Téléchargement du rapport", {
-        description: `Le rapport ${reportName} a été téléchargé.`
+        description: `Le rapport ${reportName} a été téléchargé au format PDF.`
       });
     } catch (error) {
       console.error("Erreur lors du téléchargement:", error);
@@ -96,32 +83,6 @@ const Reports: React.FC = () => {
         description: "Une erreur est survenue lors du téléchargement du rapport."
       });
     }
-  };
-
-  const generateReportContent = (reportName: string): string => {
-    const header = `${reportName}\n\n`;
-    const date = `Date de génération: ${new Date().toLocaleDateString('fr-FR')}\n\n`;
-    
-    let content = "Contenu du rapport:\n\n";
-    
-    if (reportName.includes("mensuel")) {
-      content += "Statistiques mensuelles:\n";
-      content += "- Nombre de livraisons: 245\n";
-      content += "- Taux de ponctualité: 92%\n";
-      content += "- Satisfaction client: 4.7/5\n";
-    } else if (reportName.includes("trimestriel")) {
-      content += "Statistiques trimestrielles:\n";
-      content += "- Nombre de livraisons: 712\n";
-      content += "- Performance moyenne: 89%\n";
-      content += "- Rentabilité: +12.5%\n";
-    } else if (reportName.includes("annuel")) {
-      content += "Statistiques annuelles:\n";
-      content += "- Chiffre d'affaires: 1,245,000 €\n";
-      content += "- Croissance: 15%\n";
-      content += "- Nouveaux clients: 87\n";
-    }
-    
-    return header + date + content + "\nCe rapport est généré automatiquement à des fins de démonstration.";
   };
   
   const handleCreateReport = () => {
@@ -143,9 +104,17 @@ const Reports: React.FC = () => {
     
     setReports(prev => [...prev, newReport]);
     
-    toast.success("Rapport créé", {
-      description: `Votre rapport ${reportType} pour la période ${reportPeriod} a été généré.`
-    });
+    // Générer et télécharger le rapport immédiatement
+    try {
+      downloadReport(newReport.name, 'custom', reportPeriod);
+      toast.success("Rapport créé et téléchargé", {
+        description: `Votre rapport ${reportType} pour la période ${reportPeriod} a été généré et téléchargé.`
+      });
+    } catch (error) {
+      toast.success("Rapport créé", {
+        description: `Votre rapport ${reportType} pour la période ${reportPeriod} a été généré.`
+      });
+    }
     
     setReportType("");
     setReportPeriod("");
@@ -430,4 +399,3 @@ const Reports: React.FC = () => {
 };
 
 export default Reports;
-

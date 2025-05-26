@@ -11,6 +11,7 @@ import { FileText } from 'lucide-react';
 import ReportDialog from './ReportDialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { downloadReport } from '@/utils/reportGenerator';
 
 const ReportCard: React.FC = () => {
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
@@ -20,31 +21,13 @@ const ReportCard: React.FC = () => {
 
   const handleGenerateReport = () => {
     try {
-      // Création d'un contenu de rapport factice
-      const content = generateReportContent(reportStartDate, reportEndDate);
+      const fileName = `Rapport_Presence_${format(reportStartDate, 'yyyyMMdd')}_${format(reportEndDate, 'yyyyMMdd')}`;
+      const period = `${format(reportStartDate, 'dd/MM/yyyy')} - ${format(reportEndDate, 'dd/MM/yyyy')}`;
       
-      // Création d'un Blob
-      const blob = new Blob([content], { type: 'application/pdf' });
-      
-      // Création d'une URL pour le Blob
-      const url = URL.createObjectURL(blob);
-      
-      // Création d'un élément a (lien) pour déclencher le téléchargement
-      const link = document.createElement('a');
-      link.href = url;
-      const fileName = `Rapport_Presence_${format(reportStartDate, 'yyyyMMdd')}_${format(reportEndDate, 'yyyyMMdd')}.pdf`;
-      link.download = fileName;
-      
-      // Ajout du lien à la page et simulation du clic
-      document.body.appendChild(link);
-      link.click();
-      
-      // Nettoyage après le téléchargement
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 100);
+      downloadReport(fileName, 'attendance', period);
       
       toast.success("Rapport de présence généré avec succès", {
-        description: `Période: ${format(reportStartDate, 'dd/MM/yyyy')} - ${format(reportEndDate, 'dd/MM/yyyy')}`
+        description: `Période: ${period}`
       });
     } catch (error) {
       console.error("Erreur lors de la génération:", error);
@@ -54,21 +37,6 @@ const ReportCard: React.FC = () => {
     }
     
     setIsReportDialogOpen(false);
-  };
-
-  // Génération du contenu du rapport basé sur les dates
-  const generateReportContent = (startDate: Date, endDate: Date): string => {
-    const header = `Rapport de présence\n\n`;
-    const period = `Période: ${format(startDate, 'dd/MM/yyyy')} - ${format(endDate, 'dd/MM/yyyy')}\n\n`;
-    
-    let content = "Statistiques de présence:\n\n";
-    content += "- Taux de présence global: 83%\n";
-    content += "- Taux de ponctualité: 91%\n";
-    content += "- Jours travaillés: 21\n";
-    content += "- Absences justifiées: 3\n";
-    content += "- Absences non justifiées: 1\n";
-    
-    return header + period + content + "\nCe rapport est généré automatiquement à des fins de démonstration.";
   };
 
   const setPeriod = (period: 'day' | 'week' | 'month') => {
@@ -88,30 +56,10 @@ const ReportCard: React.FC = () => {
 
   const handleDownloadReport = (reportName: string) => {
     try {
-      // Création d'un contenu de rapport factice
-      const content = `Rapport: ${reportName}\n\nCe rapport est généré automatiquement à des fins de démonstration.`;
-      
-      // Création d'un Blob
-      const blob = new Blob([content], { type: 'application/pdf' });
-      
-      // Création d'une URL pour le Blob
-      const url = URL.createObjectURL(blob);
-      
-      // Création d'un élément a (lien) pour déclencher le téléchargement
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${reportName.replace(/\s+/g, '_')}.pdf`;
-      
-      // Ajout du lien à la page et simulation du clic
-      document.body.appendChild(link);
-      link.click();
-      
-      // Nettoyage après le téléchargement
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 100);
+      downloadReport(reportName, 'attendance');
       
       toast.success(`Téléchargement: ${reportName}`, {
-        description: `Le rapport a été téléchargé avec succès.`
+        description: `Le rapport a été téléchargé avec succès au format PDF.`
       });
     } catch (error) {
       console.error("Erreur lors du téléchargement:", error);

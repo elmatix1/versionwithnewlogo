@@ -3,6 +3,8 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
+import { downloadReport } from '@/utils/reportGenerator';
+import { toast } from 'sonner';
 
 interface PeriodicReportsProps {
   handleDownloadReport: (reportName: string) => void;
@@ -13,11 +15,21 @@ const PeriodicReports: React.FC<PeriodicReportsProps> = ({
   handleDownloadReport,
   handleViewAllReports
 }) => {
-  // Fonction qui gère le téléchargement localement pour éviter la propagation
-  const onDownload = (reportName: string, e: React.MouseEvent) => {
+  const onDownload = (reportName: string, period: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    handleDownloadReport(reportName);
+    
+    try {
+      downloadReport(reportName, 'periodic', period);
+      toast.success("Téléchargement réussi", {
+        description: `Le rapport ${reportName} a été téléchargé au format PDF.`
+      });
+    } catch (error) {
+      console.error("Erreur lors du téléchargement:", error);
+      toast.error("Erreur de téléchargement", {
+        description: "Une erreur est survenue lors de la génération du rapport PDF."
+      });
+    }
   };
 
   return (
@@ -35,7 +47,7 @@ const PeriodicReports: React.FC<PeriodicReportsProps> = ({
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={(e) => onDownload("Rapport mensuel - Juillet 2023", e)}
+              onClick={(e) => onDownload("Rapport mensuel - Juillet 2023", "Juillet 2023", e)}
             >
               <Download className="h-4 w-4" />
             </Button>
@@ -48,7 +60,7 @@ const PeriodicReports: React.FC<PeriodicReportsProps> = ({
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={(e) => onDownload("Rapport trimestriel - Q2 2023", e)}
+              onClick={(e) => onDownload("Rapport trimestriel - Q2 2023", "Q2 2023", e)}
             >
               <Download className="h-4 w-4" />
             </Button>
@@ -61,7 +73,7 @@ const PeriodicReports: React.FC<PeriodicReportsProps> = ({
             <Button 
               variant="ghost" 
               size="icon"
-              onClick={(e) => onDownload("Rapport annuel - 2022", e)}
+              onClick={(e) => onDownload("Rapport annuel - 2022", "Année 2022", e)}
             >
               <Download className="h-4 w-4" />
             </Button>
