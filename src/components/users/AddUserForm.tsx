@@ -66,9 +66,6 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ open, onOpenChange, onAddUser
     onAddUser(values);
     form.reset();
     onOpenChange(false);
-    toast.success("Utilisateur ajouté", {
-      description: `${values.name} a été ajouté avec le rôle de ${roleLabels[values.role]}`
-    });
   }
 
   return (
@@ -78,6 +75,7 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ open, onOpenChange, onAddUser
           <DialogTitle>Ajouter un nouvel utilisateur</DialogTitle>
           <DialogDescription>
             Créez un nouveau compte utilisateur avec les informations et permissions appropriées.
+            L'utilisateur pourra se connecter immédiatement avec ces identifiants.
           </DialogDescription>
         </DialogHeader>
         
@@ -167,7 +165,11 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ open, onOpenChange, onAddUser
                 <FormItem>
                   <FormLabel>Mot de passe</FormLabel>
                   <FormControl>
-                    <Input type="password" {...field} />
+                    <Input 
+                      type="password" 
+                      placeholder="Minimum 6 caractères" 
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -251,7 +253,7 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ open, onOpenChange, onAddUser
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Annuler
               </Button>
-              <Button type="submit">Ajouter l'utilisateur</Button>
+              <Button type="submit">Créer l'utilisateur</Button>
             </DialogFooter>
           </form>
         </Form>

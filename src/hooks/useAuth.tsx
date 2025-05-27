@@ -3,6 +3,8 @@ import { useEffect, useState, createContext, useContext, ReactNode } from 'react
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from "sonner";
 import { saveToLocalStorage, loadFromLocalStorage } from '@/utils/localStorage';
+import { supabase } from '@/integrations/supabase/client';
+import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 
 // Définition des rôles disponibles
 export type UserRole = 
@@ -34,7 +36,7 @@ interface AuthContextType {
   hasPermission: (requiredRoles: UserRole[]) => boolean;
   hasActionPermission: (action: string) => boolean;
   allUsers: User[];
-  addUser: (user: Omit<User, 'id'>) => void;
+  addUser: (user: Omit<User, 'id'> & { password: string }) => Promise<void>;
   updateUser: (id: string, userData: Partial<User>) => void;
   deleteUser: (id: string) => void;
 }
@@ -42,10 +44,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const USERS_STORAGE_KEY = 'tms-users';
-const AUTH_USER_KEY = 'tms-auth-user';
-const AUTH_STATUS_KEY = 'tms-auth-status';
 
-// Liste des utilisateurs par défaut
+// Liste des utilisateurs par défaut pour la compatibilité
 const DEFAULT_USERS = [
   {
     id: '1',
@@ -158,102 +158,243 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Vérifier si l'utilisateur est déjà connecté
-    const checkAuth = () => {
-      const storedUser = loadFromLocalStorage<User | null>(AUTH_USER_KEY, null);
-      const storedAuth = loadFromLocalStorage<boolean>(AUTH_STATUS_KEY, false);
-      
-      if (storedUser && storedAuth) {
-        setUser(storedUser);
-        setIsAuthenticated(true);
+    // Initialiser la session Supabase
+    const initializeAuth = async () => {
+      try {
+        // Récupérer la session actuelle
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        
+        if (currentSession) {
+          setSession(currentSession);
+          await loadUserProfile(currentSession.user);
+        }
+
+        // Écouter les changements d'authentification
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+          setSession(session);
+          
+          if (session?.user) {
+            await loadUserProfile(session.user);
+          } else {
+            setUser(null);
+            setIsAuthenticated(false);
+          }
+        });
+
+        // Charger tous les utilisateurs
+        await loadAllUsers();
+
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error('Erreur lors de l\'initialisation de l\'authentification:', error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      // Initialiser la liste des utilisateurs depuis localStorage ou utiliser defaults si vide
-      const storedAllUsers = loadFromLocalStorage<User[]>(
-        USERS_STORAGE_KEY, 
-        DEFAULT_USERS.map(({ password, ...user }) => user)
-      );
-      
-      setAllUsers(storedAllUsers);
-      setIsLoading(false);
     };
-    
-    checkAuth();
+
+    initializeAuth();
   }, []);
 
-  // Persist users when they change
-  useEffect(() => {
-    if (allUsers.length > 0) {
-      saveToLocalStorage(USERS_STORAGE_KEY, allUsers);
+  const loadUserProfile = async (supabaseUser: SupabaseUser) => {
+    try {
+      // Chercher le profil utilisateur dans la table users
+      const { data: userProfile, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', supabaseUser.email)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Erreur lors du chargement du profil:', error);
+        return;
+      }
+
+      if (userProfile) {
+        const userObj: User = {
+          id: supabaseUser.id,
+          username: userProfile.name.toLowerCase().replace(/\s+/g, ''),
+          name: userProfile.name,
+          email: userProfile.email,
+          role: userProfile.role,
+          cin: userProfile.cin,
+          city: userProfile.city,
+          address: userProfile.address
+        };
+        
+        setUser(userObj);
+        setIsAuthenticated(true);
+      } else {
+        // Fallback pour les utilisateurs par défaut
+        const defaultUser = DEFAULT_USERS.find(u => u.email === supabaseUser.email);
+        if (defaultUser) {
+          const userObj: User = {
+            id: supabaseUser.id,
+            username: defaultUser.username,
+            name: defaultUser.name,
+            email: defaultUser.email,
+            role: defaultUser.role,
+            cin: defaultUser.cin,
+            city: defaultUser.city,
+            address: defaultUser.address
+          };
+          setUser(userObj);
+          setIsAuthenticated(true);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement du profil utilisateur:', error);
     }
-  }, [allUsers]);
+  };
+
+  const loadAllUsers = async () => {
+    try {
+      const { data: users, error } = await supabase
+        .from('users')
+        .select('*');
+
+      if (error) {
+        console.error('Erreur lors du chargement des utilisateurs:', error);
+        // Fallback sur les utilisateurs par défaut
+        const defaultUsersList = DEFAULT_USERS.map(({ password, ...user }) => user);
+        setAllUsers(defaultUsersList);
+        return;
+      }
+
+      if (users && users.length > 0) {
+        const formattedUsers: User[] = users.map(user => ({
+          id: user.id.toString(),
+          username: user.name.toLowerCase().replace(/\s+/g, ''),
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          cin: user.cin,
+          city: user.city,
+          address: user.address
+        }));
+        setAllUsers(formattedUsers);
+      } else {
+        // Si aucun utilisateur dans Supabase, utiliser les utilisateurs par défaut
+        const defaultUsersList = DEFAULT_USERS.map(({ password, ...user }) => user);
+        setAllUsers(defaultUsersList);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des utilisateurs:', error);
+      const defaultUsersList = DEFAULT_USERS.map(({ password, ...user }) => user);
+      setAllUsers(defaultUsersList);
+    }
+  };
 
   const login = async (username: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     
-    // Simulation d'un délai réseau
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Recherche de l'utilisateur par nom d'utilisateur et mot de passe
-    const foundUser = DEFAULT_USERS.find(
-      u => u.username === username && u.password === password
-    );
-    
-    if (foundUser) {
-      // Créer un objet utilisateur sans le mot de passe pour le stockage
-      const secureUser = {
-        id: foundUser.id,
-        username: foundUser.username,
-        name: foundUser.name,
-        email: foundUser.email,
-        role: foundUser.role,
-        cin: foundUser.cin,
-        city: foundUser.city,
-        address: foundUser.address
-      };
+    try {
+      // D'abord, essayer de trouver l'utilisateur par nom d'utilisateur
+      let email = username;
       
-      setUser(secureUser);
-      setIsAuthenticated(true);
-      saveToLocalStorage(AUTH_USER_KEY, secureUser);
-      saveToLocalStorage(AUTH_STATUS_KEY, true);
-      
-      toast.success(`Bienvenue, ${secureUser.name}`, {
-        description: `Vous êtes connecté en tant que ${secureUser.role}`,
+      // Si le nom d'utilisateur n'est pas un email, chercher l'email correspondant
+      if (!username.includes('@')) {
+        const defaultUser = DEFAULT_USERS.find(u => u.username === username);
+        if (defaultUser) {
+          email = defaultUser.email;
+        } else {
+          // Chercher dans la base de données Supabase
+          const { data: users } = await supabase
+            .from('users')
+            .select('email, name')
+            .ilike('name', `%${username}%`);
+          
+          if (users && users.length > 0) {
+            email = users[0].email;
+          }
+        }
+      }
+
+      // Tentative de connexion avec Supabase Auth
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
       });
-      
-      setIsLoading(false);
-      
-      // Toujours rediriger vers le tableau de bord après une connexion réussie
-      navigate('/dashboard', { replace: true });
-      return true;
-    } else {
-      toast.error("Échec de la connexion", {
-        description: "Nom d'utilisateur ou mot de passe incorrect",
-      });
-      
-      setIsLoading(false);
+
+      if (error) {
+        // Fallback pour les utilisateurs par défaut si pas dans Supabase Auth
+        const foundUser = DEFAULT_USERS.find(
+          u => (u.username === username || u.email === username) && u.password === password
+        );
+        
+        if (foundUser) {
+          const secureUser = {
+            id: foundUser.id,
+            username: foundUser.username,
+            name: foundUser.name,
+            email: foundUser.email,
+            role: foundUser.role,
+            cin: foundUser.cin,
+            city: foundUser.city,
+            address: foundUser.address
+          };
+          
+          setUser(secureUser);
+          setIsAuthenticated(true);
+          
+          toast.success(`Bienvenue, ${secureUser.name}`, {
+            description: `Vous êtes connecté en tant que ${secureUser.role}`,
+          });
+          
+          navigate('/dashboard', { replace: true });
+          return true;
+        }
+        
+        toast.error("Échec de la connexion", {
+          description: "Nom d'utilisateur ou mot de passe incorrect",
+        });
+        return false;
+      }
+
+      if (data.user) {
+        toast.success(`Bienvenue`, {
+          description: `Connexion réussie`,
+        });
+        navigate('/dashboard', { replace: true });
+        return true;
+      }
+
       return false;
+    } catch (error) {
+      console.error('Erreur de connexion:', error);
+      toast.error("Erreur de connexion", {
+        description: "Une erreur s'est produite lors de la connexion",
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem(AUTH_USER_KEY);
-    localStorage.removeItem(AUTH_STATUS_KEY);
-    toast.info("Déconnecté", {
-      description: "Vous avez été déconnecté avec succès",
-    });
-    navigate('/login');
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setIsAuthenticated(false);
+      setSession(null);
+      toast.info("Déconnecté", {
+        description: "Vous avez été déconnecté avec succès",
+      });
+      navigate('/login');
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+    }
   };
 
   // Vérifier si l'utilisateur a les permissions requises
   const hasPermission = (requiredRoles: UserRole[]): boolean => {
     if (!user) return false;
-    if (requiredRoles.length === 0) return true; // Aucun rôle requis
+    if (requiredRoles.length === 0) return true;
     return requiredRoles.includes(user.role);
   };
 
@@ -266,25 +407,66 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return ACTION_PERMISSIONS[action].includes(user.role);
   };
 
-  // Fonctions de gestion des utilisateurs
-  const addUser = (userData: Omit<User, 'id'>) => {
+  // Fonction pour ajouter un utilisateur avec Supabase Auth
+  const addUser = async (userData: Omit<User, 'id'> & { password: string }) => {
     if (!hasActionPermission('add-user')) {
       toast.error("Accès refusé", { description: "Vous n'avez pas les permissions pour ajouter un utilisateur" });
       return;
     }
     
-    const newUser = {
-      id: (allUsers.length + 1).toString(),
-      ...userData
-    };
-    
-    const updatedUsers = [...allUsers, newUser];
-    setAllUsers(updatedUsers);
-    
-    // Enregistrer dans localStorage
-    saveToLocalStorage(USERS_STORAGE_KEY, updatedUsers);
-    
-    toast.success("Utilisateur ajouté", { description: `${newUser.name} a été ajouté avec succès` });
+    try {
+      setIsLoading(true);
+
+      // Créer l'utilisateur dans Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: userData.email,
+        password: userData.password,
+        email_confirm: true // Auto-confirmer l'email pour éviter l'étape de vérification
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      // Créer le profil utilisateur dans la table users
+      const { error: profileError } = await supabase
+        .from('users')
+        .insert({
+          email: userData.email,
+          name: userData.name,
+          role: userData.role,
+          cin: userData.cin || null,
+          city: userData.city || null,
+          address: userData.address || null
+        });
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      // Recharger la liste des utilisateurs
+      await loadAllUsers();
+
+      toast.success("Utilisateur créé avec succès", { 
+        description: `${userData.name} a été ajouté et synchronisé avec Supabase` 
+      });
+
+    } catch (error: any) {
+      console.error('Erreur lors de la création de l\'utilisateur:', error);
+      
+      let errorMessage = "Une erreur s'est produite lors de la création";
+      if (error.message?.includes('already registered')) {
+        errorMessage = "Erreur : email déjà utilisé";
+      } else if (error.message?.includes('email')) {
+        errorMessage = "Erreur : format d'email invalide";
+      } else if (error.message?.includes('password')) {
+        errorMessage = "Erreur : mot de passe trop faible";
+      }
+      
+      toast.error("Échec de la création", { description: errorMessage });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const updateUser = (id: string, userData: Partial<User>) => {
@@ -298,8 +480,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
     
     setAllUsers(updatedUsers);
-    
-    // Enregistrer dans localStorage
     saveToLocalStorage(USERS_STORAGE_KEY, updatedUsers);
     
     toast.success("Utilisateur mis à jour", { description: "Les informations ont été mises à jour avec succès" });
@@ -313,8 +493,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     const updatedUsers = allUsers.filter(user => user.id !== id);
     setAllUsers(updatedUsers);
-    
-    // Enregistrer dans localStorage
     saveToLocalStorage(USERS_STORAGE_KEY, updatedUsers);
     
     toast.success("Utilisateur supprimé", { description: "L'utilisateur a été supprimé avec succès" });

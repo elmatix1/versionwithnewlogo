@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Table,
@@ -40,10 +39,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { UserRole } from '@/hooks/useAuth';
 import AddUserForm from '@/components/users/AddUserForm';
-import { saveToLocalStorage, loadFromLocalStorage } from '@/utils/localStorage';
 import MoroccanSuggestionInput from '@/components/shared/MoroccanSuggestionInput';
-
-const USERS_STORAGE_KEY = 'tms-users';
 
 const getRoleName = (role: UserRole) => {
   const roleNames: Record<UserRole, string> = {
@@ -82,7 +78,7 @@ const roleLabels: Record<UserRole, string> = {
 };
 
 const UserManagement: React.FC = () => {
-  const { allUsers, updateUser, deleteUser, hasActionPermission, addUser } = useAuth();
+  const { allUsers, updateUser, deleteUser, hasActionPermission, addUser, isLoading } = useAuth();
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
   const [editUserDialogOpen, setEditUserDialogOpen] = useState(false);
   const [changeRoleDialogOpen, setChangeRoleDialogOpen] = useState(false);
@@ -134,13 +130,6 @@ const UserManagement: React.FC = () => {
         address: editAddress
       });
       setEditUserDialogOpen(false);
-      
-      // Sauvegarde des utilisateurs dans localStorage
-      saveToLocalStorage(USERS_STORAGE_KEY, allUsers);
-      
-      toast.success("Utilisateur mis à jour", {
-        description: `Les informations de ${editName} ont été mises à jour.`
-      });
     }
   };
 
@@ -148,20 +137,11 @@ const UserManagement: React.FC = () => {
     if (selectedUser) {
       updateUser(selectedUser.id, { role: newRole });
       setChangeRoleDialogOpen(false);
-      
-      // Sauvegarde des utilisateurs dans localStorage
-      saveToLocalStorage(USERS_STORAGE_KEY, allUsers);
-      
-      toast.success("Rôle mis à jour", {
-        description: `Le rôle de ${selectedUser.name} a été changé en ${roleLabels[newRole]}.`
-      });
     }
   };
 
   const confirmResetPassword = () => {
     if (selectedUser) {
-      // Simuler la réinitialisation du mot de passe
-      const newRandomPassword = Math.random().toString(36).slice(-8);
       toast.success(`Mot de passe réinitialisé pour ${selectedUser.name}`, {
         description: `Un nouveau mot de passe a été envoyé à l'utilisateur.`
       });
@@ -174,29 +154,17 @@ const UserManagement: React.FC = () => {
       const userName = selectedUser.name;
       deleteUser(selectedUser.id);
       setDeleteUserDialogOpen(false);
-      
-      // Sauvegarde des utilisateurs dans localStorage après suppression
-      setTimeout(() => {
-        saveToLocalStorage(USERS_STORAGE_KEY, allUsers);
-      }, 100);
-      
-      toast.success(`Utilisateur supprimé`, {
-        description: `${userName} a été supprimé avec succès.`
-      });
     }
   };
 
-  const handleAddUser = (userData: any) => {
-    addUser(userData);
-    
-    // Sauvegarde des utilisateurs dans localStorage après ajout
-    setTimeout(() => {
-      saveToLocalStorage(USERS_STORAGE_KEY, allUsers);
-    }, 100);
-    
-    toast.success(`Utilisateur ${userData.name} ajouté`, {
-      description: `Rôle: ${roleLabels[userData.role as UserRole]}`
-    });
+  const handleAddUser = async (userData: any) => {
+    try {
+      await addUser(userData);
+      setAddUserDialogOpen(false);
+    } catch (error) {
+      // L'erreur est déjà gérée dans le hook useAuth
+      console.error('Erreur lors de l\'ajout de l\'utilisateur:', error);
+    }
   };
 
   return (
@@ -213,7 +181,11 @@ const UserManagement: React.FC = () => {
           </p>
         </div>
         {hasActionPermission('add-user') && (
-          <Button onClick={() => setAddUserDialogOpen(true)} className="flex items-center gap-1">
+          <Button 
+            onClick={() => setAddUserDialogOpen(true)} 
+            className="flex items-center gap-1"
+            disabled={isLoading}
+          >
             <Plus className="h-4 w-4" />
             <span>Nouvel utilisateur</span>
           </Button>
@@ -233,54 +205,68 @@ const UserManagement: React.FC = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {allUsers.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>
-                  <div className="flex items-center space-x-4">
-                    <Avatar>
-                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium">{user.name}</span>
-                  </div>
-                </TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
-                  <Badge className={getRoleBadgeColor(user.role)}>
-                    {getRoleName(user.role)}
-                  </Badge>
-                </TableCell>
-                <TableCell>{user.cin || "-"}</TableCell>
-                <TableCell>{user.city || "-"}</TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(user)} disabled={!hasActionPermission('edit-user')}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        <span>Modifier</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleChangeRole(user)} disabled={!hasActionPermission('manage-roles')}>
-                        <UserCog className="mr-2 h-4 w-4" />
-                        <span>Changer de rôle</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleResetPassword(user)} disabled={!hasActionPermission('edit-user')}>
-                        <KeyRound className="mr-2 h-4 w-4" />
-                        <span>Réinitialiser mot de passe</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => handleDelete(user)} disabled={!hasActionPermission('delete-user')} className="text-red-600">
-                        <Trash className="mr-2 h-4 w-4" />
-                        <span>Supprimer</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-4">
+                  Chargement des utilisateurs...
                 </TableCell>
               </TableRow>
-            ))}
+            ) : allUsers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                  Aucun utilisateur trouvé
+                </TableCell>
+              </TableRow>
+            ) : (
+              allUsers.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>
+                    <div className="flex items-center space-x-4">
+                      <Avatar>
+                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{user.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <Badge className={getRoleBadgeColor(user.role)}>
+                      {getRoleName(user.role)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{user.cin || "-"}</TableCell>
+                  <TableCell>{user.city || "-"}</TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEdit(user)} disabled={!hasActionPermission('edit-user')}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          <span>Modifier</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleChangeRole(user)} disabled={!hasActionPermission('manage-roles')}>
+                          <UserCog className="mr-2 h-4 w-4" />
+                          <span>Changer de rôle</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleResetPassword(user)} disabled={!hasActionPermission('edit-user')}>
+                          <KeyRound className="mr-2 h-4 w-4" />
+                          <span>Réinitialiser mot de passe</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleDelete(user)} disabled={!hasActionPermission('delete-user')} className="text-red-600">
+                          <Trash className="mr-2 h-4 w-4" />
+                          <span>Supprimer</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
