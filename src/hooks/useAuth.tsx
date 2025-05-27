@@ -45,6 +45,19 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const USERS_STORAGE_KEY = 'tms-users';
 
+// Helper function to validate and convert role
+const isValidUserRole = (role: string): role is UserRole => {
+  return ['admin', 'rh', 'planificateur', 'commercial', 'approvisionneur', 'exploitation', 'maintenance'].includes(role);
+};
+
+const convertToUserRole = (role: string): UserRole => {
+  if (isValidUserRole(role)) {
+    return role;
+  }
+  console.warn(`Invalid role '${role}' defaulting to 'admin'`);
+  return 'admin';
+};
+
 // Liste des utilisateurs par défaut pour la compatibilité
 const DEFAULT_USERS = [
   {
@@ -221,7 +234,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           username: userProfile.name.toLowerCase().replace(/\s+/g, ''),
           name: userProfile.name,
           email: userProfile.email,
-          role: userProfile.role,
+          role: convertToUserRole(userProfile.role), // Fix: Convert role safely
           cin: userProfile.cin,
           city: userProfile.city,
           address: userProfile.address
@@ -272,7 +285,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           username: user.name.toLowerCase().replace(/\s+/g, ''),
           name: user.name,
           email: user.email,
-          role: user.role,
+          role: convertToUserRole(user.role), // Fix: Convert role safely
           cin: user.cin,
           city: user.city,
           address: user.address
@@ -434,7 +447,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .insert({
           email: userData.email,
           name: userData.name,
-          role: userData.role,
+          role: userData.role, // Role is already of type UserRole from userData
           cin: userData.cin || null,
           city: userData.city || null,
           address: userData.address || null
