@@ -23,7 +23,7 @@ const Navbar = ({ setSidebarOpen }: NavbarProps) => {
   useEffect(() => {
     // Get page title based on path
     const path = location.pathname;
-    if (path === "/") {
+    if (path === "/dashboard") {
       setPageTitle("Tableau de bord");
     } else if (path.includes("users")) {
       setPageTitle("Gestion des utilisateurs");
