@@ -25,6 +25,8 @@ const Navbar = ({ setSidebarOpen }: NavbarProps) => {
     const path = location.pathname;
     if (path === "/dashboard") {
       setPageTitle("Tableau de bord");
+    } else if (path.includes("timetracking")) {
+      setPageTitle("Pointage");
     } else if (path.includes("users")) {
       setPageTitle("Gestion des utilisateurs");
     } else if (path.includes("hr")) {

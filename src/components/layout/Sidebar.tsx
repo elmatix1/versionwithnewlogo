@@ -12,7 +12,8 @@ import {
   ShoppingBag, 
   Wrench, 
   BarChart4,
-  Settings
+  Settings,
+  Clock
 } from 'lucide-react';
 import Logo from './Logo';
 
@@ -58,6 +59,7 @@ const Sidebar: React.FC = () => {
       
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-hide">
         <NavItem to="/dashboard" icon={<LayoutDashboard size={18} />} label="Tableau de bord" />
+        <NavItem to="/timetracking" icon={<Clock size={18} />} label="Pointage" />
         <NavItem to="/users" icon={<Users size={18} />} label="Utilisateurs" requiredRoles={['admin']} />
         <NavItem to="/hr" icon={<Users size={18} />} label="Ressources Humaines" requiredRoles={['admin', 'rh']} />
         <NavItem to="/vehicles" icon={<Truck size={18} />} label="Véhicules" requiredRoles={['admin', 'exploitation', 'maintenance', 'planificateur']} />
