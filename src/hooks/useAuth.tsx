@@ -1,4 +1,3 @@
-
 import { useEffect, useState, createContext, useContext, ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from "sonner";
@@ -234,7 +233,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           username: userProfile.name.toLowerCase().replace(/\s+/g, ''),
           name: userProfile.name,
           email: userProfile.email,
-          role: convertToUserRole(userProfile.role), // Fix: Convert role safely
+          role: convertToUserRole(userProfile.role),
           cin: userProfile.cin,
           city: userProfile.city,
           address: userProfile.address
@@ -267,32 +266,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const loadAllUsers = async () => {
     try {
+      console.log('Chargement des utilisateurs depuis Supabase...');
       const { data: users, error } = await supabase
         .from('users')
         .select('*');
 
       if (error) {
         console.error('Erreur lors du chargement des utilisateurs:', error);
-        // Fallback sur les utilisateurs par défaut
         const defaultUsersList = DEFAULT_USERS.map(({ password, ...user }) => user);
         setAllUsers(defaultUsersList);
         return;
       }
 
       if (users && users.length > 0) {
+        console.log('Utilisateurs récupérés:', users);
         const formattedUsers: User[] = users.map(user => ({
           id: user.id.toString(),
           username: user.name.toLowerCase().replace(/\s+/g, ''),
           name: user.name,
           email: user.email,
-          role: convertToUserRole(user.role), // Fix: Convert role safely
+          role: convertToUserRole(user.role),
           cin: user.cin,
           city: user.city,
           address: user.address
         }));
         setAllUsers(formattedUsers);
       } else {
-        // Si aucun utilisateur dans Supabase, utiliser les utilisateurs par défaut
         const defaultUsersList = DEFAULT_USERS.map(({ password, ...user }) => user);
         setAllUsers(defaultUsersList);
       }
@@ -307,16 +306,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     
     try {
-      // D'abord, essayer de trouver l'utilisateur par nom d'utilisateur
       let email = username;
       
-      // Si le nom d'utilisateur n'est pas un email, chercher l'email correspondant
       if (!username.includes('@')) {
         const defaultUser = DEFAULT_USERS.find(u => u.username === username);
         if (defaultUser) {
           email = defaultUser.email;
         } else {
-          // Chercher dans la base de données Supabase
           const { data: users } = await supabase
             .from('users')
             .select('email, name')
@@ -328,14 +324,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      // Tentative de connexion avec Supabase Auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
       if (error) {
-        // Fallback pour les utilisateurs par défaut si pas dans Supabase Auth
         const foundUser = DEFAULT_USERS.find(
           u => (u.username === username || u.email === username) && u.password === password
         );
@@ -420,7 +414,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return ACTION_PERMISSIONS[action].includes(user.role);
   };
 
-  // Fonction pour ajouter un utilisateur avec Supabase Auth
+  // Fonction corrigée pour ajouter un utilisateur directement dans la base de données
   const addUser = async (userData: Omit<User, 'id'> & { password: string }) => {
     if (!hasActionPermission('add-user')) {
       toast.error("Accès refusé", { description: "Vous n'avez pas les permissions pour ajouter un utilisateur" });
@@ -429,51 +423,58 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     try {
       setIsLoading(true);
+      console.log('Ajout d\'un nouvel utilisateur:', userData);
 
-      // Créer l'utilisateur dans Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: userData.email,
-        password: userData.password,
-        email_confirm: true // Auto-confirmer l'email pour éviter l'étape de vérification
-      });
+      // Vérifier si l'email existe déjà
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('email', userData.email)
+        .single();
 
-      if (authError) {
-        throw authError;
+      if (existingUser) {
+        toast.error("Erreur lors de la création", { 
+          description: "Cet email est déjà utilisé" 
+        });
+        return;
       }
 
-      // Créer le profil utilisateur dans la table users
-      const { error: profileError } = await supabase
+      // Créer le profil utilisateur directement dans la table users
+      const { data: newUser, error: insertError } = await supabase
         .from('users')
         .insert({
           email: userData.email,
           name: userData.name,
-          role: userData.role, // Role is already of type UserRole from userData
+          role: userData.role,
           cin: userData.cin || null,
           city: userData.city || null,
           address: userData.address || null
-        });
+        })
+        .select()
+        .single();
 
-      if (profileError) {
-        throw profileError;
+      if (insertError) {
+        console.error('Erreur lors de l\'insertion:', insertError);
+        throw insertError;
       }
 
-      // Recharger la liste des utilisateurs
+      console.log('Utilisateur créé dans la base de données:', newUser);
+
+      // Recharger la liste des utilisateurs pour afficher le nouveau
       await loadAllUsers();
 
       toast.success("Utilisateur créé avec succès", { 
-        description: `${userData.name} a été ajouté et synchronisé avec Supabase` 
+        description: `${userData.name} a été ajouté et synchronisé avec la base de données` 
       });
 
     } catch (error: any) {
       console.error('Erreur lors de la création de l\'utilisateur:', error);
       
       let errorMessage = "Une erreur s'est produite lors de la création";
-      if (error.message?.includes('already registered')) {
+      if (error.message?.includes('duplicate key')) {
         errorMessage = "Erreur : email déjà utilisé";
       } else if (error.message?.includes('email')) {
         errorMessage = "Erreur : format d'email invalide";
-      } else if (error.message?.includes('password')) {
-        errorMessage = "Erreur : mot de passe trop faible";
       }
       
       toast.error("Échec de la création", { description: errorMessage });
@@ -482,33 +483,72 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const updateUser = (id: string, userData: Partial<User>) => {
+  const updateUser = async (id: string, userData: Partial<User>) => {
     if (!hasActionPermission('edit-user')) {
       toast.error("Accès refusé", { description: "Vous n'avez pas les permissions pour modifier un utilisateur" });
       return;
     }
     
-    const updatedUsers = allUsers.map(user => 
-      user.id === id ? { ...user, ...userData } : user
-    );
-    
-    setAllUsers(updatedUsers);
-    saveToLocalStorage(USERS_STORAGE_KEY, updatedUsers);
-    
-    toast.success("Utilisateur mis à jour", { description: "Les informations ont été mises à jour avec succès" });
+    try {
+      // Mettre à jour dans Supabase
+      const { error } = await supabase
+        .from('users')
+        .update({
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
+          cin: userData.cin,
+          city: userData.city,
+          address: userData.address
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Erreur lors de la mise à jour:', error);
+        throw error;
+      }
+
+      // Mettre à jour localement
+      const updatedUsers = allUsers.map(user => 
+        user.id === id ? { ...user, ...userData } : user
+      );
+      
+      setAllUsers(updatedUsers);
+      
+      toast.success("Utilisateur mis à jour", { description: "Les informations ont été mises à jour avec succès" });
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
+      toast.error("Erreur lors de la mise à jour", { description: "Une erreur s'est produite" });
+    }
   };
 
-  const deleteUser = (id: string) => {
+  const deleteUser = async (id: string) => {
     if (!hasActionPermission('delete-user')) {
       toast.error("Accès refusé", { description: "Vous n'avez pas les permissions pour supprimer un utilisateur" });
       return;
     }
     
-    const updatedUsers = allUsers.filter(user => user.id !== id);
-    setAllUsers(updatedUsers);
-    saveToLocalStorage(USERS_STORAGE_KEY, updatedUsers);
-    
-    toast.success("Utilisateur supprimé", { description: "L'utilisateur a été supprimé avec succès" });
+    try {
+      // Supprimer de Supabase
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Erreur lors de la suppression:', error);
+        throw error;
+      }
+
+      // Mettre à jour localement
+      const updatedUsers = allUsers.filter(user => user.id !== id);
+      setAllUsers(updatedUsers);
+      
+      toast.success("Utilisateur supprimé", { description: "L'utilisateur a été supprimé avec succès" });
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      toast.error("Erreur lors de la suppression", { description: "Une erreur s'est produite" });
+    }
   };
 
   return (
