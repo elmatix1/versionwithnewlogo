@@ -1,3 +1,4 @@
+
 import { useEffect, useState, createContext, useContext, ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from "sonner";
@@ -490,6 +491,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     
     try {
+      // Convert string ID to number for Supabase query
+      const numericId = parseInt(id, 10);
+      
+      if (isNaN(numericId)) {
+        throw new Error('ID utilisateur invalide');
+      }
+
       // Mettre à jour dans Supabase
       const { error } = await supabase
         .from('users')
@@ -501,7 +509,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           city: userData.city,
           address: userData.address
         })
-        .eq('id', id);
+        .eq('id', numericId);
 
       if (error) {
         console.error('Erreur lors de la mise à jour:', error);
@@ -529,11 +537,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     
     try {
+      // Convert string ID to number for Supabase query
+      const numericId = parseInt(id, 10);
+      
+      if (isNaN(numericId)) {
+        throw new Error('ID utilisateur invalide');
+      }
+
       // Supprimer de Supabase
       const { error } = await supabase
         .from('users')
         .delete()
-        .eq('id', id);
+        .eq('id', numericId);
 
       if (error) {
         console.error('Erreur lors de la suppression:', error);
