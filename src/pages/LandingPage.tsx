@@ -7,7 +7,6 @@ import Logo from '@/components/layout/Logo';
 import AnimatedStats from '@/components/landing/AnimatedStats';
 import FeaturesCarousel from '@/components/landing/FeaturesCarousel';
 import TestimonialsSection from '@/components/landing/TestimonialsSection';
-import InteractiveMapDemo from '@/components/landing/InteractiveMapDemo';
 
 const LandingPage = () => {
   return (
@@ -50,13 +49,8 @@ const LandingPage = () => {
             </Button>
           </div>
 
-          {/* Carte interactive */}
-          <div className="max-w-4xl mx-auto mb-8 animate-fade-in" style={{animationDelay: '0.8s'}}>
-            <InteractiveMapDemo />
-          </div>
-
           {/* Statistiques animées */}
-          <div className="max-w-4xl mx-auto animate-fade-in" style={{animationDelay: '1s'}}>
+          <div className="max-w-4xl mx-auto animate-fade-in" style={{animationDelay: '0.8s'}}>
             <AnimatedStats />
           </div>
         </div>
