@@ -18,8 +18,8 @@ const InteractiveMapDemo: React.FC = () => {
   const movingMarker = useRef<L.Marker | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
 
-  // Coordonnées du trajet Casablanca → Marrakech
-  const routeCoordinates = [
+  // Coordonnées du trajet Casablanca → Marrakech (format tuple [lat, lng])
+  const routeCoordinates: [number, number][] = [
     [33.5731, -7.5898], // Casablanca
     [33.5650, -7.5800], // Sortie Casablanca
     [33.4500, -7.4000], // Point intermédiaire 1
