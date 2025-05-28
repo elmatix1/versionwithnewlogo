@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Play } from 'lucide-react';
 import Logo from '@/components/layout/Logo';
-import AnimatedStats from '@/components/landing/AnimatedStats';
 import FeaturesCarousel from '@/components/landing/FeaturesCarousel';
 import TestimonialsSection from '@/components/landing/TestimonialsSection';
 
@@ -47,11 +46,6 @@ const LandingPage = () => {
               <Play className="h-4 w-4" />
               Voir la démo
             </Button>
-          </div>
-
-          {/* Statistiques animées */}
-          <div className="max-w-4xl mx-auto animate-fade-in" style={{animationDelay: '0.8s'}}>
-            <AnimatedStats />
           </div>
         </div>
       </section>
