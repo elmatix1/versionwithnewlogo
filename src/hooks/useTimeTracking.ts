@@ -23,9 +23,13 @@ export const useTimeTracking = () => {
   const fetchTodayRecord = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log('No authenticated user found');
+        return;
+      }
 
       const today = format(new Date(), 'yyyy-MM-dd');
+      console.log('Fetching today record for user:', user.id, 'date:', today);
       
       const { data, error } = await supabase
         .from('time_tracking')
@@ -34,14 +38,15 @@ export const useTimeTracking = () => {
         .eq('date', today)
         .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Erreur lors de la récupération du pointage:', error);
+      if (error) {
+        console.error('Error fetching today record:', error);
         return;
       }
 
+      console.log('Today record fetched:', data);
       setTodayRecord(data);
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Error in fetchTodayRecord:', error);
     }
   };
 
@@ -49,7 +54,13 @@ export const useTimeTracking = () => {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log('No authenticated user found for records');
+        setLoading(false);
+        return;
+      }
+
+      console.log('Fetching records for user:', user.id);
 
       const { data, error } = await supabase
         .from('time_tracking')
@@ -59,14 +70,15 @@ export const useTimeTracking = () => {
         .limit(30);
 
       if (error) {
-        console.error('Erreur lors de la récupération des pointages:', error);
+        console.error('Error fetching records:', error);
         toast.error('Erreur lors du chargement des pointages');
         return;
       }
 
+      console.log('Records fetched:', data);
       setRecords(data || []);
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Error in fetchRecords:', error);
       toast.error('Erreur lors du chargement des pointages');
     } finally {
       setLoading(false);
@@ -74,15 +86,19 @@ export const useTimeTracking = () => {
   };
 
   const clockIn = async () => {
+    setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error('Vous devez être connecté pour pointer');
+        setLoading(false);
         return;
       }
 
       const now = new Date();
       const today = format(now, 'yyyy-MM-dd');
+      
+      console.log('Clock in attempt for user:', user.id, 'date:', today);
 
       // Vérifier s'il y a déjà un pointage d'arrivée aujourd'hui
       const { data: existing } = await supabase
@@ -94,38 +110,49 @@ export const useTimeTracking = () => {
 
       if (existing && existing.clock_in_time) {
         toast.error('Vous avez déjà pointé votre arrivée aujourd\'hui');
+        setLoading(false);
         return;
       }
 
       let result;
       if (existing) {
         // Mettre à jour l'enregistrement existant
+        console.log('Updating existing record:', existing.id);
         result = await supabase
           .from('time_tracking')
-          .update({ clock_in_time: now.toISOString() })
+          .update({ 
+            clock_in_time: now.toISOString(),
+            updated_at: now.toISOString()
+          })
           .eq('id', existing.id)
           .select()
           .single();
       } else {
         // Créer un nouvel enregistrement
+        console.log('Creating new record');
         result = await supabase
           .from('time_tracking')
           .insert({
             user_id: user.id,
             date: today,
-            clock_in_time: now.toISOString()
+            clock_in_time: now.toISOString(),
+            created_at: now.toISOString(),
+            updated_at: now.toISOString()
           })
           .select()
           .single();
       }
 
       if (result.error) {
-        console.error('Erreur lors du pointage d\'arrivée:', result.error);
-        toast.error('Erreur lors du pointage d\'arrivée');
+        console.error('Error during clock in:', result.error);
+        toast.error('Erreur lors du pointage d\'arrivée: ' + result.error.message);
+        setLoading(false);
         return;
       }
 
-      const timeString = format(now, 'HH:mm', { locale: fr });
+      console.log('Clock in successful:', result.data);
+
+      const timeString = format(now, 'HH:mm:ss', { locale: fr });
       const dateString = format(now, 'EEEE dd MMMM yyyy', { locale: fr });
       
       toast.success(`Arrivée enregistrée : ${timeString}, ${dateString}`);
@@ -133,21 +160,27 @@ export const useTimeTracking = () => {
       await fetchTodayRecord();
       await fetchRecords();
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Error in clockIn:', error);
       toast.error('Erreur lors du pointage d\'arrivée');
+    } finally {
+      setLoading(false);
     }
   };
 
   const clockOut = async () => {
+    setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error('Vous devez être connecté pour pointer');
+        setLoading(false);
         return;
       }
 
       const now = new Date();
       const today = format(now, 'yyyy-MM-dd');
+
+      console.log('Clock out attempt for user:', user.id, 'date:', today);
 
       // Vérifier s'il y a un pointage d'arrivée aujourd'hui
       const { data: existing } = await supabase
@@ -159,26 +192,36 @@ export const useTimeTracking = () => {
 
       if (!existing || !existing.clock_in_time) {
         toast.error('Vous devez d\'abord pointer votre arrivée');
+        setLoading(false);
         return;
       }
 
       if (existing.clock_out_time) {
         toast.error('Vous avez déjà pointé votre départ aujourd\'hui');
+        setLoading(false);
         return;
       }
+
+      console.log('Updating record for clock out:', existing.id);
 
       const { error } = await supabase
         .from('time_tracking')
-        .update({ clock_out_time: now.toISOString() })
+        .update({ 
+          clock_out_time: now.toISOString(),
+          updated_at: now.toISOString()
+        })
         .eq('id', existing.id);
 
       if (error) {
-        console.error('Erreur lors du pointage de départ:', error);
-        toast.error('Erreur lors du pointage de départ');
+        console.error('Error during clock out:', error);
+        toast.error('Erreur lors du pointage de départ: ' + error.message);
+        setLoading(false);
         return;
       }
 
-      const timeString = format(now, 'HH:mm', { locale: fr });
+      console.log('Clock out successful');
+
+      const timeString = format(now, 'HH:mm:ss', { locale: fr });
       const dateString = format(now, 'EEEE dd MMMM yyyy', { locale: fr });
       
       toast.success(`Départ enregistré : ${timeString}, ${dateString}`);
@@ -186,8 +229,10 @@ export const useTimeTracking = () => {
       await fetchTodayRecord();
       await fetchRecords();
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Error in clockOut:', error);
       toast.error('Erreur lors du pointage de départ');
+    } finally {
+      setLoading(false);
     }
   };
 

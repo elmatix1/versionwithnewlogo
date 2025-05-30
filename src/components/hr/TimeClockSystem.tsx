@@ -35,8 +35,8 @@ const TimeClockSystem: React.FC = () => {
   const hasClockInToday = todayRecord?.clock_in_time;
   const hasClockOutToday = todayRecord?.clock_out_time;
 
-  const canClockIn = !hasClockInToday;
-  const canClockOut = hasClockInToday && !hasClockOutToday;
+  const canClockIn = !hasClockInToday && !loading;
+  const canClockOut = hasClockInToday && !hasClockOutToday && !loading;
 
   return (
     <div className="space-y-6">
@@ -52,7 +52,7 @@ const TimeClockSystem: React.FC = () => {
           <div className="space-y-6">
             {/* Informations utilisateur et heure */}
             <div className="text-center bg-muted/30 rounded-lg p-4">
-              <h3 className="text-lg font-medium mb-1">Bonjour, {user.name}</h3>
+              <h3 className="text-lg font-medium mb-1">Bonjour, {user.name || user.email}</h3>
               <div className="text-2xl font-bold text-primary mb-1">{currentTime}</div>
               <div className="text-muted-foreground capitalize">{currentDate}</div>
             </div>
@@ -66,7 +66,7 @@ const TimeClockSystem: React.FC = () => {
                     <span className="text-sm text-muted-foreground block">Arrivée</span>
                     <span className="font-medium">
                       {todayRecord.clock_in_time 
-                        ? format(new Date(todayRecord.clock_in_time), 'HH:mm', { locale: fr })
+                        ? format(new Date(todayRecord.clock_in_time), 'HH:mm:ss', { locale: fr })
                         : 'Non pointée'
                       }
                     </span>
@@ -75,7 +75,7 @@ const TimeClockSystem: React.FC = () => {
                     <span className="text-sm text-muted-foreground block">Départ</span>
                     <span className="font-medium">
                       {todayRecord.clock_out_time 
-                        ? format(new Date(todayRecord.clock_out_time), 'HH:mm', { locale: fr })
+                        ? format(new Date(todayRecord.clock_out_time), 'HH:mm:ss', { locale: fr })
                         : 'Non pointé'
                       }
                     </span>
@@ -88,37 +88,40 @@ const TimeClockSystem: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Button
                 onClick={clockIn}
-                disabled={!canClockIn || loading}
+                disabled={!canClockIn}
                 size="lg"
                 className="h-16 text-lg"
                 variant={canClockIn ? "default" : "secondary"}
               >
                 <LogIn className="mr-2 h-6 w-6" />
-                Pointer l'arrivée
+                {loading ? "Enregistrement..." : "Pointer l'arrivée"}
               </Button>
               
               <Button
                 onClick={clockOut}
-                disabled={!canClockOut || loading}
+                disabled={!canClockOut}
                 size="lg"
                 className="h-16 text-lg"
                 variant={canClockOut ? "default" : "secondary"}
               >
                 <LogOut className="mr-2 h-6 w-6" />
-                Pointer le départ
+                {loading ? "Enregistrement..." : "Pointer le départ"}
               </Button>
             </div>
 
             {/* Messages d'aide */}
             <div className="text-sm text-muted-foreground text-center">
-              {!hasClockInToday && (
+              {!hasClockInToday && !loading && (
                 <p>Cliquez sur "Pointer l'arrivée" pour enregistrer votre heure d'arrivée.</p>
               )}
-              {hasClockInToday && !hasClockOutToday && (
+              {hasClockInToday && !hasClockOutToday && !loading && (
                 <p>Cliquez sur "Pointer le départ" pour enregistrer votre heure de départ.</p>
               )}
               {hasClockInToday && hasClockOutToday && (
                 <p className="text-green-600">✓ Votre pointage est complet pour aujourd'hui.</p>
+              )}
+              {loading && (
+                <p className="text-blue-600">Enregistrement en cours...</p>
               )}
             </div>
           </div>
