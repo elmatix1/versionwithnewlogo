@@ -8,12 +8,12 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface TimeTrackingRecord {
   id: string;
-  user_email: string;
+  user_email: string | null;
   date: string;
   clock_in_time: string | null;
   clock_out_time: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export const useTimeTracking = () => {
