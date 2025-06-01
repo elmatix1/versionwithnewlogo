@@ -124,11 +124,12 @@ export const useTimeTracking = () => {
           .select()
           .single();
       } else {
-        // Créer un nouvel enregistrement
+        // Créer un nouvel enregistrement avec user_id factice
         console.log('Creating new record for user email:', user.email);
         result = await supabase
           .from('time_tracking')
           .insert({
+            user_id: 'temp-' + user.email, // user_id factice basé sur l'email
             user_email: user.email,
             date: today,
             clock_in_time: now.toISOString(),
