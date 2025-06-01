@@ -38,6 +38,36 @@ const TimeClockSystem: React.FC = () => {
   const canClockIn = !hasClockInToday && !loading;
   const canClockOut = hasClockInToday && !hasClockOutToday && !loading;
 
+  const getStatusMessage = () => {
+    if (loading) {
+      return {
+        message: 'Enregistrement en cours...',
+        className: 'text-blue-600'
+      };
+    }
+    
+    if (hasClockInToday && hasClockOutToday) {
+      return {
+        message: '✓ Votre pointage est complet pour aujourd\'hui.',
+        className: 'text-green-600'
+      };
+    }
+    
+    if (hasClockInToday && !hasClockOutToday) {
+      return {
+        message: 'Vous êtes actuellement au travail. N\'oubliez pas de pointer votre départ.',
+        className: 'text-blue-600'
+      };
+    }
+    
+    return {
+      message: 'Pointez votre arrivée pour commencer votre journée de travail.',
+      className: 'text-muted-foreground'
+    };
+  };
+
+  const statusInfo = getStatusMessage();
+
   return (
     <div className="space-y-6">
       {/* Carte de pointage principal */}
@@ -109,20 +139,9 @@ const TimeClockSystem: React.FC = () => {
               </Button>
             </div>
 
-            {/* Messages d'aide */}
-            <div className="text-sm text-muted-foreground text-center">
-              {!hasClockInToday && !loading && (
-                <p>Cliquez sur "Pointer l'arrivée" pour enregistrer votre heure d'arrivée.</p>
-              )}
-              {hasClockInToday && !hasClockOutToday && !loading && (
-                <p>Cliquez sur "Pointer le départ" pour enregistrer votre heure de départ.</p>
-              )}
-              {hasClockInToday && hasClockOutToday && (
-                <p className="text-green-600">✓ Votre pointage est complet pour aujourd'hui.</p>
-              )}
-              {loading && (
-                <p className="text-blue-600">Enregistrement en cours...</p>
-              )}
+            {/* Message de statut dynamique */}
+            <div className={`text-sm text-center ${statusInfo.className}`}>
+              <p>{statusInfo.message}</p>
             </div>
           </div>
         </CardContent>
