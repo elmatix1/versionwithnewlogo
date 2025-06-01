@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface TimeTrackingRecord {
   id: string;
-  user_id: string;
+  user_email: string;
   date: string;
   clock_in_time: string | null;
   clock_out_time: string | null;
@@ -23,19 +23,19 @@ export const useTimeTracking = () => {
   const { user } = useAuth();
 
   const fetchTodayRecord = async () => {
-    if (!user) {
-      console.log('No user available for fetching today record');
+    if (!user || !user.email) {
+      console.log('No user or email available for fetching today record');
       return;
     }
 
     try {
       const today = format(new Date(), 'yyyy-MM-dd');
-      console.log('Fetching today record for user:', user.id, 'date:', today);
+      console.log('Fetching today record for user email:', user.email, 'date:', today);
       
       const { data, error } = await supabase
         .from('time_tracking')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_email', user.email)
         .eq('date', today)
         .maybeSingle();
 
@@ -52,19 +52,19 @@ export const useTimeTracking = () => {
   };
 
   const fetchRecords = async () => {
-    if (!user) {
-      console.log('No user available for fetching records');
+    if (!user || !user.email) {
+      console.log('No user or email available for fetching records');
       return;
     }
 
     setLoading(true);
     try {
-      console.log('Fetching records for user:', user.id);
+      console.log('Fetching records for user email:', user.email);
 
       const { data, error } = await supabase
         .from('time_tracking')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_email', user.email)
         .order('date', { ascending: false })
         .limit(30);
 
@@ -85,7 +85,7 @@ export const useTimeTracking = () => {
   };
 
   const clockIn = async () => {
-    if (!user) {
+    if (!user || !user.email) {
       toast.error('Vous devez être connecté pour pointer');
       return;
     }
@@ -95,13 +95,13 @@ export const useTimeTracking = () => {
       const now = new Date();
       const today = format(now, 'yyyy-MM-dd');
       
-      console.log('Clock in attempt for user:', user.id, 'date:', today);
+      console.log('Clock in attempt for user email:', user.email, 'date:', today);
 
       // Vérifier s'il y a déjà un pointage d'arrivée aujourd'hui
       const { data: existing } = await supabase
         .from('time_tracking')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_email', user.email)
         .eq('date', today)
         .maybeSingle();
 
@@ -125,11 +125,11 @@ export const useTimeTracking = () => {
           .single();
       } else {
         // Créer un nouvel enregistrement
-        console.log('Creating new record for user:', user.id);
+        console.log('Creating new record for user email:', user.email);
         result = await supabase
           .from('time_tracking')
           .insert({
-            user_id: user.id,
+            user_email: user.email,
             date: today,
             clock_in_time: now.toISOString(),
             created_at: now.toISOString(),
@@ -165,7 +165,7 @@ export const useTimeTracking = () => {
   };
 
   const clockOut = async () => {
-    if (!user) {
+    if (!user || !user.email) {
       toast.error('Vous devez être connecté pour pointer');
       return;
     }
@@ -175,13 +175,13 @@ export const useTimeTracking = () => {
       const now = new Date();
       const today = format(now, 'yyyy-MM-dd');
 
-      console.log('Clock out attempt for user:', user.id, 'date:', today);
+      console.log('Clock out attempt for user email:', user.email, 'date:', today);
 
       // Vérifier s'il y a un pointage d'arrivée aujourd'hui
       const { data: existing } = await supabase
         .from('time_tracking')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_email', user.email)
         .eq('date', today)
         .maybeSingle();
 
@@ -231,7 +231,7 @@ export const useTimeTracking = () => {
   };
 
   useEffect(() => {
-    if (user) {
+    if (user && user.email) {
       fetchTodayRecord();
       fetchRecords();
     } else {
@@ -247,7 +247,7 @@ export const useTimeTracking = () => {
     clockIn,
     clockOut,
     refetch: () => {
-      if (user) {
+      if (user && user.email) {
         fetchTodayRecord();
         fetchRecords();
       }
