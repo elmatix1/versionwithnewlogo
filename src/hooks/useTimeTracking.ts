@@ -22,6 +22,15 @@ export const useTimeTracking = () => {
   const [todayRecord, setTodayRecord] = useState<TimeTrackingRecord | null>(null);
   const { user } = useAuth();
 
+  // Fonction pour générer un UUID v4 valide
+  const generateUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+
   const fetchTodayRecord = async () => {
     if (!user || !user.email) {
       console.log('No user or email available for fetching today record');
@@ -124,12 +133,12 @@ export const useTimeTracking = () => {
           .select()
           .single();
       } else {
-        // Créer un nouvel enregistrement avec user_id factice
+        // Créer un nouvel enregistrement avec un UUID valide
         console.log('Creating new record for user email:', user.email);
         result = await supabase
           .from('time_tracking')
           .insert({
-            user_id: 'temp-' + user.email, // user_id factice basé sur l'email
+            user_id: generateUUID(), // Générer un UUID valide
             user_email: user.email,
             date: today,
             clock_in_time: now.toISOString(),
