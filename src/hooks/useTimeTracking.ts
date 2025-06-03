@@ -99,13 +99,6 @@ export const useTimeTracking = () => {
       return;
     }
 
-    // Vérifier l'authentification Supabase
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      toast.error('Session expirée, veuillez vous reconnecter');
-      return;
-    }
-
     setLoading(true);
     try {
       const now = new Date();
@@ -140,7 +133,7 @@ export const useTimeTracking = () => {
           .select()
           .single();
       } else {
-        // Créer un nouvel enregistrement avec un UUID valide
+        // Créer un nouvel enregistrement
         console.log('Creating new record for user email:', user.email);
         result = await supabase
           .from('time_tracking')
@@ -184,13 +177,6 @@ export const useTimeTracking = () => {
   const clockOut = async () => {
     if (!user || !user.email) {
       toast.error('Vous devez être connecté pour pointer');
-      return;
-    }
-
-    // Vérifier l'authentification Supabase
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      toast.error('Session expirée, veuillez vous reconnecter');
       return;
     }
 
