@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
-import { generateUUID } from './utils';
 
 interface ClockOperationsProps {
   fetchTodayRecord: () => Promise<void>;
@@ -27,6 +26,15 @@ export const useClockOperations = ({ fetchTodayRecord, fetchRecords, setLoading 
       const today = format(now, 'yyyy-MM-dd');
       
       console.log('Clock in attempt for user email:', user.email, 'date:', today);
+
+      // Get the current authenticated user's ID from Supabase
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !authUser) {
+        console.error('Authentication error:', authError);
+        toast.error('Erreur d\'authentification');
+        return;
+      }
 
       // Vérifier s'il y a déjà un pointage d'arrivée aujourd'hui
       const { data: existing } = await supabase
@@ -55,12 +63,12 @@ export const useClockOperations = ({ fetchTodayRecord, fetchRecords, setLoading 
           .select()
           .single();
       } else {
-        // Créer un nouvel enregistrement
-        console.log('Creating new record for user email:', user.email);
+        // Créer un nouvel enregistrement avec l'ID utilisateur authentifié
+        console.log('Creating new record for user:', authUser.id, 'email:', user.email);
         result = await supabase
           .from('time_tracking')
           .insert({
-            user_id: generateUUID(), // Générer un UUID valide
+            user_id: authUser.id, // Utiliser l'ID de l'utilisateur authentifié
             user_email: user.email,
             date: today,
             clock_in_time: now.toISOString(),
