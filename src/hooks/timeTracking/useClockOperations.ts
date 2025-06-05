@@ -27,6 +27,22 @@ export const useClockOperations = ({ fetchTodayRecord, fetchRecords, setLoading 
       
       console.log('Clock in attempt for user email:', user.email, 'date:', today);
 
+      // Obtenir l'ID utilisateur authentifié ou utiliser l'ID local
+      let userId = user.id;
+      
+      try {
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+        
+        if (authUser && !authError) {
+          userId = authUser.id;
+          console.log('Using Supabase authenticated user ID:', userId);
+        } else {
+          console.log('No Supabase session, using local user ID:', userId);
+        }
+      } catch (authError) {
+        console.log('Supabase auth check failed, using local user ID:', userId, 'Error:', authError);
+      }
+
       // Vérifier s'il y a déjà un pointage d'arrivée aujourd'hui
       const { data: existing } = await supabase
         .from('time_tracking')
@@ -54,11 +70,12 @@ export const useClockOperations = ({ fetchTodayRecord, fetchRecords, setLoading 
           .select()
           .single();
       } else {
-        // Créer un nouvel enregistrement sans user_id UUID
-        console.log('Creating new record for user email:', user.email);
+        // Créer un nouvel enregistrement avec user_id UUID
+        console.log('Creating new record for user:', userId, 'email:', user.email);
         result = await supabase
           .from('time_tracking')
           .insert({
+            user_id: userId,
             user_email: user.email,
             date: today,
             clock_in_time: now.toISOString(),
