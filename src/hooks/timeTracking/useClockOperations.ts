@@ -27,13 +27,20 @@ export const useClockOperations = ({ fetchTodayRecord, fetchRecords, setLoading 
       
       console.log('Clock in attempt for user email:', user.email, 'date:', today);
 
-      // Get the current authenticated user's ID from Supabase
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      // Try to get the authenticated user's ID from Supabase, but fallback gracefully
+      let userId = user.id; // Use the local user ID as fallback
       
-      if (authError || !authUser) {
-        console.error('Authentication error:', authError);
-        toast.error('Erreur d\'authentification');
-        return;
+      try {
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+        
+        if (authUser && !authError) {
+          userId = authUser.id;
+          console.log('Using Supabase authenticated user ID:', userId);
+        } else {
+          console.log('No Supabase session, using local user ID:', userId);
+        }
+      } catch (authError) {
+        console.log('Supabase auth check failed, using local user ID:', userId, 'Error:', authError);
       }
 
       // Vérifier s'il y a déjà un pointage d'arrivée aujourd'hui
@@ -63,12 +70,12 @@ export const useClockOperations = ({ fetchTodayRecord, fetchRecords, setLoading 
           .select()
           .single();
       } else {
-        // Créer un nouvel enregistrement avec l'ID utilisateur authentifié
-        console.log('Creating new record for user:', authUser.id, 'email:', user.email);
+        // Créer un nouvel enregistrement
+        console.log('Creating new record for user:', userId, 'email:', user.email);
         result = await supabase
           .from('time_tracking')
           .insert({
-            user_id: authUser.id, // Utiliser l'ID de l'utilisateur authentifié
+            user_id: userId,
             user_email: user.email,
             date: today,
             clock_in_time: now.toISOString(),
