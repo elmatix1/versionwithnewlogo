@@ -27,21 +27,17 @@ export const useClockOperations = ({ fetchTodayRecord, fetchRecords, setLoading 
       
       console.log('Clock in attempt for user email:', user.email, 'date:', today);
 
-      // Obtenir l'ID utilisateur authentifié ou utiliser l'ID local
-      let userId = user.id;
+      // Obtenir l'ID utilisateur authentifié Supabase obligatoirement
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
       
-      try {
-        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-        
-        if (authUser && !authError) {
-          userId = authUser.id;
-          console.log('Using Supabase authenticated user ID:', userId);
-        } else {
-          console.log('No Supabase session, using local user ID:', userId);
-        }
-      } catch (authError) {
-        console.log('Supabase auth check failed, using local user ID:', userId, 'Error:', authError);
+      if (!authUser || authError) {
+        console.error('No valid Supabase session found:', authError);
+        toast.error('Session invalide. Veuillez vous reconnecter.');
+        return;
       }
+
+      const userId = authUser.id;
+      console.log('Using Supabase authenticated user ID:', userId);
 
       // Vérifier s'il y a déjà un pointage d'arrivée aujourd'hui
       const { data: existing } = await supabase
@@ -123,6 +119,15 @@ export const useClockOperations = ({ fetchTodayRecord, fetchRecords, setLoading 
       const today = format(now, 'yyyy-MM-dd');
 
       console.log('Clock out attempt for user email:', user.email, 'date:', today);
+
+      // Vérifier la session Supabase pour le clock out aussi
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      
+      if (!authUser || authError) {
+        console.error('No valid Supabase session found:', authError);
+        toast.error('Session invalide. Veuillez vous reconnecter.');
+        return;
+      }
 
       // Vérifier s'il y a un pointage d'arrivée aujourd'hui
       const { data: existing } = await supabase
