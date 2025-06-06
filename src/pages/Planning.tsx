@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -26,6 +25,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -43,7 +52,8 @@ import {
   MapPin,
   Plus,
   Filter,
-  CalendarDays
+  CalendarDays,
+  Trash2
 } from 'lucide-react';
 import { toast } from "sonner";
 import MoroccanSuggestionInput from '@/components/shared/MoroccanSuggestionInput';
@@ -73,7 +83,7 @@ const statusConfig = {
 };
 
 const Planning: React.FC = () => {
-  const { deliveries, loading, addDelivery } = useDeliveries();
+  const { deliveries, loading, addDelivery, deleteDelivery } = useDeliveries();
   const { isOptimizing, optimizationResult, optimizeRoutes, clearOptimization } = useRouteOptimization();
 
   const [showAddMissionDialog, setShowAddMissionDialog] = useState(false);
@@ -81,6 +91,8 @@ const Planning: React.FC = () => {
   const [showCalendarView, setShowCalendarView] = useState(false);
   const [showOptimizationDialog, setShowOptimizationDialog] = useState(false);
   const [showTrackingDialog, setShowTrackingDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deliveryToDelete, setDeliveryToDelete] = useState<Delivery | null>(null);
 
   // Form state
   const [newMission, setNewMission] = useState({
@@ -134,6 +146,23 @@ const Planning: React.FC = () => {
     } catch (error) {
       console.error("Erreur lors de l'ajout de la mission:", error);
       // Toast notification already handled in useDeliveries hook
+    }
+  };
+
+  const handleDeleteDelivery = (delivery: Delivery) => {
+    setDeliveryToDelete(delivery);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteDelivery = async () => {
+    if (!deliveryToDelete) return;
+
+    try {
+      await deleteDelivery(deliveryToDelete.id);
+      setShowDeleteDialog(false);
+      setDeliveryToDelete(null);
+    } catch (error) {
+      console.error("Erreur lors de la suppression de la mission:", error);
     }
   };
 
@@ -288,18 +317,19 @@ const Planning: React.FC = () => {
                       <TableHead>Origine</TableHead>
                       <TableHead>Destination</TableHead>
                       <TableHead>Statut</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {loading ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-4">
+                        <TableCell colSpan={9} className="text-center py-4">
                           Chargement des missions...
                         </TableCell>
                       </TableRow>
                     ) : deliveries.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-4">
+                        <TableCell colSpan={9} className="text-center py-4">
                           Aucune mission disponible
                         </TableCell>
                       </TableRow>
@@ -320,6 +350,16 @@ const Planning: React.FC = () => {
                               <Badge className={statusCfg.className}>
                                 {statusCfg.label}
                               </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteDelivery(delivery)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </TableCell>
                           </TableRow>
                         );
@@ -403,7 +443,6 @@ const Planning: React.FC = () => {
         </Card>
       </div>
 
-      {/* Dialog pour ajouter une nouvelle mission */}
       <Dialog open={showAddMissionDialog} onOpenChange={setShowAddMissionDialog}>
         <DialogContent>
           <DialogHeader>
@@ -511,7 +550,36 @@ const Planning: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog pour la vue carte avec la vraie carte interactive */}
+      {/* Dialog de confirmation de suppression */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer cette mission de livraison ?
+              {deliveryToDelete && (
+                <div className="mt-2 p-2 bg-muted rounded">
+                  <p><strong>Mission:</strong> PLN-{deliveryToDelete.id}</p>
+                  <p><strong>Trajet:</strong> {deliveryToDelete.origin} → {deliveryToDelete.destination}</p>
+                  <p><strong>Chauffeur:</strong> {deliveryToDelete.driver}</p>
+                  <p><strong>Date:</strong> {deliveryToDelete.date} à {deliveryToDelete.time}</p>
+                </div>
+              )}
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteDelivery}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog open={showMapView} onOpenChange={setShowMapView}>
         <DialogContent className="max-w-6xl h-[80vh]">
           <DialogHeader>
@@ -527,7 +595,6 @@ const Planning: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog pour la vue calendrier avec le vrai calendrier interactif */}
       <Dialog open={showCalendarView} onOpenChange={setShowCalendarView}>
         <DialogContent className="max-w-6xl h-[80vh]">
           <DialogHeader>
@@ -543,7 +610,6 @@ const Planning: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog pour l'optimisation des trajets */}
       <Dialog open={showOptimizationDialog} onOpenChange={setShowOptimizationDialog}>
         <DialogContent>
           <DialogHeader>
@@ -564,7 +630,6 @@ const Planning: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog pour le suivi en temps réel */}
       <Dialog open={showTrackingDialog} onOpenChange={setShowTrackingDialog}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
