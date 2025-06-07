@@ -195,6 +195,10 @@ const Planning: React.FC = () => {
     });
   };
 
+  const handleViewGPSTracking = () => {
+    window.location.href = '/vehicle-tracking';
+  };
+
   // Si on a des résultats d'optimisation, on les affiche
   if (optimizationResult) {
     return (
@@ -215,8 +219,19 @@ const Planning: React.FC = () => {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-1">Planification</h1>
-        <p className="text-muted-foreground">Gestion des plannings et des missions</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold mb-1">Planification</h1>
+            <p className="text-muted-foreground">Gestion des plannings et des missions</p>
+          </div>
+          <Button 
+            onClick={handleViewGPSTracking}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+          >
+            <MapPin className="h-4 w-4" />
+            Suivi GPS en Temps Réel
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -274,10 +289,20 @@ const Planning: React.FC = () => {
               <CardTitle>Calendrier des livraisons</CardTitle>
               <CardDescription>Planification des livraisons et des missions</CardDescription>
             </div>
-            <Button className="flex items-center gap-2" onClick={() => setShowAddMissionDialog(true)}>
-              <Plus size={16} />
-              <span>Nouvelle mission</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline"
+                onClick={handleViewGPSTracking}
+                className="flex items-center gap-2"
+              >
+                <MapPin size={16} />
+                <span>Suivi GPS</span>
+              </Button>
+              <Button className="flex items-center gap-2" onClick={() => setShowAddMissionDialog(true)}>
+                <Plus size={16} />
+                <span>Nouvelle mission</span>
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

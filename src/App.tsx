@@ -1,26 +1,10 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./hooks/useAuth";
-import MainLayout from "./components/layout/MainLayout";
-import ProtectedRoute from "./components/layout/ProtectedRoute";
-import LandingPage from "./pages/LandingPage";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import UserManagement from "./pages/UserManagement";
-import HRManagement from "./pages/HRManagement";
-import VehicleManagement from "./pages/VehicleManagement";
-import OrderManagement from "./pages/OrderManagement";
-import NotFound from "./pages/NotFound";
-import Inventory from "./pages/Inventory";
-import Planning from "./pages/Planning";
-import Maintenance from "./pages/Maintenance";
-import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
-import TimeTracking from "./pages/TimeTracking";
+import { navItems } from "./nav-items";
+import VehicleTracking from "./pages/VehicleTracking";
 
 const queryClient = new QueryClient();
 
@@ -28,60 +12,13 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
-      <Sonner />
       <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            {/* Routes publiques */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<Login />} />
-            
-            {/* Routes protégées */}
-            <Route element={<ProtectedRoute />}>
-              <Route element={<MainLayout />}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/timetracking" element={<TimeTracking />} />
-                
-                {/* Routes protégées par rôle */}
-                <Route element={<ProtectedRoute requiredRoles={['admin']} />}>
-                  <Route path="/users" element={<UserManagement />} />
-                  <Route path="/settings" element={<Settings />} />
-                </Route>
-                
-                <Route element={<ProtectedRoute requiredRoles={['admin', 'rh']} />}>
-                  <Route path="/hr" element={<HRManagement />} />
-                </Route>
-                
-                <Route element={<ProtectedRoute requiredRoles={['admin', 'exploitation', 'maintenance', 'planificateur']} />}>
-                  <Route path="/vehicles" element={<VehicleManagement />} />
-                </Route>
-                
-                <Route element={<ProtectedRoute requiredRoles={['admin', 'commercial', 'approvisionneur']} />}>
-                  <Route path="/orders" element={<OrderManagement />} />
-                </Route>
-                
-                <Route element={<ProtectedRoute requiredRoles={['admin', 'planificateur', 'exploitation']} />}>
-                  <Route path="/planning" element={<Planning />} />
-                </Route>
-                
-                <Route element={<ProtectedRoute requiredRoles={['admin', 'approvisionneur']} />}>
-                  <Route path="/inventory" element={<Inventory />} />
-                </Route>
-                
-                <Route element={<ProtectedRoute requiredRoles={['admin', 'maintenance']} />}>
-                  <Route path="/maintenance" element={<Maintenance />} />
-                </Route>
-                
-                <Route element={<ProtectedRoute requiredRoles={['admin', 'commercial']} />}>
-                  <Route path="/reports" element={<Reports />} />
-                </Route>
-              </Route>
-            </Route>
-            
-            {/* Catch-all route for 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
+        <Routes>
+          {navItems.map(({ to, page }) => (
+            <Route key={to} path={to} element={page} />
+          ))}
+          <Route path="/vehicle-tracking" element={<VehicleTracking />} />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

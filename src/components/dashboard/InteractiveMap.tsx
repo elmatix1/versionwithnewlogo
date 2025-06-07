@@ -17,6 +17,10 @@ interface Vehicle {
   name: string;
   status: 'delivering' | 'idle' | 'maintenance' | 'active' | 'inactive';
   location?: string;
+  latitude?: number;
+  longitude?: number;
+  lastUpdate?: string;
+  gpsSpeed?: number;
 }
 
 interface InteractiveMapProps {
@@ -40,8 +44,8 @@ const statusLabels = {
   inactive: "Hors service",
 };
 
-// Coordonnées simulées pour les véhicules au Maroc
-const getVehicleCoordinates = (vehicleName: string, location?: string) => {
+// Coordonnées simulées pour les véhicules au Maroc (fallback)
+const getVehicleCoordinates = (vehicleName: string, location?: string): [number, number] => {
   const locations = {
     "Dépôt Central": [33.5731, -7.5898], // Casablanca
     "Route A7": [33.5928, -7.6167], // Route près de Casablanca
@@ -50,8 +54,8 @@ const getVehicleCoordinates = (vehicleName: string, location?: string) => {
     "Port": [33.5992, -7.6006], // Port de Casablanca
   };
 
-  if (location && locations[location]) {
-    return locations[location];
+  if (location && locations[location as keyof typeof locations]) {
+    return locations[location as keyof typeof locations];
   }
 
   // Positions par défaut basées sur l'ID du véhicule pour la cohérence
@@ -70,7 +74,7 @@ const getVehicleCoordinates = (vehicleName: string, location?: string) => {
 };
 
 // Créer une icône personnalisée pour chaque statut
-const createCustomIcon = (status: string) => {
+const createCustomIcon = (status: string, hasGPS: boolean = false) => {
   const color = statusColors[status] || statusColors.inactive;
   
   return L.divIcon({
@@ -87,12 +91,34 @@ const createCustomIcon = (status: string) => {
         align-items: center;
         justify-content: center;
         position: relative;
+        ${hasGPS ? 'animation: pulse 2s infinite;' : ''}
       ">
         <div style="
           font-size: 10px;
           line-height: 1;
         ">🚛</div>
+        ${hasGPS ? `
+          <div style="
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 6px;
+            height: 6px;
+            background: #10b981;
+            border-radius: 50%;
+            border: 1px solid white;
+          "></div>
+        ` : ''}
       </div>
+      ${hasGPS ? `
+        <style>
+          @keyframes pulse {
+            0% { box-shadow: 0 2px 4px rgba(0,0,0,0.3), 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 2px 4px rgba(0,0,0,0.3), 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 2px 4px rgba(0,0,0,0.3), 0 0 0 0 rgba(16, 185, 129, 0); }
+          }
+        </style>
+      ` : ''}
     `,
     iconSize: [24, 24],
     iconAnchor: [12, 12],
@@ -130,22 +156,52 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ vehicles = [], classNam
 
     // Ajouter les nouveaux marqueurs
     vehicles.forEach(vehicle => {
-      const coordinates = getVehicleCoordinates(vehicle.name, vehicle.location);
-      const icon = createCustomIcon(vehicle.status);
+      const hasGPS = vehicle.latitude !== undefined && vehicle.longitude !== undefined;
+      const coordinates = hasGPS 
+        ? [vehicle.latitude!, vehicle.longitude!]
+        : getVehicleCoordinates(vehicle.name, vehicle.location);
+      
+      const icon = createCustomIcon(vehicle.status, hasGPS);
 
       const marker = L.marker([coordinates[0], coordinates[1]], { icon })
         .addTo(map.current!)
         .bindPopup(`
           <div style="padding: 8px; min-width: 200px;">
-            <h4 style="margin: 0 0 4px 0; font-weight: bold; font-size: 14px;">${vehicle.name}</h4>
-            <p style="margin: 0; font-size: 12px; color: #666;">
-              Statut: <span style="color: ${statusColors[vehicle.status]}; font-weight: bold;">
+            <h4 style="margin: 0 0 4px 0; font-weight: bold; font-size: 14px;">
+              🚛 ${vehicle.name}
+            </h4>
+            <div style="margin: 4px 0; font-size: 12px;">
+              <strong>Statut:</strong> 
+              <span style="color: ${statusColors[vehicle.status]}; font-weight: bold;">
                 ${statusLabels[vehicle.status] || 'Statut inconnu'}
               </span>
-            </p>
-            <p style="margin: 4px 0 0 0; font-size: 12px; color: #666;">
-              Position: ${vehicle.location || 'Position inconnue'}
-            </p>
+            </div>
+            ${hasGPS ? `
+              <div style="margin: 4px 0; font-size: 12px; color: #10b981; font-weight: bold;">
+                📡 Position GPS en temps réel
+              </div>
+              <div style="margin: 4px 0; font-size: 12px;">
+                <strong>Coordonnées:</strong> ${vehicle.latitude?.toFixed(6)}, ${vehicle.longitude?.toFixed(6)}
+              </div>
+              ${vehicle.gpsSpeed !== undefined ? `
+                <div style="margin: 4px 0; font-size: 12px;">
+                  <strong>Vitesse:</strong> ${vehicle.gpsSpeed.toFixed(1)} km/h
+                </div>
+              ` : ''}
+              ${vehicle.lastUpdate ? `
+                <div style="margin: 4px 0; font-size: 12px;">
+                  <strong>Dernière mise à jour:</strong><br/>
+                  ${new Date(vehicle.lastUpdate).toLocaleString('fr-FR')}
+                </div>
+              ` : ''}
+            ` : `
+              <div style="margin: 4px 0; font-size: 12px; color: #f59e0b;">
+                📍 Position estimée
+              </div>
+              <div style="margin: 4px 0; font-size: 12px;">
+                <strong>Position:</strong> ${vehicle.location || 'Position inconnue'}
+              </div>
+            `}
           </div>
         `);
 
