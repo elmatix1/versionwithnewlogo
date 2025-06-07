@@ -6,7 +6,7 @@ import UserManagement from "./pages/UserManagement";
 import OrderManagement from "./pages/OrderManagement";
 import Planning from "./pages/Planning";
 import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
+import SettingsPage from "./pages/Settings";
 import HRManagement from "./pages/HRManagement";
 import Maintenance from "./pages/Maintenance";
 import Inventory from "./pages/Inventory";
@@ -78,7 +78,7 @@ export const navItems = [
     title: "Paramètres",
     to: "/settings",
     icon: Settings,
-    page: <Settings />,
+    page: <SettingsPage />,
   },
   {
     title: "Accueil",

@@ -8,6 +8,7 @@ import InteractiveMap from './InteractiveMap';
 import { useVehiclePositionsForDashboard } from '@/hooks/useVehiclePositionsForDashboard';
 import { MapPin, Navigation } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { VehicleStatus } from '@/hooks/useVehicles';
 
 // Define the Vehicle interface to match what's expected
 interface DashboardVehicle {
@@ -46,16 +47,35 @@ const MapOverview: React.FC<MapOverviewProps> = ({ vehicles = [], className }) =
   const navigate = useNavigate();
   
   // Convert DashboardVehicle to the format expected by useVehiclePositionsForDashboard
-  const convertedVehicles = vehicles.map(vehicle => ({
-    id: vehicle.id,
-    name: vehicle.name,
-    type: vehicle.type || 'truck',
-    status: vehicle.status,
-    location: vehicle.location,
-    fuelLevel: vehicle.fuelLevel || 0,
-    lastMaintenance: vehicle.lastMaintenance || '',
-    nextService: vehicle.nextService || ''
-  }));
+  // Map status to valid VehicleStatus values
+  const convertedVehicles = vehicles.map(vehicle => {
+    let validStatus: VehicleStatus;
+    switch (vehicle.status) {
+      case 'delivering':
+      case 'active':
+        validStatus = 'active';
+        break;
+      case 'maintenance':
+        validStatus = 'maintenance';
+        break;
+      case 'idle':
+      case 'inactive':
+      default:
+        validStatus = 'inactive';
+        break;
+    }
+    
+    return {
+      id: vehicle.id,
+      name: vehicle.name,
+      type: vehicle.type || 'truck',
+      status: validStatus,
+      location: vehicle.location,
+      fuelLevel: vehicle.fuelLevel || 0,
+      lastMaintenance: vehicle.lastMaintenance || '',
+      nextService: vehicle.nextService || ''
+    };
+  });
 
   const vehiclesWithPositions = useVehiclePositionsForDashboard(convertedVehicles);
 
