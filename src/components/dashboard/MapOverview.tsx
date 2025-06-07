@@ -5,19 +5,24 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import InteractiveMap from './InteractiveMap';
-import { useVehiclePositionsForDashboard, VehicleWithPosition } from '@/hooks/useVehiclePositionsForDashboard';
+import { useVehiclePositionsForDashboard } from '@/hooks/useVehiclePositionsForDashboard';
 import { MapPin, Navigation } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-interface Vehicle {
+// Define the Vehicle interface to match what's expected
+interface DashboardVehicle {
   id: string;
   name: string;
   status: 'delivering' | 'idle' | 'maintenance' | 'active' | 'inactive';
   location?: string;
+  type?: string;
+  fuelLevel?: number;
+  lastMaintenance?: string;
+  nextService?: string;
 }
 
 interface MapOverviewProps {
-  vehicles: Vehicle[];
+  vehicles: DashboardVehicle[];
   className?: string;
 }
 
@@ -39,7 +44,20 @@ const statusLabels = {
 
 const MapOverview: React.FC<MapOverviewProps> = ({ vehicles = [], className }) => {
   const navigate = useNavigate();
-  const vehiclesWithPositions = useVehiclePositionsForDashboard(vehicles);
+  
+  // Convert DashboardVehicle to the format expected by useVehiclePositionsForDashboard
+  const convertedVehicles = vehicles.map(vehicle => ({
+    id: vehicle.id,
+    name: vehicle.name,
+    type: vehicle.type || 'truck',
+    status: vehicle.status,
+    location: vehicle.location,
+    fuelLevel: vehicle.fuelLevel || 0,
+    lastMaintenance: vehicle.lastMaintenance || '',
+    nextService: vehicle.nextService || ''
+  }));
+
+  const vehiclesWithPositions = useVehiclePositionsForDashboard(convertedVehicles);
 
   // Normaliser les statuts des véhicules pour correspondre aux couleurs disponibles
   const normalizeStatus = (status: string) => {
@@ -58,11 +76,16 @@ const MapOverview: React.FC<MapOverviewProps> = ({ vehicles = [], className }) =
   };
 
   const normalizedVehicles = vehiclesWithPositions.map(vehicle => ({
-    ...vehicle,
+    id: vehicle.id,
+    name: vehicle.name,
     status: normalizeStatus(vehicle.status) as keyof typeof statusColors,
     location: vehicle.latitude && vehicle.longitude 
       ? `GPS: ${vehicle.latitude.toFixed(4)}, ${vehicle.longitude.toFixed(4)}`
-      : vehicle.location || 'Position inconnue'
+      : vehicle.location || 'Position inconnue',
+    latitude: vehicle.latitude,
+    longitude: vehicle.longitude,
+    lastUpdate: vehicle.lastUpdate,
+    gpsSpeed: vehicle.gpsSpeed
   }));
 
   const vehiclesWithGPS = vehiclesWithPositions.filter(v => v.latitude && v.longitude).length;

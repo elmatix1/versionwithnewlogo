@@ -46,7 +46,7 @@ const statusLabels = {
 
 // Coordonnées simulées pour les véhicules au Maroc (fallback)
 const getVehicleCoordinates = (vehicleName: string, location?: string): [number, number] => {
-  const locations = {
+  const locations: Record<string, [number, number]> = {
     "Dépôt Central": [33.5731, -7.5898], // Casablanca
     "Route A7": [33.5928, -7.6167], // Route près de Casablanca
     "Garage Nord": [33.9716, -6.8498], // Rabat
@@ -54,8 +54,8 @@ const getVehicleCoordinates = (vehicleName: string, location?: string): [number,
     "Port": [33.5992, -7.6006], // Port de Casablanca
   };
 
-  if (location && locations[location as keyof typeof locations]) {
-    return locations[location as keyof typeof locations];
+  if (location && locations[location]) {
+    return locations[location];
   }
 
   // Positions par défaut basées sur l'ID du véhicule pour la cohérence
@@ -75,7 +75,7 @@ const getVehicleCoordinates = (vehicleName: string, location?: string): [number,
 
 // Créer une icône personnalisée pour chaque statut
 const createCustomIcon = (status: string, hasGPS: boolean = false) => {
-  const color = statusColors[status] || statusColors.inactive;
+  const color = statusColors[status as keyof typeof statusColors] || statusColors.inactive;
   
   return L.divIcon({
     className: 'custom-vehicle-marker',
@@ -157,13 +157,13 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ vehicles = [], classNam
     // Ajouter les nouveaux marqueurs
     vehicles.forEach(vehicle => {
       const hasGPS = vehicle.latitude !== undefined && vehicle.longitude !== undefined;
-      const coordinates = hasGPS 
+      const coordinates: [number, number] = hasGPS 
         ? [vehicle.latitude!, vehicle.longitude!]
         : getVehicleCoordinates(vehicle.name, vehicle.location);
       
       const icon = createCustomIcon(vehicle.status, hasGPS);
 
-      const marker = L.marker([coordinates[0], coordinates[1]], { icon })
+      const marker = L.marker(coordinates, { icon })
         .addTo(map.current!)
         .bindPopup(`
           <div style="padding: 8px; min-width: 200px;">
@@ -172,8 +172,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ vehicles = [], classNam
             </h4>
             <div style="margin: 4px 0; font-size: 12px;">
               <strong>Statut:</strong> 
-              <span style="color: ${statusColors[vehicle.status]}; font-weight: bold;">
-                ${statusLabels[vehicle.status] || 'Statut inconnu'}
+              <span style="color: ${statusColors[vehicle.status as keyof typeof statusColors]}; font-weight: bold;">
+                ${statusLabels[vehicle.status as keyof typeof statusLabels] || 'Statut inconnu'}
               </span>
             </div>
             ${hasGPS ? `
