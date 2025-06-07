@@ -15,7 +15,7 @@ export function useVehiclePositionsForDashboard(vehicles: Vehicle[]) {
 
   useEffect(() => {
     const fetchPositions = async () => {
-      if (vehicles.length === 0) {
+      if (!vehicles || vehicles.length === 0) {
         setVehiclesWithPositions([]);
         return;
       }
@@ -62,32 +62,34 @@ export function useVehiclePositionsForDashboard(vehicles: Vehicle[]) {
         setVehiclesWithPositions(enrichedVehicles);
       } catch (error) {
         console.error('Erreur lors de la récupération des positions GPS:', error);
-        setVehiclesWithPositions(vehicles);
+        setVehiclesWithPositions(vehicles || []);
       }
     };
 
     fetchPositions();
 
-    // S'abonner aux mises à jour en temps réel
-    const channel = supabase
-      .channel('dashboard_positions')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'vehicle_positions'
-        },
-        () => {
-          // Rafraîchir les positions quand il y a une nouvelle position
-          fetchPositions();
-        }
-      )
-      .subscribe();
+    // S'abonner aux mises à jour en temps réel seulement si on a des véhicules
+    if (vehicles && vehicles.length > 0) {
+      const channel = supabase
+        .channel('dashboard_positions')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'vehicle_positions'
+          },
+          () => {
+            // Rafraîchir les positions quand il y a une nouvelle position
+            fetchPositions();
+          }
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [vehicles]);
 
   return vehiclesWithPositions;

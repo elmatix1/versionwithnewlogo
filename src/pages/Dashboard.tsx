@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import StatCard from '@/components/dashboard/StatCard';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
@@ -5,7 +6,7 @@ import MapOverview from '@/components/dashboard/MapOverview';
 import OrdersChart from '@/components/dashboard/OrdersChart';
 import UpcomingDeliveries from '@/components/dashboard/UpcomingDeliveries';
 import DriverAvailability from '@/components/dashboard/DriverAvailability';
-import { Truck, FileText, Users, TrendingUp, CheckCircle, Circle, Plus, Trash } from 'lucide-react';
+import { Truck, FileText, Users, TrendingUp, Plus, Trash } from 'lucide-react';
 import { useTodos } from '@/hooks/useTodos';
 import { useVehicles } from '@/hooks/useVehicles';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -40,7 +41,7 @@ const Dashboard: React.FC = () => {
     },
     { 
       title: "Véhicules actifs", 
-      value: vehiclesLoading ? "..." : vehicles.filter(v => v.status === 'active').length.toString(), 
+      value: vehiclesLoading ? "..." : (vehicles?.filter(v => v.status === 'active').length || 0).toString(), 
       icon: <Truck size={20} />, 
       change: { value: 5, isPositive: true } 
     },
@@ -165,7 +166,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
-        <MapOverview vehicles={vehicles} className="lg:col-span-1" />
+        <MapOverview vehicles={vehicles || []} className="lg:col-span-1" />
         <UpcomingDeliveries deliveries={deliveries} className="lg:col-span-1" />
         <DriverAvailability drivers={drivers} className="lg:col-span-1" />
       </div>

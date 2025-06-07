@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { navItems } from "./nav-items";
 import VehicleTracking from "./pages/VehicleTracking";
+import MainLayout from "./components/layout/MainLayout";
 
 const queryClient = new QueryClient();
 
@@ -14,10 +15,12 @@ const App = () => (
       <Toaster />
       <BrowserRouter>
         <Routes>
-          {navItems.map(({ to, page }) => (
-            <Route key={to} path={to} element={page} />
-          ))}
-          <Route path="/vehicle-tracking" element={<VehicleTracking />} />
+          <Route path="/" element={<MainLayout />}>
+            {navItems.map(({ to, page }) => (
+              <Route key={to} path={to} element={page} />
+            ))}
+            <Route path="/vehicle-tracking" element={<VehicleTracking />} />
+          </Route>
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
