@@ -153,10 +153,92 @@ export function useVehicles() {
     }
   };
   
+  // Valider les données avant mise à jour
+  const validateVehicleData = (updates: Partial<Vehicle>): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    
+    // Validation du niveau de carburant
+    if (updates.fuelLevel !== undefined && (updates.fuelLevel < 0 || updates.fuelLevel > 100)) {
+      errors.push('Le niveau de carburant doit être entre 0 et 100%');
+    }
+    
+    // Validation du statut
+    if (updates.status && !['active', 'maintenance', 'inactive'].includes(updates.status)) {
+      errors.push('Statut invalide. Doit être : En service, En maintenance ou Hors service');
+    }
+    
+    // Validation des dates
+    if (updates.lastMaintenance && new Date(updates.lastMaintenance) > new Date()) {
+      errors.push('La date du dernier entretien ne peut pas être dans le futur');
+    }
+    
+    if (updates.nextService && new Date(updates.nextService) < new Date()) {
+      errors.push('La date du prochain entretien doit être dans le futur');
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
+  
   // Mettre à jour un véhicule
   const updateVehicle = async (id: string, updates: Partial<Vehicle>) => {
     try {
       console.log('Tentative de mise à jour du véhicule:', id, updates);
+      
+      // Valider les données avant la mise à jour
+      const validation = validateVehicleData(updates);
+      if (!validation.isValid) {
+        const errorMessage = validation.errors.join(', ');
+        toast.error("Données invalides", {
+          description: errorMessage
+        });
+        throw new Error(errorMessage);
+      }
+      
+      // Récupérer les informations actuelles du véhicule pour gérer les contraintes
+      const { data: currentVehicle, error: fetchError } = await supabase
+        .from('vehicles')
+        .select('registration')
+        .eq('id', parseInt(id))
+        .single();
+      
+      if (fetchError) {
+        console.error('Erreur lors de la récupération du véhicule actuel:', fetchError);
+        throw fetchError;
+      }
+      
+      // Si l'immatriculation change, gérer les contraintes de clé étrangère
+      const registrationChanged = updates.name && updates.name !== currentVehicle.registration;
+      
+      if (registrationChanged) {
+        // Vérifier s'il y a des positions associées à ce véhicule
+        const { data: positions, error: positionsError } = await supabase
+          .from('vehicle_positions')
+          .select('id')
+          .eq('vehicle_id', currentVehicle.registration);
+        
+        if (positionsError) {
+          console.error('Erreur lors de la vérification des positions:', positionsError);
+        }
+        
+        // Si des positions existent, les mettre à jour avec la nouvelle immatriculation
+        if (positions && positions.length > 0) {
+          const { error: updatePositionsError } = await supabase
+            .from('vehicle_positions')
+            .update({ vehicle_id: updates.name })
+            .eq('vehicle_id', currentVehicle.registration);
+          
+          if (updatePositionsError) {
+            console.error('Erreur lors de la mise à jour des positions:', updatePositionsError);
+            toast.error("Erreur lors de la mise à jour des positions du véhicule", {
+              description: "Impossible de mettre à jour les références de position"
+            });
+            throw updatePositionsError;
+          }
+        }
+      }
       
       // Préparer les données pour la mise à jour
       const updateData: any = {};
@@ -177,6 +259,25 @@ export function useVehicles() {
       
       if (error) {
         console.error('Erreur Supabase lors de la mise à jour d\'un véhicule:', error);
+        
+        // Gestion d'erreurs spécifiques
+        let errorMessage = "Erreur lors de la mise à jour du véhicule";
+        let errorDescription = error.message;
+        
+        if (error.code === '23503') {
+          errorMessage = "Erreur de contrainte de données";
+          errorDescription = "Ce véhicule est référencé dans d'autres tables et ne peut pas être modifié";
+        } else if (error.code === '23505') {
+          errorMessage = "Immatriculation déjà existante";
+          errorDescription = "Cette immatriculation est déjà utilisée par un autre véhicule";
+        } else if (error.code === '42501') {
+          errorMessage = "Permissions insuffisantes";
+          errorDescription = "Vous n'avez pas les droits nécessaires pour modifier ce véhicule";
+        }
+        
+        toast.error(errorMessage, {
+          description: errorDescription
+        });
         throw error;
       }
       
@@ -191,14 +292,18 @@ export function useVehicles() {
       
       console.log('Véhicule mis à jour avec succès');
       
-      toast.success("Véhicule mis à jour", {
-        description: "Les informations du véhicule ont été mises à jour."
+      toast.success("Véhicule mis à jour avec succès", {
+        description: `Les informations du véhicule ${updates.name || 'ont été mises à jour'}.`
       });
     } catch (err: any) {
       console.error('Erreur lors de la mise à jour d\'un véhicule:', err);
-      toast.error("Erreur lors de la mise à jour du véhicule", {
-        description: err.message
-      });
+      
+      // Si l'erreur n'a pas déjà été gérée (pas de toast affiché)
+      if (!err.code) {
+        toast.error("Erreur lors de la mise à jour du véhicule", {
+          description: err.message
+        });
+      }
       throw err;
     }
   };

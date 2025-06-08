@@ -45,25 +45,64 @@ const EditVehicleDialog: React.FC<EditVehicleDialogProps> = ({
     location: vehicle.location || ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+    
+    // Réinitialiser les erreurs de validation quand l'utilisateur modifie les données
+    if (validationErrors.length > 0) {
+      setValidationErrors([]);
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const errors: string[] = [];
+    
+    // Validation côté client
+    if (!formData.name.trim()) {
+      errors.push('L\'immatriculation est obligatoire');
+    }
+    
+    if (formData.fuelLevel < 0 || formData.fuelLevel > 100) {
+      errors.push('Le niveau de carburant doit être entre 0 et 100%');
+    }
+    
+    if (formData.lastMaintenance && new Date(formData.lastMaintenance) > new Date()) {
+      errors.push('La date du dernier entretien ne peut pas être dans le futur');
+    }
+    
+    if (formData.nextService && new Date(formData.nextService) < new Date()) {
+      errors.push('La date du prochain entretien doit être dans le futur');
+    }
+    
+    setValidationErrors(errors);
+    return errors.length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation côté client
+    if (!validateForm()) {
+      toast.error("Données invalides", {
+        description: "Veuillez corriger les erreurs dans le formulaire"
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
       await onUpdateVehicle(vehicle.id, formData);
-      toast.success("Véhicule mis à jour avec succès");
       onOpenChange(false);
+      setValidationErrors([]);
     } catch (error) {
       console.error('Erreur lors de la mise à jour:', error);
-      toast.error("Erreur lors de la mise à jour du véhicule");
+      // L'erreur est déjà gérée dans le hook useVehicles avec des toasts spécifiques
     } finally {
       setIsSubmitting(false);
     }
@@ -79,6 +118,16 @@ const EditVehicleDialog: React.FC<EditVehicleDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         
+        {validationErrors.length > 0 && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 mb-4">
+            <ul className="text-destructive text-sm space-y-1">
+              {validationErrors.map((error, index) => (
+                <li key={index}>• {error}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -88,6 +137,7 @@ const EditVehicleDialog: React.FC<EditVehicleDialogProps> = ({
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 required
+                className={validationErrors.some(e => e.includes('immatriculation')) ? 'border-destructive' : ''}
               />
             </div>
             
@@ -131,6 +181,7 @@ const EditVehicleDialog: React.FC<EditVehicleDialogProps> = ({
                 max="100"
                 value={formData.fuelLevel}
                 onChange={(e) => handleInputChange('fuelLevel', parseInt(e.target.value) || 0)}
+                className={validationErrors.some(e => e.includes('carburant')) ? 'border-destructive' : ''}
               />
             </div>
           </div>
@@ -143,6 +194,7 @@ const EditVehicleDialog: React.FC<EditVehicleDialogProps> = ({
                 type="date"
                 value={formData.lastMaintenance}
                 onChange={(e) => handleInputChange('lastMaintenance', e.target.value)}
+                className={validationErrors.some(e => e.includes('dernier entretien')) ? 'border-destructive' : ''}
               />
             </div>
             
@@ -153,6 +205,7 @@ const EditVehicleDialog: React.FC<EditVehicleDialogProps> = ({
                 type="date"
                 value={formData.nextService}
                 onChange={(e) => handleInputChange('nextService', e.target.value)}
+                className={validationErrors.some(e => e.includes('prochain entretien')) ? 'border-destructive' : ''}
               />
             </div>
           </div>
