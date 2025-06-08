@@ -255,47 +255,6 @@ export type Database = {
         }
         Relationships: []
       }
-      vehicle_positions: {
-        Row: {
-          created_at: string
-          heading: number | null
-          id: string
-          latitude: number
-          longitude: number
-          speed: number | null
-          timestamp: string
-          vehicle_id: string
-        }
-        Insert: {
-          created_at?: string
-          heading?: number | null
-          id?: string
-          latitude: number
-          longitude: number
-          speed?: number | null
-          timestamp?: string
-          vehicle_id: string
-        }
-        Update: {
-          created_at?: string
-          heading?: number | null
-          id?: string
-          latitude?: number
-          longitude?: number
-          speed?: number | null
-          timestamp?: string
-          vehicle_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "vehicle_positions_vehicle_id_fkey"
-            columns: ["vehicle_id"]
-            isOneToOne: false
-            referencedRelation: "vehicles"
-            referencedColumns: ["registration"]
-          },
-        ]
-      }
       vehicles: {
         Row: {
           driver: string | null
@@ -337,10 +296,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      simulate_vehicle_movement: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
