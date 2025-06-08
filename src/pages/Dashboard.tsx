@@ -8,6 +8,7 @@ import DriverAvailability from '@/components/dashboard/DriverAvailability';
 import { Truck, FileText, Users, TrendingUp, CheckCircle, Circle, Plus, Trash } from 'lucide-react';
 import { useTodos } from '@/hooks/useTodos';
 import { useVehicles } from '@/hooks/useVehicles';
+import { useDrivers } from '@/hooks/drivers/useDrivers';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,9 @@ const Dashboard: React.FC = () => {
   // Hook pour les véhicules
   const { vehicles, loading: vehiclesLoading } = useVehicles();
 
+  // Hook pour les chauffeurs
+  const { drivers, loading: driversLoading } = useDrivers();
+
   // Fonction pour ajouter une nouvelle tâche
   const handleAddTodo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +32,16 @@ const Dashboard: React.FC = () => {
       addTodo(newTask.trim());
       setNewTask('');
     }
+  };
+
+  // Convertir les chauffeurs au format attendu par DriverAvailability
+  const formatDriversForAvailability = () => {
+    return drivers.map(driver => ({
+      id: driver.id,
+      name: driver.name,
+      status: driver.status,
+      lastActivity: driver.status === 'on-duty' ? 'il y a 5 min' : 'il y a 20 min'
+    }));
   };
 
   // Mock data
@@ -46,7 +60,7 @@ const Dashboard: React.FC = () => {
     },
     { 
       title: "Chauffeurs disponibles", 
-      value: "12", 
+      value: driversLoading ? "..." : drivers.filter(d => d.status === 'available').length.toString(), 
       icon: <Users size={20} />, 
       change: { value: 3, isPositive: false } 
     },
@@ -119,33 +133,6 @@ const Dashboard: React.FC = () => {
     }
   ];
 
-  const drivers = [
-    { 
-      id: "dr1", 
-      name: "Thomas Durand", 
-      status: "on-duty" as const, 
-      lastActivity: "il y a 5 min" 
-    },
-    { 
-      id: "dr2", 
-      name: "Sophie Lefèvre", 
-      status: "available" as const, 
-      lastActivity: "il y a 20 min" 
-    },
-    { 
-      id: "dr3", 
-      name: "Pierre Martin", 
-      status: "off-duty" as const, 
-      lastActivity: "hier, 18:30" 
-    },
-    { 
-      id: "dr4", 
-      name: "Julie Dubois", 
-      status: "on-duty" as const, 
-      lastActivity: "il y a 15 min" 
-    }
-  ];
-
   return (
     <div>
       <div className="mb-8">
@@ -167,7 +154,7 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
         <MapOverview vehicles={vehicles} className="lg:col-span-1" />
         <UpcomingDeliveries deliveries={deliveries} className="lg:col-span-1" />
-        <DriverAvailability drivers={drivers} className="lg:col-span-1" />
+        <DriverAvailability drivers={formatDriversForAvailability()} className="lg:col-span-1" />
       </div>
 
       {/* Section des tâches */}
