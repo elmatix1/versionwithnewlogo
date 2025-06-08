@@ -9,7 +9,7 @@ interface Driver {
   id: string;
   name: string;
   avatar?: string;
-  status: 'available' | 'on-duty' | 'off-duty';
+  status: 'available' | 'on-duty' | 'off-duty' | 'on-leave';
   lastActivity?: string;
 }
 
@@ -30,6 +30,10 @@ const statusConfig = {
   'off-duty': { 
     label: 'Hors service', 
     className: 'bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200'
+  },
+  'on-leave': { 
+    label: 'En congé', 
+    className: 'bg-orange-500 text-white'
   },
 };
 
