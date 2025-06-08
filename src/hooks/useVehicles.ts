@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -217,13 +216,18 @@ export function useVehicles() {
       if (error) {
         console.error('Erreur Supabase lors de la mise à jour d\'un véhicule:', error);
         
-        // Gestion d'erreurs spécifiques
+        // Gestion d'erreurs spécifiques pour les contraintes de clé étrangère
         let errorMessage = "Erreur lors de la mise à jour du véhicule";
         let errorDescription = error.message;
         
         if (error.code === '23503') {
+          // Erreur de contrainte de clé étrangère
           errorMessage = "Erreur de contrainte de données";
-          errorDescription = "Ce véhicule est référencé dans d'autres tables et ne peut pas être modifié";
+          if (error.message.includes('vehicle_positions')) {
+            errorDescription = "Ce véhicule a des positions enregistrées qui empêchent la modification de son immatriculation. Contactez l'administrateur pour résoudre cette contrainte.";
+          } else {
+            errorDescription = "Ce véhicule est référencé dans d'autres données du système et ne peut pas être modifié de cette manière.";
+          }
         } else if (error.code === '23505') {
           errorMessage = "Immatriculation déjà existante";
           errorDescription = "Cette immatriculation est déjà utilisée par un autre véhicule";
