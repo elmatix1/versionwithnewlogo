@@ -197,49 +197,6 @@ export function useVehicles() {
         throw new Error(errorMessage);
       }
       
-      // Récupérer les informations actuelles du véhicule pour gérer les contraintes
-      const { data: currentVehicle, error: fetchError } = await supabase
-        .from('vehicles')
-        .select('registration')
-        .eq('id', parseInt(id))
-        .single();
-      
-      if (fetchError) {
-        console.error('Erreur lors de la récupération du véhicule actuel:', fetchError);
-        throw fetchError;
-      }
-      
-      // Si l'immatriculation change, gérer les contraintes de clé étrangère
-      const registrationChanged = updates.name && updates.name !== currentVehicle.registration;
-      
-      if (registrationChanged) {
-        // Vérifier s'il y a des positions associées à ce véhicule
-        const { data: positions, error: positionsError } = await supabase
-          .from('vehicle_positions')
-          .select('id')
-          .eq('vehicle_id', currentVehicle.registration);
-        
-        if (positionsError) {
-          console.error('Erreur lors de la vérification des positions:', positionsError);
-        }
-        
-        // Si des positions existent, les mettre à jour avec la nouvelle immatriculation
-        if (positions && positions.length > 0) {
-          const { error: updatePositionsError } = await supabase
-            .from('vehicle_positions')
-            .update({ vehicle_id: updates.name })
-            .eq('vehicle_id', currentVehicle.registration);
-          
-          if (updatePositionsError) {
-            console.error('Erreur lors de la mise à jour des positions:', updatePositionsError);
-            toast.error("Erreur lors de la mise à jour des positions du véhicule", {
-              description: "Impossible de mettre à jour les références de position"
-            });
-            throw updatePositionsError;
-          }
-        }
-      }
-      
       // Préparer les données pour la mise à jour
       const updateData: any = {};
       
