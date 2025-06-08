@@ -12,10 +12,10 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <BrowserRouter>
-        <AuthProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <BrowserRouter>
           <Routes>
             <Route path="/" element={<MainLayout />}>
               {navItems.map(({ to, page }) => (
@@ -24,9 +24,9 @@ const App = () => (
               <Route path="/vehicle-tracking" element={<VehicleTracking />} />
             </Route>
           </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
