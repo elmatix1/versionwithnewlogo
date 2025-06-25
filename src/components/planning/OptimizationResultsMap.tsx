@@ -61,17 +61,17 @@ const OptimizationResultsMap: React.FC<OptimizationResultsMapProps> = ({ routes,
       const startCoord = route.coordinates[0];
       const endCoord = route.coordinates[route.coordinates.length - 1];
 
-      // Marqueur de départ avec animation
+      // Marqueur de départ (bleu) avec icône distinctive
       const startIcon = L.divIcon({
         className: 'custom-marker-start',
         html: `
           <div style="
             background-color: #3b82f6; 
-            width: 24px; 
-            height: 24px; 
+            width: 20px; 
+            height: 20px; 
             border-radius: 50%; 
             border: 3px solid white; 
-            box-shadow: 0 4px 12px rgba(59,130,246,0.4);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
             position: relative;
             display: flex;
             align-items: center;
@@ -84,55 +84,53 @@ const OptimizationResultsMap: React.FC<OptimizationResultsMapProps> = ({ routes,
             ">🚚</div>
             <div style="
               position: absolute;
-              top: -6px;
-              left: -6px;
-              width: 36px;
-              height: 36px;
+              top: -10px;
+              left: -10px;
+              width: 40px;
+              height: 40px;
               border-radius: 50%;
-              background-color: rgba(59,130,246,0.2);
+              background-color: #3b82f620;
               animation: pulse 2s infinite;
             "></div>
           </div>
         `,
-        iconSize: [30, 30],
-        iconAnchor: [15, 15]
+        iconSize: [26, 26],
+        iconAnchor: [13, 13]
       });
 
       L.marker([startCoord[0], startCoord[1]], { icon: startIcon })
         .addTo(map.current!)
         .bindPopup(`
-          <div style="padding: 12px; min-width: 280px;">
-            <h4 style="margin: 0 0 10px 0; color: #3b82f6; font-weight: bold; font-size: 18px;">
+          <div style="padding: 10px; min-width: 250px;">
+            <h4 style="margin: 0 0 8px 0; color: #3b82f6; font-weight: bold; font-size: 16px;">
               🚚 Départ: ${route.origin}
             </h4>
-            <div style="background-color: #f8fafc; padding: 12px; border-radius: 8px; margin: 8px 0;">
-              <div style="margin: 6px 0; font-size: 14px;">
-                <strong>🚛 Véhicule:</strong> ${route.vehicle}
-              </div>
-              <div style="margin: 6px 0; font-size: 14px;">
-                <strong>👨‍✈️ Chauffeur:</strong> ${route.driver}
-              </div>
-              <div style="margin: 6px 0; font-size: 14px;">
-                <strong>🎯 Destination:</strong> ${route.destination}
-              </div>
+            <div style="margin: 4px 0; font-size: 13px;">
+              <strong>Véhicule:</strong> ${route.vehicle}
             </div>
-            <div style="text-align: center; padding: 10px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border-radius: 8px; font-weight: bold; font-size: 14px;">
-              📏 Distance totale: ${route.distance} km
+            <div style="margin: 4px 0; font-size: 13px;">
+              <strong>Chauffeur:</strong> ${route.driver}
+            </div>
+            <div style="margin: 4px 0; font-size: 13px;">
+              <strong>Destination:</strong> ${route.destination}
+            </div>
+            <div style="margin: 8px 0 4px 0; padding: 6px 8px; background-color: #3b82f6; color: white; border-radius: 4px; text-align: center; font-weight: bold; font-size: 12px;">
+              Distance totale: ${route.distance} km
             </div>
           </div>
         `);
 
-      // Marqueur d'arrivée avec style distinct
+      // Marqueur d'arrivée (vert) avec icône différente
       const endIcon = L.divIcon({
         className: 'custom-marker-end',
         html: `
           <div style="
-            background: linear-gradient(135deg, #10b981, #059669);
-            width: 24px; 
-            height: 24px; 
-            border-radius: 6px; 
+            background-color: #10b981; 
+            width: 20px; 
+            height: 20px; 
+            border-radius: 3px; 
             border: 3px solid white; 
-            box-shadow: 0 4px 12px rgba(16,185,129,0.4);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
             transform: rotate(45deg);
             position: relative;
           ">
@@ -142,98 +140,109 @@ const OptimizationResultsMap: React.FC<OptimizationResultsMapProps> = ({ routes,
               left: 50%;
               transform: translate(-50%, -50%) rotate(-45deg);
               color: white;
-              font-size: 12px;
+              font-size: 10px;
               font-weight: bold;
             ">🏁</div>
           </div>
         `,
-        iconSize: [30, 30],
-        iconAnchor: [15, 15]
+        iconSize: [26, 26],
+        iconAnchor: [13, 13]
       });
 
       L.marker([endCoord[0], endCoord[1]], { icon: endIcon })
         .addTo(map.current!)
         .bindPopup(`
-          <div style="padding: 12px; min-width: 300px;">
-            <h4 style="margin: 0 0 10px 0; color: #10b981; font-weight: bold; font-size: 18px;">
+          <div style="padding: 10px; min-width: 250px;">
+            <h4 style="margin: 0 0 8px 0; color: #10b981; font-weight: bold; font-size: 16px;">
               🏁 Arrivée: ${route.destination}
             </h4>
-            <div style="background-color: #f0fdf4; padding: 12px; border-radius: 10px; margin: 10px 0; border: 2px solid #bbf7d0;">
-              <div style="display: flex; justify-content: space-between; margin: 6px 0; font-size: 14px;">
-                <span><strong>📏 Distance:</strong></span>
-                <span style="color: #059669; font-weight: bold;">${route.distance} km</span>
+            <div style="background-color: #f8f9fa; padding: 8px; border-radius: 6px; margin: 8px 0;">
+              <div style="display: flex; justify-content: space-between; margin: 3px 0; font-size: 13px;">
+                <span>Distance:</span>
+                <strong style="color: #10b981;">${route.distance} km</strong>
               </div>
-              <div style="display: flex; justify-content: space-between; margin: 6px 0; font-size: 14px;">
-                <span><strong>⏰ Temps original:</strong></span>
-                <span style="color: #dc2626;">${route.originalDuration} min</span>
+              <div style="display: flex; justify-content: space-between; margin: 3px 0; font-size: 13px;">
+                <span>Temps original:</span>
+                <span style="color: #f59e0b;">${route.originalDuration} min</span>
               </div>
-              <div style="display: flex; justify-content: space-between; margin: 6px 0; font-size: 14px;">
-                <span><strong>🚀 Temps optimisé:</strong></span>
-                <span style="color: #10b981; font-weight: bold;">${route.optimizedDuration} min</span>
+              <div style="display: flex; justify-content: space-between; margin: 3px 0; font-size: 13px;">
+                <span>Temps optimisé:</span>
+                <strong style="color: #10b981;">${route.optimizedDuration} min</strong>
               </div>
             </div>
-            <div style="text-align: center; padding: 12px; background: linear-gradient(135deg, #10b981, #059669); color: white; border-radius: 10px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">
+            <div style="text-align: center; padding: 8px; background-color: #10b981; color: white; border-radius: 6px; font-weight: bold;">
               ⚡ Économie: ${route.timeSaved} minutes
             </div>
           </div>
         `);
 
-      // Tracer la route réelle avec style amélioré
+      // Tracer la route optimisée avec style amélioré
       const routeLine = L.polyline(
         route.coordinates.map(coord => [coord[0], coord[1]] as L.LatLngExpression),
         {
           color: color,
-          weight: 4,
+          weight: 5,
           opacity: 0.8,
+          dashArray: '10, 5',
           lineCap: 'round',
           lineJoin: 'round'
         }
       ).addTo(map.current!);
 
-      // Ajouter une ombre à la route pour plus de réalisme (sans la propriété offset)
-      const shadowLine = L.polyline(
-        route.coordinates.map(coord => [coord[0], coord[1]] as L.LatLngExpression),
-        {
-          color: '#000000',
-          weight: 6,
-          opacity: 0.1,
-          lineCap: 'round',
-          lineJoin: 'round'
-        }
-      ).addTo(map.current!);
+      // Ajouter des marqueurs intermédiaires pour les points clés
+      if (route.coordinates.length > 2) {
+        route.coordinates.slice(1, -1).forEach((coord, waypointIndex) => {
+          const waypointIcon = L.divIcon({
+            className: 'waypoint-marker',
+            html: `
+              <div style="
+                background-color: white; 
+                width: 10px; 
+                height: 10px; 
+                border-radius: 50%; 
+                border: 2px solid ${color}; 
+                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+              "></div>
+            `,
+            iconSize: [14, 14],
+            iconAnchor: [7, 7]
+          });
 
-      // Popup pour la route avec informations détaillées
+          L.marker([coord[0], coord[1]], { icon: waypointIcon })
+            .addTo(map.current!)
+            .bindPopup(`
+              <div style="padding: 6px; text-align: center;">
+                <strong>Point intermédiaire ${waypointIndex + 1}</strong><br>
+                <small>Route ${route.origin} → ${route.destination}</small>
+              </div>
+            `);
+        });
+      }
+
       routeLine.bindPopup(`
-        <div style="padding: 15px; min-width: 320px;">
-          <h4 style="margin: 0 0 12px 0; color: ${color}; font-weight: bold; font-size: 18px;">
-            🛣️ Route Optimisée Réelle
+        <div style="padding: 12px; min-width: 280px;">
+          <h4 style="margin: 0 0 10px 0; color: ${color}; font-weight: bold; font-size: 16px;">
+            🛣️ Route Optimisée
           </h4>
-          <div style="margin: 8px 0; font-size: 16px; text-align: center; background: linear-gradient(135deg, ${color}20, ${color}10); padding: 8px; border-radius: 8px;">
-            <strong>${route.origin}</strong> 
-            <span style="color: ${color}; font-size: 20px; margin: 0 8px;">➜</span> 
-            <strong>${route.destination}</strong>
+          <div style="margin: 6px 0; font-size: 14px; text-align: center;">
+            <strong>${route.origin}</strong> ➜ <strong>${route.destination}</strong>
           </div>
-          <div style="background-color: #f8fafc; padding: 15px; border-radius: 12px; margin: 12px 0; border: 2px solid ${color}20;">
-            <div style="display: flex; justify-content: space-between; margin: 8px 0; font-size: 15px;">
-              <span><strong>📏 Distance réelle:</strong></span>
-              <span style="font-weight: bold; color: ${color};">${route.distance} km</span>
+          <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">
+            <div style="display: flex; justify-content: space-between; margin: 4px 0; font-size: 14px;">
+              <span>📏 Distance:</span>
+              <strong>${route.distance} km</strong>
             </div>
-            <div style="display: flex; justify-content: space-between; margin: 8px 0; font-size: 15px;">
-              <span><strong>⏱️ Temps original:</strong></span>
-              <span style="color: #dc2626;">${route.originalDuration} min</span>
+            <div style="display: flex; justify-content: space-between; margin: 4px 0; font-size: 14px;">
+              <span>⏱️ Temps original:</span>
+              <span>${route.originalDuration} min</span>
             </div>
-            <div style="display: flex; justify-content: space-between; margin: 8px 0; font-size: 15px;">
-              <span><strong>🚀 Temps optimisé:</strong></span>
+            <div style="display: flex; justify-content: space-between; margin: 4px 0; font-size: 14px;">
+              <span>🚀 Temps optimisé:</span>
               <span style="color: #10b981; font-weight: bold;">${route.optimizedDuration} min</span>
             </div>
-            <div style="margin-top: 12px; padding: 8px; background-color: #ecfdf5; border-radius: 6px; text-align: center;">
-              <span style="font-size: 13px; color: #065f46;">
-                📊 Points de route: ${route.coordinates.length} coordonnées
-              </span>
-            </div>
           </div>
-          <div style="text-align: center; padding: 12px; background: linear-gradient(135deg, #10b981, #059669); color: white; border-radius: 12px; font-weight: bold; font-size: 16px; box-shadow: 0 6px 20px rgba(16,185,129,0.3);">
-            ⚡ Économie totale: ${route.timeSaved} minutes
+          <div style="text-align: center; padding: 8px; background-color: #10b981; color: white; border-radius: 6px; font-weight: bold; font-size: 14px;">
+            ⚡ Économie: ${route.timeSaved} minutes
           </div>
         </div>
       `);
@@ -255,7 +264,7 @@ const OptimizationResultsMap: React.FC<OptimizationResultsMapProps> = ({ routes,
     style.textContent = `
       @keyframes pulse {
         0% { transform: scale(1); opacity: 0.8; }
-        50% { transform: scale(1.2); opacity: 0.4; }
+        50% { transform: scale(1.3); opacity: 0.4; }
         100% { transform: scale(1); opacity: 0.8; }
       }
     `;
@@ -273,7 +282,7 @@ const OptimizationResultsMap: React.FC<OptimizationResultsMapProps> = ({ routes,
       <div ref={mapContainer} className="w-full h-[500px] rounded-lg border shadow-sm" />
       {routes.length > 0 && (
         <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-4 z-[1000] border">
-          <div className="text-sm font-semibold text-gray-800 mb-3">🗺️ Routes Réelles Optimisées</div>
+          <div className="text-sm font-semibold text-gray-800 mb-3">📍 Légende des Trajets</div>
           <div className="space-y-2">
             <div className="flex items-center gap-3 text-xs text-gray-700">
               <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow-sm flex items-center justify-center">
@@ -288,16 +297,17 @@ const OptimizationResultsMap: React.FC<OptimizationResultsMapProps> = ({ routes,
               <span className="font-medium">Point d'arrivée</span>
             </div>
             <div className="flex items-center gap-3 text-xs text-gray-700">
-              <div className="w-8 h-1 bg-blue-500 rounded"></div>
-              <span className="font-medium">Route réelle calculée</span>
+              <div className="w-3 h-3 rounded-full bg-white border-2 border-blue-500"></div>
+              <span className="font-medium">Points intermédiaires</span>
+            </div>
+            <div className="flex items-center gap-3 text-xs text-gray-700">
+              <div className="w-8 h-0.5 bg-blue-500 rounded" style={{borderTop: '3px dashed #3b82f6', borderBottom: '2px solid #3b82f6'}}></div>
+              <span className="font-medium">Route optimisée</span>
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-gray-200">
             <div className="text-xs text-gray-600 font-medium">
-              ✅ {routes.length} trajet{routes.length > 1 ? 's' : ''} avec routes réelles
-            </div>
-            <div className="text-xs text-green-600 font-medium">
-              🌍 Données OpenRouteService
+              📊 {routes.length} trajet{routes.length > 1 ? 's' : ''} optimisé{routes.length > 1 ? 's' : ''}
             </div>
           </div>
         </div>
