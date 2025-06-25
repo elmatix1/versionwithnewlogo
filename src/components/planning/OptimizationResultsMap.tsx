@@ -190,7 +190,7 @@ const OptimizationResultsMap: React.FC<OptimizationResultsMapProps> = ({ routes,
         }
       ).addTo(map.current!);
 
-      // Ajouter une ombre à la route pour plus de réalisme
+      // Ajouter une ombre à la route pour plus de réalisme (sans la propriété offset)
       const shadowLine = L.polyline(
         route.coordinates.map(coord => [coord[0], coord[1]] as L.LatLngExpression),
         {
@@ -198,8 +198,7 @@ const OptimizationResultsMap: React.FC<OptimizationResultsMapProps> = ({ routes,
           weight: 6,
           opacity: 0.1,
           lineCap: 'round',
-          lineJoin: 'round',
-          offset: 2
+          lineJoin: 'round'
         }
       ).addTo(map.current!);
 
