@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { routingService, RoutePoint } from '@/services/routingService';
@@ -31,7 +30,7 @@ export function useRouteOptimization() {
   const cityCoordinates: Record<string, [number, number]> = {
     'Casablanca': [33.5731, -7.5898],
     'Rabat': [34.0209, -6.8416],
-    'Marrakech': [31.6315, -8.0075], // Coordonnées corrigées
+    'Marrakech': [31.6315, -8.0075],
     'Fès': [34.0181, -5.0078],
     'Tanger': [35.7595, -5.8340],
     'Agadir': [30.4278, -9.5981],
@@ -56,7 +55,7 @@ export function useRouteOptimization() {
   const getCityCoordinates = (cityName: string): RoutePoint | null => {
     const coords = cityCoordinates[cityName];
     if (!coords) {
-      console.warn(`Coordonnées non trouvées pour: ${cityName}`);
+      console.warn(`❌ Coordonnées non trouvées pour: ${cityName}`);
       return null;
     }
     return { lat: coords[0], lng: coords[1] };
@@ -68,20 +67,26 @@ export function useRouteOptimization() {
     const destCoords = getCityCoordinates(destination);
 
     if (!originCoords || !destCoords) {
-      // Fallback vers les anciennes coordonnées si ville non trouvée
-      return {
-        distance: 200,
-        duration: 150,
-        coordinates: [
-          cityCoordinates['Casablanca'] || [33.5731, -7.5898],
-          cityCoordinates['Marrakech'] || [31.6315, -8.0075]
-        ] as [number, number][]
-      };
+      console.error(`❌ Impossible de trouver les coordonnées pour ${origin} ou ${destination}`);
+      throw new Error(`Coordonnées non trouvées pour ${origin} ou ${destination}`);
     }
+
+    console.log(`🚗 Calcul de route réelle: ${origin} (${originCoords.lat}, ${originCoords.lng}) → ${destination} (${destCoords.lat}, ${destCoords.lng})`);
 
     try {
       const routingResult = await routingService.calculateRoute(originCoords, destCoords);
-      console.log(`Route réelle calculée: ${origin} → ${destination}`, routingResult);
+      
+      // Vérifier que nous avons une vraie route avec plusieurs points
+      if (routingResult.coordinates.length < 3) {
+        console.warn(`⚠️ Route trop simple (${routingResult.coordinates.length} points), on force la régénération`);
+        throw new Error('Route trop simple');
+      }
+      
+      console.log(`✅ Route réelle calculée: ${origin} → ${destination}`, {
+        distance: routingResult.distance,
+        duration: routingResult.duration,
+        points: routingResult.coordinates.length
+      });
       
       return {
         distance: routingResult.distance,
@@ -89,18 +94,8 @@ export function useRouteOptimization() {
         coordinates: routingResult.coordinates
       };
     } catch (error) {
-      console.error(`Erreur lors du calcul de route ${origin} → ${destination}:`, error);
-      
-      // Fallback en cas d'erreur
-      const directDistance = calculateHaversineDistance(originCoords, destCoords);
-      return {
-        distance: Math.round(directDistance * 1.25),
-        duration: Math.round(directDistance * 0.8 + 20),
-        coordinates: [
-          [originCoords.lat, originCoords.lng],
-          [destCoords.lat, destCoords.lng]
-        ] as [number, number][]
-      };
+      console.error(`💥 Erreur lors du calcul de route ${origin} → ${destination}:`, error);
+      throw error;
     }
   };
 
@@ -132,9 +127,9 @@ export function useRouteOptimization() {
         return null;
       }
 
-      console.log(`Optimisation de ${plannedDeliveries.length} livraisons avec routes réelles`);
+      console.log(`🎯 Optimisation de ${plannedDeliveries.length} livraisons avec routes RÉELLES`);
       toast.info("Calcul des routes réelles en cours...", {
-        description: "Connexion aux services de routage..."
+        description: "Connexion aux services de routage (OpenRouteService/OSRM)..."
       });
 
       // Calculer les routes réelles pour toutes les livraisons
@@ -144,10 +139,31 @@ export function useRouteOptimization() {
         const vehicle = delivery.vehicle || `TL-${1000 + index}`;
         const driver = delivery.driver || `Chauffeur ${index + 1}`;
         
-        console.log(`Calcul de route réelle: ${origin} → ${destination}`);
+        console.log(`🚗 ${index + 1}/${plannedDeliveries.length}: Calcul de route réelle ${origin} → ${destination}`);
         
-        // Calculer la route réelle
-        const realRoute = await calculateRealRoute(origin, destination);
+        // Calculer la route réelle avec retry en cas d'échec
+        let realRoute;
+        let attempts = 0;
+        const maxAttempts = 3;
+        
+        while (attempts < maxAttempts) {
+          try {
+            realRoute = await calculateRealRoute(origin, destination);
+            break;
+          } catch (error) {
+            attempts++;
+            console.warn(`⚠️ Tentative ${attempts}/${maxAttempts} échouée pour ${origin} → ${destination}`);
+            if (attempts === maxAttempts) {
+              throw error;
+            }
+            // Attendre avant de réessayer
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+        
+        if (!realRoute) {
+          throw new Error(`Impossible de calculer la route ${origin} → ${destination}`);
+        }
         
         // Calculer l'optimisation (10-25% d'amélioration)
         const baseOptimization = 0.12; // 12% de base
@@ -157,7 +173,7 @@ export function useRouteOptimization() {
         const timeSaved = Math.round(realRoute.duration * optimizationFactor);
         const optimizedDuration = Math.max(30, realRoute.duration - timeSaved);
 
-        console.log(`Route optimisée: ${realRoute.distance}km, ${realRoute.duration}min → ${optimizedDuration}min (économie: ${timeSaved}min)`);
+        console.log(`✅ Route ${index + 1} optimisée: ${realRoute.distance}km, ${realRoute.duration}min → ${optimizedDuration}min (économie: ${timeSaved}min, ${realRoute.coordinates.length} points)`);
 
         return {
           id: delivery.id || `route-${index}`,
@@ -174,6 +190,10 @@ export function useRouteOptimization() {
       });
 
       // Attendre que toutes les routes soient calculées
+      toast.info("Finalisation des calculs...", {
+        description: "Optimisation des trajets en cours..."
+      });
+      
       const optimizedRoutes = await Promise.all(routePromises);
 
       const totalTimeSaved = optimizedRoutes.reduce((sum, route) => sum + route.timeSaved, 0);
@@ -188,19 +208,22 @@ export function useRouteOptimization() {
         optimizationPercentage
       };
 
-      console.log(`Optimisation terminée: ${totalTimeSaved}min économisées sur ${totalDistance}km total`);
+      console.log(`🎉 Optimisation terminée avec succès:`);
+      console.log(`   - ${optimizedRoutes.length} trajets avec routes RÉELLES`);
+      console.log(`   - ${totalTimeSaved}min économisées sur ${totalDistance}km total`);
+      console.log(`   - ${optimizationPercentage}% d'amélioration`);
       
       setOptimizationResult(result);
       
       toast.success("Optimisation terminée avec routes réelles", {
-        description: `${optimizedRoutes.length} trajets optimisés, ${totalTimeSaved} minutes économisées au total`
+        description: `${optimizedRoutes.length} trajets optimisés avec ${optimizedRoutes.reduce((sum, route) => sum + route.coordinates.length, 0)} points de route au total`
       });
       
       return result;
     } catch (error) {
-      console.error("Erreur lors de l'optimisation:", error);
+      console.error("💥 Erreur lors de l'optimisation:", error);
       toast.error("Erreur lors de l'optimisation", {
-        description: "Une erreur est survenue pendant le calcul des trajets optimisés"
+        description: "Une erreur est survenue pendant le calcul des trajets réels. Vérifiez votre connexion internet."
       });
       return null;
     } finally {
