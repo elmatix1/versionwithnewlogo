@@ -26,101 +26,113 @@ class RoutingService {
   private readonly API_KEY = '5b3ce3597851110001cf6248a707c93f02c84b4fb08dc5ed47bf2c3e';
 
   async calculateRoute(origin: RoutePoint, destination: RoutePoint): Promise<RoutingResult> {
+    // Validation des coordonnées
+    if (!this.isValidCoordinate(origin) || !this.isValidCoordinate(destination)) {
+      console.error('❌ Coordonnées invalides:', { origin, destination });
+      return this.generateRealisticRoute(origin, destination);
+    }
+
     try {
       console.log(`🚗 Calcul de route réelle: ${origin.lat},${origin.lng} → ${destination.lat},${destination.lng}`);
       
-      // Préparer les coordonnées pour ORS (longitude, latitude)
-      const coordinates = [
-        [origin.lng, origin.lat],
-        [destination.lng, destination.lat]
-      ];
-
-      const requestBody = {
-        coordinates: coordinates,
-        format: 'json',
-        instructions: true,
-        geometry: true,
-        elevation: false,
-        extra_info: ['waytype', 'surface'],
-        options: {
-          avoid_features: ['ferries'],
-          vehicle_type: 'driving'
-        }
-      };
-
-      console.log('📡 Requête ORS:', JSON.stringify(requestBody, null, 2));
-
-      const response = await fetch(this.ORS_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': this.API_KEY,
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      console.log('📨 Réponse ORS status:', response.status, response.statusText);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Erreur API ORS:', response.status, errorText);
-        throw new Error(`Erreur API ORS: ${response.status} - ${errorText}`);
+      // Essayer d'abord avec OSRM (plus fiable)
+      const osrmResult = await this.calculateRouteWithOSRM(origin, destination);
+      if (osrmResult && osrmResult.coordinates.length > 3) {
+        return osrmResult;
       }
-
-      const data = await response.json();
-      console.log('📊 Données ORS reçues:', data);
-      
-      if (!data.routes || data.routes.length === 0) {
-        console.error('❌ Aucune route trouvée dans la réponse ORS');
-        throw new Error('Aucune route trouvée');
-      }
-
-      const route = data.routes[0];
-      
-      if (!route.geometry) {
-        console.error('❌ Pas de géométrie dans la route ORS');
-        throw new Error('Pas de géométrie de route');
-      }
-
-      // Décoder la géométrie (format polyline)
-      const coordinates_decoded = this.decodePolyline(route.geometry);
-      console.log(`🗺️ Points décodés: ${coordinates_decoded.length} coordonnées`);
-      
-      // Convertir les coordonnées [lng, lat] en [lat, lng] pour Leaflet
-      const leafletCoordinates: [number, number][] = coordinates_decoded.map(
-        ([lng, lat]) => [lat, lng]
-      );
-
-      const distanceKm = Math.round(route.summary.distance / 1000);
-      const durationMin = Math.round(route.summary.duration / 60);
-
-      console.log(`✅ Route réelle calculée: ${distanceKm}km, ${durationMin}min, ${leafletCoordinates.length} points`);
-
-      return {
-        coordinates: leafletCoordinates,
-        distance: distanceKm,
-        duration: durationMin,
-        segments: [{
-          coordinates: leafletCoordinates,
-          distance: route.summary.distance,
-          duration: route.summary.duration,
-          instructions: route.segments?.[0]?.steps?.map((step: any) => step.instruction) || []
-        }]
-      };
-    } catch (error) {
-      console.error('💥 Erreur lors du calcul de route:', error);
-      
-      // Essayer avec une API alternative (OSRM)
-      console.log('🔄 Tentative avec OSRM...');
-      try {
-        return await this.calculateRouteWithOSRM(origin, destination);
-      } catch (osrmError) {
-        console.error('💥 Erreur OSRM aussi:', osrmError);
-        // Fallback vers route réaliste générée
-        return this.generateRealisticRoute(origin, destination);
-      }
+    } catch (osrmError) {
+      console.warn('⚠️ OSRM a échoué, tentative avec ORS:', osrmError);
     }
+
+    try {
+      // Fallback vers OpenRouteService
+      return await this.calculateRouteWithORS(origin, destination);
+    } catch (orsError) {
+      console.warn('⚠️ ORS a également échoué:', orsError);
+      // Générer une route réaliste comme dernier recours
+      return this.generateRealisticRoute(origin, destination);
+    }
+  }
+
+  private isValidCoordinate(point: RoutePoint): boolean {
+    return (
+      point &&
+      typeof point.lat === 'number' &&
+      typeof point.lng === 'number' &&
+      !isNaN(point.lat) &&
+      !isNaN(point.lng) &&
+      point.lat >= -90 &&
+      point.lat <= 90 &&
+      point.lng >= -180 &&
+      point.lng <= 180
+    );
+  }
+
+  // Méthode avec OpenRouteService
+  private async calculateRouteWithORS(origin: RoutePoint, destination: RoutePoint): Promise<RoutingResult> {
+    const coordinates = [
+      [origin.lng, origin.lat],
+      [destination.lng, destination.lat]
+    ];
+
+    const requestBody = {
+      coordinates: coordinates,
+      format: 'json',
+      instructions: true,
+      geometry: true,
+      elevation: false,
+      extra_info: ['waytype', 'surface'],
+      options: {
+        avoid_features: ['ferries'],
+        vehicle_type: 'driving'
+      }
+    };
+
+    const response = await fetch(this.ORS_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': this.API_KEY,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erreur API ORS: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.routes || data.routes.length === 0) {
+      throw new Error('Aucune route trouvée');
+    }
+
+    const route = data.routes[0];
+    
+    if (!route.geometry) {
+      throw new Error('Pas de géométrie de route');
+    }
+
+    const coordinates_decoded = this.decodePolyline(route.geometry);
+    const leafletCoordinates: [number, number][] = coordinates_decoded.map(
+      ([lng, lat]) => [lat, lng]
+    );
+
+    const distanceKm = Math.round(route.summary.distance / 1000);
+    const durationMin = Math.round(route.summary.duration / 60);
+
+    return {
+      coordinates: leafletCoordinates,
+      distance: distanceKm,
+      duration: durationMin,
+      segments: [{
+        coordinates: leafletCoordinates,
+        distance: route.summary.distance,
+        duration: route.summary.duration,
+        instructions: route.segments?.[0]?.steps?.map((step: any) => step.instruction) || []
+      }]
+    };
   }
 
   // Méthode alternative avec OSRM (Open Source Routing Machine)
@@ -129,7 +141,12 @@ class RoutingService {
     
     console.log('🔄 Tentative OSRM:', osrmUrl);
     
-    const response = await fetch(osrmUrl);
+    const response = await fetch(osrmUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
     
     if (!response.ok) {
       throw new Error(`Erreur OSRM: ${response.status}`);
@@ -137,11 +154,16 @@ class RoutingService {
     
     const data = await response.json();
     
-    if (!data.routes || data.routes.length === 0) {
+    if (!data.routes || data.routes.length === 0 || data.code !== 'Ok') {
       throw new Error('Aucune route OSRM trouvée');
     }
     
     const route = data.routes[0];
+    
+    if (!route.geometry || !route.geometry.coordinates) {
+      throw new Error('Pas de géométrie OSRM');
+    }
+    
     const coordinates = route.geometry.coordinates;
     
     // Convertir [lng, lat] en [lat, lng] pour Leaflet
@@ -188,7 +210,7 @@ class RoutingService {
       let midLng = origin.lng + (lngDiff * ratio);
       
       // Ajouter des déviations pour simuler les routes réelles
-      const deviationFactor = 0.015; // Augmenter pour plus de réalisme
+      const deviationFactor = 0.015;
       const deviationLat = deviationFactor * Math.sin(ratio * Math.PI * 3) * Math.cos(ratio * Math.PI * 2);
       const deviationLng = deviationFactor * Math.cos(ratio * Math.PI * 3) * Math.sin(ratio * Math.PI * 2);
       
@@ -264,29 +286,6 @@ class RoutingService {
               Math.sin(dLng/2) * Math.sin(dLng/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c;
-  }
-
-  // Méthode pour calculer plusieurs routes en batch
-  async calculateMultipleRoutes(routes: Array<{origin: RoutePoint, destination: RoutePoint}>): Promise<RoutingResult[]> {
-    const results: RoutingResult[] = [];
-    
-    // Traiter les routes par petits groupes pour éviter de surcharger l'API
-    for (let i = 0; i < routes.length; i += 3) {
-      const batch = routes.slice(i, i + 3);
-      const batchPromises = batch.map(route => 
-        this.calculateRoute(route.origin, route.destination)
-      );
-      
-      const batchResults = await Promise.all(batchPromises);
-      results.push(...batchResults);
-      
-      // Petite pause entre les batches pour respecter les limites de l'API
-      if (i + 3 < routes.length) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-    }
-    
-    return results;
   }
 }
 
