@@ -2,7 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { OptimizedRoute } from '@/hooks/useRouteOptimization';
+import { OptimizedRoute } from '@/types/routeOptimization';
 
 // Fix pour les icônes par défaut de Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CheckCircle, Clock, Route, TrendingUp, X } from 'lucide-react';
-import { OptimizationResult } from '@/hooks/useRouteOptimization';
+import { OptimizationResult } from '@/types/routeOptimization';
 import OptimizationResultsMap from './OptimizationResultsMap';
 
 interface OptimizationResultsProps {
